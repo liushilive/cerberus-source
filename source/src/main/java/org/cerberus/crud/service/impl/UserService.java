@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -139,6 +139,15 @@ public class UserService implements IUserService {
             msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "New password confirmation failed! Please re-enter new password!"));
             answUpdate.setResultMessage(msg);
         }
+        return answUpdate;
+    }
+
+    @Override
+    public AnswerItem<User> updateUserPasswordAdmin(User user, String newPassword) {
+        AnswerItem answUpdate = new AnswerItem();
+        MessageEvent msg;
+        //verifications succeed, update password
+        answUpdate = userDAO.updateUserPassword(user, newPassword, user.getRequest());
         return answUpdate;
     }
 

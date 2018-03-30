@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -57,7 +57,7 @@ public class GetTagExecutions extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(LogEventService.class);
-        logEventService.createPublicCalls("/GetTagExecutions", "CALL", "GetTagExecutionsV0 called : " + request.getRequestURL(), request);
+        logEventService.createForPublicCalls("/GetTagExecutions", "CALL", "GetTagExecutions called : " + request.getRequestURL(), request);
 
         testCaseExecutionService = appContext.getBean(ITestCaseExecutionService.class);
 

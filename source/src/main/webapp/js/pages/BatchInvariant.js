@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -37,7 +40,7 @@ function initPage() {
     //configure and create the dataTable
     var configurations = new TableConfigurationsServerSide("batchinvariantsTable", "ReadBatchInvariant?system=" + getUser().defaultSystem, "contentTable", aoColumnsFunc("batchinvariantsTable"), [1,'asc']);
 
-    createDataTableWithPermissions(configurations, renderOptionsForBatchInvariant, "#batchinvariant");
+    createDataTableWithPermissions(configurations, renderOptionsForBatchInvariant, "#batchinvariant", undefined, true);
 }
 
 function displayPageLabel() {
@@ -88,7 +91,7 @@ function deleteEntryHandlerClick() {
 
         }
         //show message in the main page
-        showMessageMainPage(messageType, data.message);
+        showMessageMainPage(messageType, data.message, false);
         //close confirmation window
         $('#confirmationModal').modal('hide');
     }).fail(handleErrorAjaxAfterTimeout);
@@ -100,7 +103,7 @@ function deleteEntryClick(batch) {
     var messageComplete = doc.getDocLabel("page_batchinvariant", "message_delete");
     messageComplete = messageComplete.replace("%TABLE%", doc.getDocLabel("batchinvariant", "batch"));
     messageComplete = messageComplete.replace("%ENTRY%", batch);
-    showModalConfirmation(deleteEntryHandlerClick, doc.getDocLabel("page_batchinvariant", "button_delete"), messageComplete, batch, "", "", "");
+    showModalConfirmation(deleteEntryHandlerClick, undefined, doc.getDocLabel("page_batchinvariant", "button_delete"), messageComplete, batch, "", "", "");
 }
 
 function addEntryModalSaveHandler() {
@@ -196,10 +199,12 @@ function aoColumnsFunc(tableId) {
     var doc = new Doc();
 
     var aoColumns = [
-        {"data": null,
+        {
+            "data": null,
             "title": doc.getDocLabel("page_global", "columnAction"),
             "bSortable": false,
             "bSearchable": false,
+            "sWidth": "50px",
             "mRender": function (data, type, obj) {
                 var hasPermissions = $("#" + tableId).attr("hasPermissions");
 
@@ -221,14 +226,21 @@ function aoColumnsFunc(tableId) {
                 return '<div class="center btn-group width150">' + viewEntry + '</div>';
             }
         },
-        {"data": "batch",
+        {
+            "data": "batch",
             "sName": "batch",
+            "sWidth": "50px",
             "title": doc.getDocOnline("batchinvariant", "Batch")},
-        {"data": "system",
+        {
+            "data": "system",
             "sName": "system",
+            "sWidth": "50px",
             "title": doc.getDocOnline("batchinvariant", "system")},
-        {"data": "description",
+        {
+            "data": "description",
+            "like":true,
             "sName": "description",
+            "sWidth": "100px",
             "title": doc.getDocOnline("batchinvariant", "Description")}
     ];
     return aoColumns;

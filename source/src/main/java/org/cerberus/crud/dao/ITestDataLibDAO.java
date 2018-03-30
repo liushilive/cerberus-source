@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -21,6 +23,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.fileupload.FileItem;
 import org.cerberus.crud.entity.TestDataLib;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
@@ -54,15 +58,24 @@ public interface ITestDataLibDAO {
      *
      * @param testDataLibName
      * @param limit
+     * @param like
      * @return
      */
-    AnswerList readNameListByName(String testDataLibName, int limit);
+    AnswerList readNameListByName(String testDataLibName, int limit, boolean like);
 
     /**
      *
      * @return All TestData
      */
     AnswerList readAll();
+    
+    /**
+    *
+    * @param id
+    * @param file
+    * @return
+    */
+   Answer uploadFile(int id, FileItem file);
 
     /**
      *
@@ -93,7 +106,7 @@ public interface ITestDataLibDAO {
      * @param testDataLib
      * @return
      */
-    Answer create(TestDataLib testDataLib);
+    AnswerItem create(TestDataLib testDataLib);
 
     /**
      *

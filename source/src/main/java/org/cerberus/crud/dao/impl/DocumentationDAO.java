@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -23,13 +25,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import org.apache.log4j.Level;
 import org.cerberus.crud.dao.IDocumentationDAO;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.crud.entity.Documentation;
 import org.cerberus.crud.factory.IFactoryDocumentation;
-import org.cerberus.log.MyLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -39,6 +41,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class DocumentationDAO implements IDocumentationDAO {
 
+    private static final Logger LOG = LogManager.getLogger(DocumentationDAO.class);
+    
     @Autowired
     private DatabaseSpring databaseSpring;
     @Autowired
@@ -63,29 +67,30 @@ public class DocumentationDAO implements IDocumentationDAO {
                     if (resultSet.first()) {
                         String docLabel = resultSet.getString("DocLabel");
                         String description = resultSet.getString("DocDesc");
-                        result = factoryDocumentation.create(docTable, docField, docValue, docLabel, description);
+                        String docAnchor = resultSet.getString("DocAnchor");
+                        result = factoryDocumentation.create(docTable, docField, docValue, docLabel, description, docAnchor);
                     }else{
                         return null;
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                    LOG.warn("Unable to execute query : "+exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                LOG.warn("Unable to execute query : "+exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+            LOG.warn("Unable to execute query : "+exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return result;
@@ -94,7 +99,7 @@ public class DocumentationDAO implements IDocumentationDAO {
     @Override
     public List<Documentation> findDocumentationsWithNotEmptyValueAndDescription(String docTable, String docField, String lang) {
         List<Documentation> result = new ArrayList<Documentation>();
-        final String query = "SELECT DocValue, DocDesc, DocLabel FROM documentation where DocTable = ? and docfield = ? and Lang = ? and docValue IS NOT NULL and length(docValue) > 1 AND length(docdesc) > 1";
+        final String query = "SELECT DocValue, DocDesc, DocLabel, DocAnchor FROM documentation where DocTable = ? and docfield = ? and Lang = ? and docValue IS NOT NULL and length(docValue) > 1 AND length(docdesc) > 1";
 
         Connection connection = this.databaseSpring.connect();
         try {
@@ -110,28 +115,29 @@ public class DocumentationDAO implements IDocumentationDAO {
                         String docLabel = resultSet.getString("DocLabel");
                         String description = resultSet.getString("DocDesc");
                         String docValue = resultSet.getString("DocValue");
+                        String docAnchor = resultSet.getString("DocAnchor");
 
-                        result.add(factoryDocumentation.create(docTable, docField, docValue, docLabel, description));
+                        result.add(factoryDocumentation.create(docTable, docField, docValue, docLabel, description, docAnchor));
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                    LOG.warn("Unable to execute query : "+exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                LOG.warn("Unable to execute query : "+exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+            LOG.warn("Unable to execute query : "+exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
 
@@ -156,28 +162,29 @@ public class DocumentationDAO implements IDocumentationDAO {
                     while (resultSet.next()) {
                         String docLabel = resultSet.getString("DocLabel");
                         String description = resultSet.getString("DocDesc");
+                        String docAnchor = resultSet.getString("DocAnchor");
 
-                        result.add(factoryDocumentation.create(docTable, docField, "", docLabel, description));
+                        result.add(factoryDocumentation.create(docTable, docField, "", docLabel, description, docAnchor));
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                    LOG.warn("Unable to execute query : "+exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                LOG.warn("Unable to execute query : "+exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+            LOG.warn("Unable to execute query : "+exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
 
@@ -188,42 +195,25 @@ public class DocumentationDAO implements IDocumentationDAO {
     public String findLabelFromTableAndField(String docTable, String docField, String lang) {
         final String query = "SELECT DocLabel FROM documentation where DocTable = ? and docfield = ? and Lang = ? and length(docvalue)=0 and length(docdesc) > 1";
 
-        Connection connection = this.databaseSpring.connect();
-        try {
-            PreparedStatement preStat = connection.prepareStatement(query);
+        
+        try(Connection connection = this.databaseSpring.connect();
+        		PreparedStatement preStat = connection.prepareStatement(query);) {
+            
             preStat.setMaxRows(1);
-            try {
-                preStat.setString(1, docTable);
-                preStat.setString(2, docField);
-                preStat.setString(3, lang);
-
-                ResultSet resultSet = preStat.executeQuery();
-                try {
-                    if (resultSet.first()) {
-                        return resultSet.getString("DocLabel");
-                    }
-                } catch (SQLException exception) {
-                    MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
-                } finally {
-                    resultSet.close();
+            preStat.setString(1, docTable);
+            preStat.setString(2, docField);
+            preStat.setString(3, lang);
+                
+            try(ResultSet resultSet = preStat.executeQuery()) {
+                if (resultSet.first()) {
+                    return resultSet.getString("DocLabel");
                 }
             } catch (SQLException exception) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
-            } finally {
-                preStat.close();
+                LOG.warn("Unable to execute query : "+exception.toString());
             }
         } catch (SQLException exception) {
-            MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
-        } finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.WARN, e.toString());
-            }
-        }
-
+            LOG.warn("Unable to execute query : "+exception.toString());
+        } 
         return null;
     }
 
@@ -234,42 +224,26 @@ public class DocumentationDAO implements IDocumentationDAO {
     public String findDescriptionFromTableFieldAndValue(String docTable, String docField, String docValue, String lang) {
         final String query = "SELECT DocDesc FROM documentation where DocTable = ? and DocField = ? and DocValue = ? and Lang = ? and length(docdesc) > 1";
 
-        Connection connection = this.databaseSpring.connect();
-        try {
-            PreparedStatement preStat = connection.prepareStatement(query);
+        
+        try(Connection connection = this.databaseSpring.connect();
+        		PreparedStatement preStat = connection.prepareStatement(query);) {
+            
             preStat.setMaxRows(1);
-            try {
-                preStat.setString(1, docTable);
-                preStat.setString(2, docField);
-                preStat.setString(3, docValue);
-                preStat.setString(4, lang);
+            preStat.setString(1, docTable);
+            preStat.setString(2, docField);
+            preStat.setString(3, docValue);
+            preStat.setString(4, lang);
 
-                ResultSet resultSet = preStat.executeQuery();
-                try {
-                    if (resultSet.first()) {
-                        return resultSet.getString("DocDesc");
-                    }
-                } catch (SQLException exception) {
-                    MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
-                } finally {
-                    resultSet.close();
+            try(ResultSet resultSet = preStat.executeQuery()){
+                if (resultSet.first()) {
+                    return resultSet.getString("DocDesc");
                 }
             } catch (SQLException exception) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
-            } finally {
-                preStat.close();
+                LOG.warn("Unable to execute query : "+exception.toString());
             }
         } catch (SQLException exception) {
-            MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
-        } finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.WARN, e.toString());
-            }
-        }
+            LOG.warn("Unable to execute query : "+exception.toString());
+        } 
 
         return null;
     }
@@ -278,7 +252,7 @@ public class DocumentationDAO implements IDocumentationDAO {
     public List<Documentation> findAll(String lang) {
 
         List<Documentation> result = new ArrayList<Documentation>();
-        final String query = "SELECT DocTable, DocField, DocValue, DocLabel, DocDesc FROM documentation where Lang = ?";
+        final String query = "SELECT DocTable, DocField, DocValue, DocLabel, DocDesc, DocAnchor FROM documentation where Lang = ?";
 
         Connection connection = this.databaseSpring.connect();
         try {
@@ -293,28 +267,29 @@ public class DocumentationDAO implements IDocumentationDAO {
                         String value = resultSet.getString("DocValue");
                         String label = resultSet.getString("DocLabel");
                         String description = resultSet.getString("DocDesc");
+                        String docAnchor = resultSet.getString("DocAnchor");
 
-                        result.add(factoryDocumentation.create(table, field, value, label, description));
+                        result.add(factoryDocumentation.create(table, field, value, label, description, docAnchor));
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                    LOG.warn("Unable to execute query : "+exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                LOG.warn("Unable to execute query : "+exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+            LOG.warn("Unable to execute query : "+exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
 
@@ -324,7 +299,7 @@ public class DocumentationDAO implements IDocumentationDAO {
     @Override
     public List<Documentation> findAllWithEmptyDocValue(String lang) {
         List<Documentation> result = new ArrayList<Documentation>();
-        final String query = "SELECT DocTable, DocField, DocValue, DocLabel, DocDesc FROM documentation where Lang = ? and docValue='' ORDER BY DocTable, DocField, DocValue asc";
+        final String query = "SELECT DocTable, DocField, DocValue, DocLabel, DocDesc, DocAnchor FROM documentation where Lang = ? and docValue='' ORDER BY DocTable, DocField, DocValue asc";
 
         Connection connection = this.databaseSpring.connect();
         try {
@@ -339,28 +314,29 @@ public class DocumentationDAO implements IDocumentationDAO {
                         String value = resultSet.getString("DocValue");
                         String label = resultSet.getString("DocLabel");
                         String description = resultSet.getString("DocDesc");
+                        String anchor = resultSet.getString("DocAnchor");
 
-                        result.add(factoryDocumentation.create(table, field, value, label, description));
+                        result.add(factoryDocumentation.create(table, field, value, label, description, anchor));
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                    LOG.warn("Unable to execute query : "+exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                LOG.warn("Unable to execute query : "+exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(DocumentationDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+            LOG.warn("Unable to execute query : "+exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(DocumentationDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
 

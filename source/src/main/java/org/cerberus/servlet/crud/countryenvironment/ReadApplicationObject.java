@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,11 +21,15 @@ package org.cerberus.servlet.crud.countryenvironment;
 
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
-import org.cerberus.crud.entity.Application;
 import org.cerberus.crud.entity.ApplicationObject;
+import org.cerberus.crud.entity.Invariant;
+import org.cerberus.crud.entity.TestCaseExecution;
 import org.cerberus.crud.service.IApplicationObjectService;
-import org.cerberus.crud.service.IApplicationService;
 import org.cerberus.crud.service.impl.ApplicationService;
+import org.cerberus.crud.service.impl.BuildRevisionInvariantService;
+import org.cerberus.crud.service.impl.InvariantService;
+import org.cerberus.crud.service.impl.TestCaseService;
+import org.cerberus.crud.service.IApplicationObjectService;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.exception.CerberusException;
@@ -49,7 +53,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -58,6 +63,7 @@ import java.util.logging.Logger;
 @WebServlet(name = "ReadApplicationObject", urlPatterns = {"/ReadApplicationObject"})
 public class ReadApplicationObject extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(ReadApplicationObject.class);
     private IApplicationObjectService applicationObjectService;
 
     /**
@@ -117,13 +123,17 @@ public class ReadApplicationObject extends HttpServlet {
                     answer = findApplicationObject(id, appContext, userHasPermissions, request);
                     jsonResponse = (JSONObject) answer.getItem();
                 }
-            } else if (request.getParameter("application") == null) {
+            } else if (request.getParameter("columnName") != null) {
+            	answer = findValuesForColumnFilter(appContext, request);
+                jsonResponse = (JSONObject) answer.getItem();
+            }
+            else if (request.getParameter("application") == null) {
                 answer = findApplicationObjectList(null, appContext, userHasPermissions, request);
                 jsonResponse = (JSONObject) answer.getItem();
             } else if (request.getParameter("iDisplayStart") == null){
                 answer = findApplicationObjectList(request.getParameter("application"), appContext, userHasPermissions);
                 jsonResponse = (JSONObject) answer.getItem();
-            } else {
+            }else {
                 answer = findApplicationObjectList(request.getParameter("application"), appContext, userHasPermissions, request);
                 jsonResponse = (JSONObject) answer.getItem();
             }
@@ -135,7 +145,7 @@ public class ReadApplicationObject extends HttpServlet {
             response.getWriter().print(jsonResponse.toString());
 
         } catch (JSONException e) {
-            org.apache.log4j.Logger.getLogger(ReadApplicationObject.class.getName()).log(org.apache.log4j.Level.ERROR, null, e);
+            LOG.warn(e);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }
@@ -156,7 +166,7 @@ public class ReadApplicationObject extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadApplicationObject.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -174,7 +184,7 @@ public class ReadApplicationObject extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadApplicationObject.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -204,12 +214,18 @@ public class ReadApplicationObject extends HttpServlet {
         String columnToSort[] = sColumns.split(",");
         String columnName = columnToSort[columnToSortParameter];
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
+
 
         Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
             if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
-                List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+            	List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
+            	if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                } 
             }
         }
 
@@ -266,8 +282,8 @@ public class ReadApplicationObject extends HttpServlet {
 
         AnswerItem resp = applicationObjectService.readByKey(application, objecta);
 
-        JSONObject jsonObject = new JSONObject();
-        if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
+        JSONObject jsonObject = null;
+        if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getItem() != null) {//the service was able to perform the query, then we should get all values
             jsonObject = convertApplicationObjectToJSONObject((ApplicationObject)resp.getItem());
         }
 
@@ -285,7 +301,7 @@ public class ReadApplicationObject extends HttpServlet {
         JSONObject object = new JSONObject();
         applicationObjectService = appContext.getBean(IApplicationObjectService.class);
 
-        AnswerItem resp = applicationObjectService.readByKey(id);
+        AnswerItem resp = applicationObjectService.readByKeyTech(id);
 
         JSONObject jsonObject = new JSONObject();
         if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
@@ -305,6 +321,50 @@ public class ReadApplicationObject extends HttpServlet {
         Gson gson = new Gson();
         JSONObject result = new JSONObject(gson.toJson(application));
         return result;
+    }
+    
+    /**
+     * Find Values to display for Column Filter
+     *
+     * @param appContext
+     * @param request
+     * @param columnName
+     * @return
+     * @throws JSONException
+     */
+    private AnswerItem findValuesForColumnFilter(ApplicationContext appContext, HttpServletRequest request) throws JSONException {
+        AnswerItem answer = new AnswerItem();
+        JSONObject object = new JSONObject();
+        AnswerList values = new AnswerList();
+        
+        applicationObjectService = appContext.getBean(IApplicationObjectService.class);
+
+        String searchParameter = ParameterParserUtil.parseStringParam(request.getParameter("sSearch"), "");
+        String columnName = ParameterParserUtil.parseStringParam(request.getParameter("columnName"), "");
+        String sColumns = ParameterParserUtil.parseStringParam(request.getParameter("sColumns"), "tec.test,tec.testcase,application,project,ticket,description,behaviororvalueexpected,readonly,bugtrackernewurl,deploytype,mavengroupid");
+        String columnToSort[] = sColumns.split(",");
+        
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
+
+        Map<String, List<String>> individualSearch = new HashMap<>();
+        for (int a = 0; a < columnToSort.length; a++) {
+            if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
+            	List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
+            	if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                } 
+            }
+        }
+                
+        values = applicationObjectService.readDistinctValuesByCriteria(searchParameter, individualSearch, columnName);
+
+        object.put("distinctValues", values.getDataList());
+
+        answer.setItem(object);
+        answer.setResultMessage(values.getResultMessage());
+        return answer;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,7 @@
  */
 /* global handleErrorAjaxAfterTimeout */
 
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
 
@@ -38,7 +38,13 @@ $.when($.getScript("js/pages/global/global.js")).then(function () {
         //Loading history deploy table
         loadHistoTable();
 
-
+        //open Run navbar Menu
+        openNavbarMenu("navMenuIntegration");
+        
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 

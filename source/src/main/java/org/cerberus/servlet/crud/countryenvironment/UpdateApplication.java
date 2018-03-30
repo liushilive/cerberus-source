@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,13 +22,13 @@ package org.cerberus.servlet.crud.countryenvironment;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Application;
 import org.cerberus.crud.entity.CountryEnvironmentParameters;
 import org.cerberus.engine.entity.MessageEvent;
@@ -60,6 +60,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "UpdateApplication", urlPatterns = {"/UpdateApplication"})
 public class UpdateApplication extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(UpdateApplication.class);
+
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -81,6 +83,7 @@ public class UpdateApplication extends HttpServlet {
         String charset = request.getCharacterEncoding();
 
         ICountryEnvironmentParametersService ceaService = appContext.getBean(ICountryEnvironmentParametersService.class);
+        IFactoryCountryEnvironmentParameters cedFactory = appContext.getBean(IFactoryCountryEnvironmentParameters.class);
 
         response.setContentType("application/json");
 
@@ -96,6 +99,7 @@ public class UpdateApplication extends HttpServlet {
         String deployType = policy.sanitize(request.getParameter("deploytype"));
         // Parameter that needs to be secured --> We SECURE+DECODE them
         String application = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("application"), null, charset);
+        String originalApplication = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("originalApplication"), null, charset);
         String subSystem = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("subsystem"), "", charset);
         String mavenGpID = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("mavengroupid"), "", charset);
         String description = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("description"), "", charset);
@@ -131,6 +135,12 @@ public class UpdateApplication extends HttpServlet {
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "Application ID (application) is missing."));
             ans.setResultMessage(msg);
+        } else if (StringUtil.isNullOrEmpty(system)) {
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
+            msg.setDescription(msg.getDescription().replace("%ITEM%", "Application")
+                    .replace("%OPERATION%", "Update")
+                    .replace("%REASON%", "System is missing!"));
+            ans.setResultMessage(msg);
         } else if (sort_error) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Application")
@@ -143,7 +153,7 @@ public class UpdateApplication extends HttpServlet {
              */
             IApplicationService applicationService = appContext.getBean(IApplicationService.class);
 
-            AnswerItem resp = applicationService.readByKey(application);
+            AnswerItem resp = applicationService.readByKey(originalApplication);
             if (!(resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getItem() != null)) {
                 /**
                  * Object could not be found. We stop here and report the error.
@@ -156,6 +166,7 @@ public class UpdateApplication extends HttpServlet {
                  * object exist, then we can update it.
                  */
                 Application applicationData = (Application) resp.getItem();
+                applicationData.setApplication(application);
                 applicationData.setSystem(system);
                 applicationData.setSubsystem(subSystem);
                 applicationData.setType(type);
@@ -166,20 +177,22 @@ public class UpdateApplication extends HttpServlet {
                 applicationData.setBugTrackerNewUrl(newBugURL);
                 applicationData.setDescription(description);
                 applicationData.setSort(sort);
-                ans = applicationService.update(applicationData);
+                applicationData.setUsrModif(request.getRemoteUser());
+                ans = applicationService.update(originalApplication, applicationData);
                 finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
 
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     /**
-                     * Update was succesfull. Adding Log entry.
+                     * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/UpdateApplication", "UPDATE", "Updated Application : ['" + application + "']", request);
-                }
+                    logEventService.createForPrivateCalls("/UpdateApplication", "UPDATE", "Updated Application : ['" + originalApplication + "']", request);
 
-                // Update the Database with the new list.
-                ans = ceaService.compareListAndUpdateInsertDeleteElements(system, application, ceaList);
-                finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
+                    // Update the Database with the new list.
+                    ans = ceaService.compareListAndUpdateInsertDeleteElements(system, application, ceaList);
+                    finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
+
+                }
 
             }
         }
@@ -196,6 +209,7 @@ public class UpdateApplication extends HttpServlet {
 
     private List<CountryEnvironmentParameters> getCountryEnvironmentApplicationFromParameter(HttpServletRequest request, ApplicationContext appContext, String system, String application, JSONArray json) throws JSONException {
         List<CountryEnvironmentParameters> cedList = new ArrayList();
+        ICountryEnvironmentParametersService ceaService = appContext.getBean(ICountryEnvironmentParametersService.class);
         IFactoryCountryEnvironmentParameters cedFactory = appContext.getBean(IFactoryCountryEnvironmentParameters.class);
         PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
         String charset = request.getCharacterEncoding();
@@ -217,9 +231,21 @@ public class UpdateApplication extends HttpServlet {
             String var2 = tcsaJson.getString("var2");
             String var3 = tcsaJson.getString("var3");
             String var4 = tcsaJson.getString("var4");
+            String strPoolSize = tcsaJson.getString("poolSize");
+            int poolSize;
+            if (strPoolSize.isEmpty()) {
+                poolSize = CountryEnvironmentParameters.DEFAULT_POOLSIZE;
+            } else {
+                try {
+                    poolSize = Integer.parseInt(strPoolSize);
+                } catch (NumberFormatException e) {
+                    LOG.warn("Unable to parse pool size: " + strPoolSize + ". Applying default value");
+                    poolSize = CountryEnvironmentParameters.DEFAULT_POOLSIZE;
+                }
+            }
 
             if (!delete) {
-                CountryEnvironmentParameters ced = cedFactory.create(system, country, environment, application, ip, domain, url, urlLogin, var1, var2, var3, var4);
+                CountryEnvironmentParameters ced = cedFactory.create(system, country, environment, application, ip, domain, url, urlLogin, var1, var2, var3, var4, poolSize);
                 cedList.add(ced);
             }
         }
@@ -242,10 +268,9 @@ public class UpdateApplication extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateApplication.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateApplication.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -264,10 +289,9 @@ public class UpdateApplication extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateApplication.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateApplication.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

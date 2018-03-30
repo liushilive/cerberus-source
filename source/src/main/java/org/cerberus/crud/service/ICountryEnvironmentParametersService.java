@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -41,7 +41,7 @@ public interface ICountryEnvironmentParametersService {
      * @param application
      * @return
      */
-    AnswerItem readByKey(String system, String country, String environment, String application);
+    AnswerItem<CountryEnvironmentParameters> readByKey(String system, String country, String environment, String application);
 
     /**
      *
@@ -160,4 +160,5 @@ public interface ICountryEnvironmentParametersService {
      * @throws CerberusException
      */
     void convert(Answer answer) throws CerberusException;
+
 }

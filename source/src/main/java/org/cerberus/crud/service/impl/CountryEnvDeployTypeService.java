@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -45,7 +45,7 @@ public class CountryEnvDeployTypeService implements ICountryEnvDeployTypeService
 
     private final String OBJECT_NAME = "CountryEnvDeployType";
 
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(CountryEnvDeployTypeService.class);
+    private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger(CountryEnvDeployTypeService.class);
 
     @Override
     public AnswerList readByVarious(String system, String country, String environment, String deployType) {
@@ -122,10 +122,6 @@ public class CountryEnvDeployTypeService implements ICountryEnvDeployTypeService
                 }
             }
         }
-        if (!listToUpdateOrInsert.isEmpty()) {
-            ans = this.createList(listToUpdateOrInsert);
-            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
-        }
 
         /**
          * Iterate on (TestCaseStep From Database - TestCaseStep From Page). If
@@ -145,6 +141,12 @@ public class CountryEnvDeployTypeService implements ICountryEnvDeployTypeService
         }
         if (!listToDelete.isEmpty()) {
             ans = this.deleteList(listToDelete);
+            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
+        }
+
+        // We insert only at the end (after deletion of all potencial enreg - linked with #1281)
+        if (!listToUpdateOrInsert.isEmpty()) {
+            ans = this.createList(listToUpdateOrInsert);
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
         }
         return finalAnswer;

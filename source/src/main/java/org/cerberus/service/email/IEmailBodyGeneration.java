@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,16 +19,14 @@
  */
 package org.cerberus.service.email;
 
-import java.sql.Connection;
-
 /**
  *
  * @author bcivel
  */
 public interface IEmailBodyGeneration {
 
-    public String GenerateBuildContentTable(String system, String build, String revision, String lastBuild, String lastRevision, Connection conn) ;
+    public String GenerateBuildContentTable(String system, String build, String revision, String lastBuild, String lastRevision);
 
-    public String GenerateTestRecapTable(String system, String build, String revision, String country, Connection conn) ;
-    
+    public String GenerateTestRecapTable(String system, String build, String revision, String country);
+
 }

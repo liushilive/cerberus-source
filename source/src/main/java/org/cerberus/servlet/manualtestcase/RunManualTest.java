@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,6 @@
  */
 package org.cerberus.servlet.manualtestcase;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -29,22 +28,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Level;
-import org.cerberus.crud.entity.TestCaseExecution;
-import org.cerberus.crud.entity.TestCaseExecutionData;
-import org.cerberus.crud.entity.TestCaseStepActionControlExecution;
-import org.cerberus.crud.entity.TestCaseStepActionExecution;
-import org.cerberus.crud.entity.TestCaseStepExecution;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.cerberus.crud.entity.*;
 import org.cerberus.crud.factory.IFactoryTestCaseStepActionControlExecution;
 import org.cerberus.crud.factory.IFactoryTestCaseStepActionExecution;
 import org.cerberus.crud.factory.IFactoryTestCaseStepExecution;
-import org.cerberus.crud.service.ITestCaseExecutionService;
-import org.cerberus.crud.service.ITestCaseStepActionControlExecutionService;
-import org.cerberus.crud.service.ITestCaseStepActionExecutionService;
-import org.cerberus.crud.service.ITestCaseStepExecutionService;
+import org.cerberus.crud.service.*;
 import org.cerberus.engine.execution.IRecorderService;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.log.MyLogger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -54,6 +46,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
  */
 public class RunManualTest extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(RunManualTest.class);
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -71,6 +64,7 @@ public class RunManualTest extends HttpServlet {
         String cancelExecution = req.getParameter("isCancelExecution") == null ? "" : req.getParameter("isCancelExecution");
 
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
+        IParameterService parameterService = appContext.getBean(IParameterService.class);
         ITestCaseExecutionService testCaseExecutionService = appContext.getBean(ITestCaseExecutionService.class);
         ITestCaseStepExecutionService testCaseStepExecutionService = appContext.getBean(ITestCaseStepExecutionService.class);
         ITestCaseStepActionExecutionService testCaseStepActionExecutionService = appContext.getBean(ITestCaseStepActionExecutionService.class);
@@ -155,25 +149,12 @@ public class RunManualTest extends HttpServlet {
 
                 }
 
-                //Notify it's finnished
-//        WebsocketTest wst = new WebsocketTest();
-//        try {
-//            wst.handleMessage(execution.getTag());
-//        } catch (IOException ex) {
-//            MyLogger.log(SaveManualExecution.class.getName(), Level.FATAL, "" + ex);
-//        }
-                /**
-                 * Get Step Execution and insert them into Database
-                 */
-//            for (TestCaseExecutionData tced : getTestCaseExecutionData(req, appContext, test, testCase, executionId)){
-//            testCaseStepExecutionService.insertTestCaseStepExecution(null);
-//            }
             }
 
-            resp.sendRedirect("ExecutionDetail.jsp?id_tc=" + executionId);
+            resp.sendRedirect("TestCaseExecution.jsp?executionId=" + executionId);
 
         } catch (CerberusException e) {
-            MyLogger.log(SaveManualExecution.class.getName(), Level.FATAL, "" + e.getMessageError().getDescription());
+            LOG.warn(e.getMessageError().getDescription());
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             resp.setContentType("text/html");
             resp.getWriter().print(e.getMessageError().getDescription());
@@ -232,7 +213,7 @@ public class RunManualTest extends HttpServlet {
                 String stepResultMessage = getParameterIfExists(request, "stepResultMessage_" + inc);
                 String stepReturnCode = getParameterIfExists(request, "stepStatus_" + inc);
 
-                result.add(testCaseStepExecutionFactory.create(executionId, test, testCase, step, sort, null, now, now, now, now,
+                result.add(testCaseStepExecutionFactory.create(executionId, test, testCase, step, 1, sort, "", "", "", "", "", "", null, now, now, now, now,
                         new BigDecimal("0"), stepReturnCode, stepResultMessage, ""));
             }
         }
@@ -258,8 +239,8 @@ public class RunManualTest extends HttpServlet {
                 String actionReturnCode = getParameterIfExists(request, "actionStatus_" + stepSort + "_" + inc);
                 String actionReturnMessage = getParameterIfExists(request, "actionResultMessage_" + stepSort + "_" + inc);
 
-                result.add(testCaseStepActionExecutionFactory.create(executionId, test, testCase, step, sequence, sort, actionReturnCode,
-                        actionReturnMessage,"", "", "Manual Action", "", "", "", "", "", now, now, now, now,
+                result.add(testCaseStepActionExecutionFactory.create(executionId, test, testCase, step, 1, sequence, sort, actionReturnCode,
+                        actionReturnMessage, "", "", "", "", "", "Manual Action", "", "", "", "", "", now, now, now, now,
                         null, "", null, null));
             }
         }
@@ -287,8 +268,8 @@ public class RunManualTest extends HttpServlet {
                 String controlReturnCode = getParameterIfExists(request, "controlStatus_" + stepSort + "_" + actionSort + "_" + inc);
                 String controlReturnMessage = getParameterIfExists(request, "controlResultMessage_" + stepSort + "_" + actionSort + "_" + inc);
 
-                result.add(testCaseStepActionExecutionFactory.create(executionId, test, testCase, step, sequence, control, sort,
-                        controlReturnCode, controlReturnMessage, "Manual Control", null, null, null, null, null, now, now,
+                result.add(testCaseStepActionExecutionFactory.create(executionId, test, testCase, step, 1, sequence, control, sort,
+                        controlReturnCode, controlReturnMessage, "", "", "", "", "", "Manual Control", null, null, null, null, null, now, now,
                         now, now, "", null, null));
             }
         }

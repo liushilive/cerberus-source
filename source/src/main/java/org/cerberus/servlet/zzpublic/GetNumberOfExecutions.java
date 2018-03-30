@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,17 +22,14 @@ package org.cerberus.servlet.zzpublic;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.TestCaseExecution;
-import org.cerberus.exception.CerberusException;
 import org.cerberus.crud.service.IApplicationService;
 import org.cerberus.crud.service.IInvariantService;
 import org.cerberus.crud.service.ILogEventService;
@@ -41,8 +38,10 @@ import org.cerberus.crud.service.impl.ApplicationService;
 import org.cerberus.crud.service.impl.InvariantService;
 import org.cerberus.crud.service.impl.LogEventService;
 import org.cerberus.crud.service.impl.TestCaseExecutionService;
+import org.cerberus.exception.CerberusException;
 import org.cerberus.util.DateUtil;
 import org.cerberus.util.ParameterParserUtil;
+import org.cerberus.util.servlet.ServletUtil;
 import org.cerberus.version.Infos;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
@@ -69,6 +68,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "GetNumberOfExecutions", urlPatterns = {"/GetNumberOfExecutions"})
 public class GetNumberOfExecutions extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(GetNumberOfExecutions.class);
     /**
      * Processes requests for both HTTP
      * <code>GET</code> and
@@ -83,16 +83,19 @@ public class GetNumberOfExecutions extends HttpServlet {
             throws ServletException, IOException {
         PrintWriter out = response.getWriter();
 
+        // Loading Services.
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
+        IApplicationService myApplicationService = appContext.getBean(ApplicationService.class);
+        IInvariantService myInvariantService = appContext.getBean(InvariantService.class);
+
+        // Calling Servlet Transversal Util.
+        ServletUtil.servletStart(request);
 
         /**
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(LogEventService.class);
-        logEventService.createPublicCalls("/GetNumberOfExecutions", "CALL", "GetNumberOfExecutionsV0 called : " + request.getRequestURL(), request);
-
-        IApplicationService myApplicationService = appContext.getBean(ApplicationService.class);
-        IInvariantService myInvariantService = appContext.getBean(InvariantService.class);
+        logEventService.createForPublicCalls("/GetNumberOfExecutions", "CALL", "GetNumberOfExecutions called : " + request.getRequestURL(), request);
 
         // Parsing all parameters.
         String environment = ParameterParserUtil.parseStringParam(request.getParameter("environment"), "PROD");
@@ -102,7 +105,8 @@ public class GetNumberOfExecutions extends HttpServlet {
         String controlStatus = ParameterParserUtil.parseStringParam(request.getParameter("controlstatus"), "");
         int NbMinutes = ParameterParserUtil.parseIntegerParam(request.getParameter("nbminuteshistory"), 0);
 
-        String helpMessage = "\nThis servlet return the number of execution that match the following criterias :\n"
+        // Defining help message.
+        String helpMessage = "\nThis servlet return the number of execution performed on WORKING test cases that match the following criterias :\n"
                 + "- nbminuteshistory [mandatory] : the number of minutes in the past from the moment the servlet is called. This parameter must be > 0. [" + NbMinutes + "]\n"
                 + "- test : Executions done on the test. [" + test + "]\n"
                 + "- environment : Environment where the execution happened. Default to PROD. [" + environment + "]\n"
@@ -112,9 +116,8 @@ public class GetNumberOfExecutions extends HttpServlet {
 
         try {
 
-            boolean error = false;
-
             // Checking the parameter validity. nbminuteshistory is a mandatory parameter.
+            boolean error = false;
             if (NbMinutes == 0) {
                 out.println("Error - Parameter nbminuteshistory is mandatory. Please feed it in order to specify the elapsed time where the history should be considered.");
                 error = true;
@@ -162,7 +165,7 @@ public class GetNumberOfExecutions extends HttpServlet {
 
 
         } catch (Exception e) {
-            Logger.getLogger(GetNumberOfExecutions.class.getName()).log(Level.SEVERE, Infos.getInstance().getProjectNameAndVersion() + " - Exception catched.", e);
+            LOG.warn(Infos.getInstance().getProjectNameAndVersion() + " - Exception catched.", e);
             out.print("Error while Getting number of executions : ");
             out.println(e.getMessage());
         } finally {

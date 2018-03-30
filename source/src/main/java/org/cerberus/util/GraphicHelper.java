@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,8 @@
  */
 package org.cerberus.util;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -29,7 +30,7 @@ import org.json.JSONObject;
  * @author memiks
  */
 public class GraphicHelper {
-    private static final Logger LOGGER = Logger.getLogger(GraphicHelper.class);
+    private static final Logger LOGGER = LogManager.getLogger(GraphicHelper.class);
 
     private GraphicHelper() {
     }

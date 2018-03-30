@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -22,6 +24,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.cerberus.crud.entity.TestCaseStepActionControlExecution;
+import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
 
 /**
@@ -33,13 +36,50 @@ import org.cerberus.util.answer.AnswerList;
  */
 public interface ITestCaseStepActionControlExecutionDAO {
 
+    /**
+     *
+     * @param testCaseStepActionControlExecution
+     */
     void insertTestCaseStepActionControlExecution(TestCaseStepActionControlExecution testCaseStepActionControlExecution);
 
+    /**
+     *
+     * @param testCaseStepActionControlExecution
+     */
     void updateTestCaseStepActionControlExecution(TestCaseStepActionControlExecution testCaseStepActionControlExecution);
 
-    List<TestCaseStepActionControlExecution> findTestCaseStepActionControlExecutionByCriteria(long id, String test, String testCase, int step, int sequence);
+    /**
+     *
+     * @param id
+     * @param test
+     * @param testCase
+     * @param step
+     * @param index
+     * @param sequence
+     * @return
+     */
+    List<TestCaseStepActionControlExecution> findTestCaseStepActionControlExecutionByCriteria(long id, String test, String testCase, int step, int index, int sequence);
 
-    public AnswerList readByVarious1(long executionId, String test, String testCase, int step, int sequence);
-    
+    public AnswerList readByVarious1(long executionId, String test, String testCase, int step, int index, int sequence);
+
+    /**
+     *
+     * @param executionId
+     * @param test
+     * @param testCase
+     * @param step
+     * @param index
+     * @param sequence
+     * @param controlSequence
+     * @return
+     */
+    public AnswerItem readByKey(long executionId, String test, String testCase, int step, int index, int sequence, int controlSequence);
+
+    /**
+     *
+     * @param resultSet
+     * @return
+     * @throws SQLException
+     */
     public TestCaseStepActionControlExecution loadFromResultset(ResultSet resultSet) throws SQLException; 
 }

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,8 +20,8 @@
 package org.cerberus.engine.entity;
 
 import io.appium.java_client.AppiumDriver;
-import java.util.List;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.remote.DesiredCapabilities;
 
 /**
  *
@@ -30,6 +30,8 @@ import org.openqa.selenium.WebDriver;
 public class Session {
     
     private String host;
+    private String hostUser;
+    private String hostPassword;
     private String port;
     private WebDriver driver;
     private AppiumDriver appiumDriver;
@@ -38,8 +40,9 @@ public class Session {
     private Integer cerberus_selenium_setScriptTimeout;
     private Integer cerberus_selenium_wait_element;
     private Integer cerberus_appium_wait_element;
+    private Integer cerberus_selenium_action_click_timeout;
     private boolean started;
-    List<SessionCapabilities> capabilities;
+    private DesiredCapabilities desiredCapabilities;
 
     public Integer getCerberus_selenium_pageLoadTimeout() {
         return cerberus_selenium_pageLoadTimeout;
@@ -89,12 +92,28 @@ public class Session {
         this.appiumDriver = appiumDriver;
     }
 
-    public List<SessionCapabilities> getCapabilities() {
-        return capabilities;
+    public DesiredCapabilities getDesiredCapabilities() {
+        return desiredCapabilities;
     }
 
-    public void setCapabilities(List<SessionCapabilities> capabilities) {
-        this.capabilities = capabilities;
+    public void setDesiredCapabilities(DesiredCapabilities capabilities) {
+        this.desiredCapabilities = capabilities;
+    }
+
+    public String getHostUser() {
+        return hostUser;
+    }
+
+    public void setHostUser(String hostUser) {
+        this.hostUser = hostUser;
+    }
+
+    public String getHostPassword() {
+        return hostPassword;
+    }
+
+    public void setHostPassword(String hostPassword) {
+        this.hostPassword = hostPassword;
     }
     
     public String getHost() {
@@ -136,6 +155,14 @@ public class Session {
         if (appiumDriver != null) {
             appiumDriver.closeApp();
         }
+    }
+
+    public Integer getCerberus_selenium_action_click_timeout() {
+        return cerberus_selenium_action_click_timeout;
+    }
+
+    public void setCerberus_selenium_action_click_timeout(Integer cerberus_selenium_action_click_timeout) {
+        this.cerberus_selenium_action_click_timeout = cerberus_selenium_action_click_timeout;
     }
     
 }

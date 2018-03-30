@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -28,8 +30,10 @@ public class Documentation {
     private String docValue;
     private String docLabel;
     private String docDesc;
+    private String docAnchor;
 
     private boolean havedocDesc; // true if doc Desc is feed.
+    private boolean haveDocAnchor; // true if doc Anchor is feed.
 
     public boolean isHavedocDesc() {
         return havedocDesc;
@@ -77,6 +81,22 @@ public class Documentation {
 
     public void setDocValue(String docValue) {
         this.docValue = docValue;
+    }
+
+    public String getDocAnchor() {
+        return docAnchor;
+    }
+
+    public void setDocAnchor(String docAnchor) {
+        this.docAnchor = docAnchor;
+    }
+
+    public boolean isHaveDocAnchor() {
+        return haveDocAnchor;
+    }
+
+    public void setHaveDocAnchor(boolean haveDocAnchor) {
+        this.haveDocAnchor = haveDocAnchor;
     }
 
 }

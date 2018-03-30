@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -25,18 +25,17 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.apache.commons.lang3.StringUtils;
-import org.cerberus.database.DatabaseSpring;
-import org.cerberus.log.MyLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.service.ILogEventService;
 import org.cerberus.crud.service.IParameterService;
+import org.cerberus.database.DatabaseSpring;
 import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
 import org.springframework.context.ApplicationContext;
@@ -47,6 +46,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
  */
 @WebServlet(name = "ResultCI", urlPatterns = {"/ResultCI"})
 public class ResultCI extends HttpServlet {
+    
+    private static final Logger LOG = LogManager.getLogger(ResultCI.class);
 
     protected void processRequest(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
@@ -60,15 +61,15 @@ public class ResultCI extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(ILogEventService.class);
-        logEventService.createPublicCalls("/ResultCI", "CALL", "ResultCIV0 called : " + request.getRequestURL(), request);
+        logEventService.createForPublicCalls("/ResultCI", "CALL", "ResultCI called : " + request.getRequestURL(), request);
 
         String tag = policy.sanitize(request.getParameter("tag"));
 
         String helpMessage = "\nThis servlet is used to profide a global OK or KO based on the number and status of the execution done on a specific tag.\n"
-                + "The number of executions are ponderated by parameters by priority from CI_OK_prio1 to CI_OK_prio4.\n"
+                + "The number of executions are ponderated by parameters by priority from cerberus_ci_okcoefprio1 to cerberus_ci_okcoefprio4.\n"
                 + "Formula used is the following :\n"
-                + "Nb Exe Prio 1 testcases * CI_OK_prio1 + Nb Exe Prio 2 testcases * CI_OK_prio2 +\n"
-                + "  Nb Exe Prio 3 testcases * CI_OK_prio3 + Nb Exe Prio 4 testcases * CI_OK_prio4\n\n"
+                + "Nb Exe Prio 1 testcases * cerberus_ci_okcoefprio1 + Nb Exe Prio 2 testcases * cerberus_ci_okcoefprio2 +\n"
+                + "  Nb Exe Prio 3 testcases * cerberus_ci_okcoefprio3 + Nb Exe Prio 4 testcases * cerberus_ci_okcoefprio4\n\n"
                 + "If not executions are found, the result is KO.\n"
                 + "With at least 1 execution, if result is < 1 then global servlet result is OK. If not, it is KO.\n"
                 + "All execution needs to have a status equal to KO, FA, NA or PE.\n\n"
@@ -183,10 +184,10 @@ public class ResultCI extends HttpServlet {
 
                 IParameterService parameterService = appContext.getBean(IParameterService.class);
 
-                float pond1 = Float.valueOf(parameterService.findParameterByKey("CI_OK_prio1", "").getValue());
-                float pond2 = Float.valueOf(parameterService.findParameterByKey("CI_OK_prio2", "").getValue());
-                float pond3 = Float.valueOf(parameterService.findParameterByKey("CI_OK_prio3", "").getValue());
-                float pond4 = Float.valueOf(parameterService.findParameterByKey("CI_OK_prio4", "").getValue());
+                float pond1 = Float.valueOf(parameterService.findParameterByKey("cerberus_ci_okcoefprio1", "").getValue());
+                float pond2 = Float.valueOf(parameterService.findParameterByKey("cerberus_ci_okcoefprio2", "").getValue());
+                float pond3 = Float.valueOf(parameterService.findParameterByKey("cerberus_ci_okcoefprio3", "").getValue());
+                float pond4 = Float.valueOf(parameterService.findParameterByKey("cerberus_ci_okcoefprio4", "").getValue());
 
                 String result;
                 float resultCal = (nbkop1 * pond1) + (nbkop2 * pond2) + (nbkop3 * pond3) + (nbkop4 * pond4);
@@ -198,7 +199,7 @@ public class ResultCI extends HttpServlet {
                 out.print(result);
 
                 // Log the result with calculation detail.
-                logEventService.createPublicCalls("/ResultCI", "CALLRESULT", "ResultCI calculated with result [" + result + "] : " + nbkop1 + "*" + pond1 + " + " + nbkop2 + "*" + pond2 + " + " + nbkop3 + "*" + pond3 + " + " + nbkop4 + "*" + pond4 + " = " + resultCal, request);
+                logEventService.createForPublicCalls("/ResultCI", "CALLRESULT", "ResultCI calculated with result [" + result + "] : " + nbkop1 + "*" + pond1 + " + " + nbkop2 + "*" + pond2 + " + " + nbkop3 + "*" + pond3 + " + " + nbkop4 + "*" + pond4 + " = " + resultCal, request);
 
             } else {
                 // In case of errors, we display the help message.
@@ -214,7 +215,7 @@ public class ResultCI extends HttpServlet {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(ResultCI.class.getName(), org.apache.log4j.Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
 

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -43,7 +43,7 @@ public interface IExecutionRunService {
      * @return
      * @throws CerberusException
      */
-    TestCaseExecution executeAsynchroneouslyTestCase(TestCaseExecution tCExecution) throws CerberusException;
+    TestCaseExecution executeTestCaseAsynchroneously(TestCaseExecution tCExecution) throws CerberusException;
     
     /**
      * Stop the Test Case Execution

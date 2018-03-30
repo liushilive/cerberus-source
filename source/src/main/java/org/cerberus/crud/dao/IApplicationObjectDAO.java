@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -25,9 +27,6 @@ import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
 
 import java.awt.image.BufferedImage;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +45,7 @@ public interface IApplicationObjectDAO {
      * @param id
      * @return
      */
-    AnswerItem readByKey(int id);
+    AnswerItem readByKeyTech(int id);
 
     /**
      *
@@ -120,10 +119,12 @@ public interface IApplicationObjectDAO {
 
     /**
      *
+     * @param application
+     * @param appObject
      * @param object
      * @return
      */
-    Answer update(ApplicationObject object);
+    Answer update(String application, String appObject, ApplicationObject object);
 
     /**
      *

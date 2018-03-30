@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -20,13 +22,13 @@ package org.cerberus.servlet.crud.transversaltables;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Label;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
@@ -53,6 +55,8 @@ import org.owasp.html.Sanitizers;
 @WebServlet(name = "CreateLabel", urlPatterns = {"/CreateLabel"})
 public class CreateLabel extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(CreateLabel.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -85,8 +89,13 @@ public class CreateLabel extends HttpServlet {
         // Parameter that are already controled by GUI (no need to decode) --> We SECURE them
         String id = policy.sanitize(request.getParameter("id"));
         String system = policy.sanitize(request.getParameter("system"));
+        String type = policy.sanitize(request.getParameter("type"));
+        String longDesc = policy.sanitize(request.getParameter("longdesc"));
+        String reqtype = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("reqtype"), "", charset);
+        String reqstatus = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("reqstatus"), "", charset);
+        String reqcriticity = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("reqcriticity"), "", charset);
         // Parameter that needs to be secured --> We SECURE+DECODE them
-        String label = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("label"), "", charset);
+        String label = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("label"), "", charset);
         String color = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("color"), "", charset);
         String parentLabel = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("parentLabel"), "", charset);
         String description = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("description"), "", charset);
@@ -111,7 +120,7 @@ public class CreateLabel extends HttpServlet {
             IFactoryLabel factoryLabel = appContext.getBean(IFactoryLabel.class);
 
             Timestamp creationDate = new Timestamp(new Date().getTime());
-            Label labelData = factoryLabel.create(0, system, label, color, parentLabel, description, usr,creationDate, usr, creationDate);
+            Label labelData = factoryLabel.create(0, system, label, type, color, parentLabel, reqtype, reqstatus, reqcriticity, description, longDesc, usr,creationDate, usr, creationDate);
             ans = labelService.create(labelData);
 
             if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
@@ -119,7 +128,7 @@ public class CreateLabel extends HttpServlet {
                  * Object created. Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createPrivateCalls("/CreateLabel", "CREATE", "Create Label : ['" + label + "'] for System : ["+system+"]", request);
+                logEventService.createForPrivateCalls("/CreateLabel", "CREATE", "Create Label : ['" + label + "'] for System : ["+system+"]", request);
             }
         }
 
@@ -149,9 +158,9 @@ public class CreateLabel extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateLabel.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateLabel.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -169,9 +178,9 @@ public class CreateLabel extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateLabel.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateLabel.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

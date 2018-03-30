@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,31 +22,29 @@ package org.cerberus.servlet.zzpublic;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.cerberus.crud.entity.CountryEnvParam;
-import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.service.IBuildRevisionInvariantService;
-import org.cerberus.crud.service.IInvariantService;
 import org.cerberus.crud.service.ICountryEnvParamService;
 import org.cerberus.crud.service.ICountryEnvParam_logService;
+import org.cerberus.crud.service.IInvariantService;
 import org.cerberus.crud.service.ILogEventService;
 import org.cerberus.crud.service.IParameterService;
+import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.service.email.IEmailGeneration;
-import org.cerberus.service.email.impl.sendMail;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerList;
 import org.cerberus.util.answer.AnswerUtil;
+import org.cerberus.util.servlet.ServletUtil;
 import org.cerberus.version.Infos;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
+import org.cerberus.service.email.IEmailService;
 
 /**
  * @author vertigo
@@ -54,7 +52,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "DisableEnvironmentV000", urlPatterns = {"/DisableEnvironmentV000"})
 public class DisableEnvironmentV000 extends HttpServlet {
 
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger("DisableEnvironmentV000");
+    private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger("DisableEnvironmentV000");
 
     private final String OPERATION = "Disable Environment";
     private final String PARAMETERALL = "ALL";
@@ -74,20 +72,23 @@ public class DisableEnvironmentV000 extends HttpServlet {
 
         String charset = request.getCharacterEncoding();
 
+        // Loading Services.
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
+        ICountryEnvParamService countryEnvParamService = appContext.getBean(ICountryEnvParamService.class);
+        IInvariantService invariantService = appContext.getBean(IInvariantService.class);
+        IBuildRevisionInvariantService buildRevisionInvariantService = appContext.getBean(IBuildRevisionInvariantService.class);
+        IEmailService emailService = appContext.getBean(IEmailService.class);
+        ICountryEnvParam_logService countryEnvParam_logService = appContext.getBean(ICountryEnvParam_logService.class);
+        IParameterService parameterService = appContext.getBean(IParameterService.class);
+
+        // Calling Servlet Transversal Util.
+        ServletUtil.servletStart(request);
+
         /**
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(ILogEventService.class);
-        logEventService.createPublicCalls("/DisableEnvironmentV000", "CALL", "DisableEnvironmentV000 called : " + request.getRequestURL(), request);
-
-        // Loading Services.
-        ICountryEnvParamService countryEnvParamService = appContext.getBean(ICountryEnvParamService.class);
-        IInvariantService invariantService = appContext.getBean(IInvariantService.class);
-        IBuildRevisionInvariantService buildRevisionInvariantService = appContext.getBean(IBuildRevisionInvariantService.class);
-        IEmailGeneration emailService = appContext.getBean(IEmailGeneration.class);
-        ICountryEnvParam_logService countryEnvParam_logService = appContext.getBean(ICountryEnvParam_logService.class);
-        IParameterService parameterService = appContext.getBean(IParameterService.class);
+        logEventService.createForPublicCalls("/DisableEnvironmentV000", "CALL", "DisableEnvironmentV000 called : " + request.getRequestURL(), request);
 
         // Parsing all parameters.
         String system = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("system"), "", charset);
@@ -100,9 +101,8 @@ public class DisableEnvironmentV000 extends HttpServlet {
                 + "- country [mandatory] : the country where the Build Revision has been deployed. You can use ALL if you want to perform the action for all countries that exist for the given system and environement. [" + country + "]\n"
                 + "- environment [mandatory] : the environment where the Build Revision has been deployed. [" + environment + "]\n";
 
-        boolean error = false;
-
         // Checking the parameter validity.
+        boolean error = false;
         if (system.equalsIgnoreCase("")) {
             out.println("Error - Parameter system is mandatory.");
             error = true;
@@ -171,7 +171,7 @@ public class DisableEnvironmentV000 extends HttpServlet {
                      * Update was successful.
                      */
                     // Adding Log entry.
-                    logEventService.createPrivateCalls("/DisableEnvironmentV000", "UPDATE", "Updated CountryEnvParam : ['" + cepData.getSystem() + "','" + cepData.getCountry() + "','" + cepData.getEnvironment() + "']", request);
+                    logEventService.createForPrivateCalls("/DisableEnvironmentV000", "UPDATE", "Updated CountryEnvParam : ['" + cepData.getSystem() + "','" + cepData.getCountry() + "','" + cepData.getEnvironment() + "']", request);
 
                     // Adding CountryEnvParam Log entry.
                     countryEnvParam_logService.createLogEntry(cepData.getSystem(), cepData.getCountry(), cepData.getEnvironment(), "", "", "Disabled.", "PublicCall");
@@ -182,29 +182,13 @@ public class DisableEnvironmentV000 extends HttpServlet {
                     // Email Calculation.
                     String eMailContent;
                     String OutputMessage = "";
-                    eMailContent = emailService.EmailGenerationDisableEnv(cepData.getSystem(), cepData.getCountry(), cepData.getEnvironment());
-                    String[] eMailContentTable = eMailContent.split("///");
-                    String to = eMailContentTable[0];
-                    String cc = eMailContentTable[1];
-                    String subject = eMailContentTable[2];
-                    String body = eMailContentTable[3];
 
-                    // Search the From, the Host and the Port defined in the parameters
-                    String from;
-                    String host;
-                    int port;
-                    try {
-                        from = parameterService.findParameterByKey("integration_smtp_from", cepData.getSystem()).getValue();
-                        host = parameterService.findParameterByKey("integration_smtp_host", cepData.getSystem()).getValue();
-                        port = Integer.valueOf(parameterService.findParameterByKey("integration_smtp_port", cepData.getSystem()).getValue());
+                    MessageEvent me = emailService.generateAndSendDisableEnvEmail(cepData.getSystem(), cepData.getCountry(), cepData.getEnvironment());
 
-                        //Sending the email
-                        sendMail.sendHtmlMail(host, port, body, subject, from, to, cc);
-
-                    } catch (Exception e) {
-                        Logger.getLogger(DisableEnvironmentV000.class.getName()).log(Level.SEVERE, Infos.getInstance().getProjectNameAndVersion() + " - Exception catched.", e);
-                        logEventService.createPrivateCalls("/DisableEnvironmentV000", "DISABLE", "Warning on Disable environment : ['" + cepData.getSystem() + "','" + cepData.getCountry() + "','" + cepData.getEnvironment() + "'] " + e.getMessage(), request);
-                        OutputMessage = e.getMessage();
+                    if (!"OK".equals(me.getMessage().getCodeString())) {
+                        LOG.warn(Infos.getInstance().getProjectNameAndVersion() + " - Exception catched." + me.getMessage().getDescription());
+                        logEventService.createForPrivateCalls("/DisableEnvironmentV000", "DISABLE", "Warning on Disable environment : ['" + cepData.getSystem() + "','" + cepData.getCountry() + "','" + cepData.getEnvironment() + "'] " + me.getMessage().getDescription(), request);
+                        OutputMessage = me.getMessage().getDescription();
                     }
 
                     if (OutputMessage.equals("")) {

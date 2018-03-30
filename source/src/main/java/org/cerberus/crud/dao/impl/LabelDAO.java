@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -21,12 +23,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.ILabelDAO;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.crud.entity.Label;
@@ -54,7 +58,7 @@ public class LabelDAO implements ILabelDAO {
     @Autowired
     private IFactoryLabel factoryLabel;
 
-    private static final Logger LOG = Logger.getLogger(LabelDAO.class);
+    private static final Logger LOG = LogManager.getLogger(LabelDAO.class);
 
     private final String OBJECT_NAME = "Label";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -73,22 +77,26 @@ public class LabelDAO implements ILabelDAO {
             LOG.debug("SQL : " + query);
             LOG.debug("SQL.param.label : " + id);
         }
-
         try (Connection connection = databaseSpring.connect();
                 PreparedStatement preStat = connection.prepareStatement(query)) {
             //prepare and execute query
             preStat.setInt(1, id);
-            ResultSet resultSet = preStat.executeQuery();
-            //parse query
-            if (resultSet.first()) {
-                result = loadFromResultSet(resultSet);
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                ans.setItem(result);
-            } else {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-            }
+            try(ResultSet resultSet = preStat.executeQuery();){
+            	//parse query
+                if (resultSet.first()) {
+                    result = loadFromResultSet(resultSet);
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    ans.setItem(result);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                }
+            }catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
 
+            } 
         } catch (Exception e) {
             LOG.warn("Unable to readByKey Label: " + e.getMessage());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
@@ -120,9 +128,14 @@ public class LabelDAO implements ILabelDAO {
             searchSQL.append(" and (`id` like ?");
             searchSQL.append(" or `system` like ?");
             searchSQL.append(" or `label` like ?");
+            searchSQL.append(" or `type` like ?");
             searchSQL.append(" or `color` like ?");
             searchSQL.append(" or `parentLabel` like ?");
+            searchSQL.append(" or `ReqType` like ?");
+            searchSQL.append(" or `ReqStatus` like ?");
+            searchSQL.append(" or `ReqCriticity` like ?");
             searchSQL.append(" or `description` like ?");
+            searchSQL.append(" or `longdesc` like ?");
             searchSQL.append(" or `usrCreated` like ?");
             searchSQL.append(" or `dateCreated` like ?");
             searchSQL.append(" or `usrModif` like ?");
@@ -139,7 +152,7 @@ public class LabelDAO implements ILabelDAO {
         }
 
         if (!StringUtil.isNullOrEmpty(system)) {
-            searchSQL.append(" and (`System` = ? )");
+            searchSQL.append(" and (`System` = ? or `System` = '')");
         }
         query.append(searchSQL);
 
@@ -158,10 +171,16 @@ public class LabelDAO implements ILabelDAO {
             LOG.debug("SQL : " + query.toString());
         }
         try (Connection connection = databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+                PreparedStatement preStat = connection.prepareStatement(query.toString());
+        		Statement stm = connection.createStatement();) {
 
             int i = 1;
             if (!StringUtil.isNullOrEmpty(searchTerm)) {
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -179,36 +198,42 @@ public class LabelDAO implements ILabelDAO {
             if (!StringUtil.isNullOrEmpty(system)) {
                 preStat.setString(i++, system);
             }
-            ResultSet resultSet = preStat.executeQuery();
+            
+            try(ResultSet resultSet = preStat.executeQuery();
+            		ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");) {
+            	
+                //gets the data
+                while (resultSet.next()) {
+                    objectList.add(this.loadFromResultSet(resultSet));
+                }
 
-            //gets the data
-            while (resultSet.next()) {
-                objectList.add(this.loadFromResultSet(resultSet));
-            }
+                int nrTotalRows = 0;
 
-            //get the total number of rows
-            resultSet = preStat.executeQuery("SELECT FOUND_ROWS()");
-            int nrTotalRows = 0;
+                if (rowSet != null && rowSet.next()) {
+                    nrTotalRows = rowSet.getInt(1);
+                }
 
-            if (resultSet != null && resultSet.next()) {
-                nrTotalRows = resultSet.getInt(1);
-            }
+                if (objectList.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
+                    LOG.error("Partial Result in the query.");
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
+                    response = new AnswerList(objectList, nrTotalRows);
+                } else if (objectList.size() <= 0) {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                    response = new AnswerList(objectList, nrTotalRows);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    response = new AnswerList(objectList, nrTotalRows);
+                }
+                response.setDataList(objectList);
 
-            if (objectList.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
-                LOG.error("Partial Result in the query.");
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
-                response = new AnswerList(objectList, nrTotalRows);
-            } else if (objectList.size() <= 0) {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                response = new AnswerList(objectList, nrTotalRows);
-            } else {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                response = new AnswerList(objectList, nrTotalRows);
-            }
-            response.setDataList(objectList);
+            }catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
 
+            } 
         } catch (Exception e) {
             LOG.warn("Unable to readBySystemCriteria Label: " + e.getMessage());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
@@ -224,8 +249,8 @@ public class LabelDAO implements ILabelDAO {
         Answer response = new Answer();
         MessageEvent msg = null;
         StringBuilder query = new StringBuilder();
-        query.append("INSERT INTO label (`system`, `label`, `color`, `parentLabel`, `description`, `usrCreated`, `dateCreated`, `usrModif`, `dateModif` ) ");
-        query.append("VALUES (?,?,?,?,?,?,?,?,?)");
+        query.append("INSERT INTO label (`system`, `label`, `type`, `color`, `parentLabel`, `ReqType`, `ReqStatus`, `ReqCriticity`, `description`, `longdesc`, `usrCreated`, `dateCreated`, `usrModif`, `dateModif` ) ");
+        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -234,15 +259,21 @@ public class LabelDAO implements ILabelDAO {
         try (Connection connection = databaseSpring.connect();
                 PreparedStatement preStat = connection.prepareStatement(query.toString())) {
 
-            preStat.setString(1, object.getSystem());
-            preStat.setString(2, object.getLabel());
-            preStat.setString(3, object.getColor());
-            preStat.setString(4, object.getParentLabel());
-            preStat.setString(5, object.getDescription());
-            preStat.setString(6, object.getUsrCreated());
-            preStat.setTimestamp(7, object.getDateCreated());
-            preStat.setString(8, object.getUsrModif());
-            preStat.setTimestamp(9, object.getDateModif());
+            int i = 1;
+            preStat.setString(i++, object.getSystem());
+            preStat.setString(i++, object.getLabel());
+            preStat.setString(i++, object.getType());
+            preStat.setString(i++, object.getColor());
+            preStat.setString(i++, object.getParentLabel());
+            preStat.setString(i++, object.getReqType());
+            preStat.setString(i++, object.getReqStatus());
+            preStat.setString(i++, object.getReqCriticity());
+            preStat.setString(i++, object.getDescription());
+            preStat.setString(i++, object.getLongDesc());
+            preStat.setString(i++, object.getUsrCreated());
+            preStat.setTimestamp(i++, object.getDateCreated());
+            preStat.setString(i++, object.getUsrModif());
+            preStat.setTimestamp(i++, object.getDateModif());
 
             preStat.executeUpdate();
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -291,27 +322,34 @@ public class LabelDAO implements ILabelDAO {
     public Answer update(Label object) {
         Answer response = new Answer();
         MessageEvent msg = null;
-        final String query = "UPDATE label SET `system` = ?, `label` = ?, `color` = ?, `parentLabel` = ?, `usrModif` = ?, `dateModif` = ?, `description` = ?  WHERE id = ?";
+        final String query = "UPDATE label SET `system` = ?, `label` = ?, `type` = ?, `color` = ?, `parentLabel` = ?, `usrModif` = ?, `dateModif` = ?, `description` = ?"
+                + ", `LongDesc` = ?, `ReqType` = ?, `ReqStatus` = ?, `ReqCriticity` = ?  WHERE id = ?";
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query);
         }
-         try (Connection connection = databaseSpring.connect();
+        try (Connection connection = databaseSpring.connect();
                 PreparedStatement preStat = connection.prepareStatement(query.toString())) {
-                preStat.setString(1, object.getSystem());
-                preStat.setString(2, object.getLabel());
-                preStat.setString(3, object.getColor());
-                preStat.setString(4, object.getParentLabel());
-                preStat.setString(5, object.getUsrModif());
-                preStat.setTimestamp(6, object.getDateModif());
-                preStat.setString(7, object.getDescription());
-                preStat.setInt(8, object.getId());
-                
-                preStat.executeUpdate();
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "UPDATE"));
-            } catch (Exception e) {
+            int i = 1;
+            preStat.setString(i++, object.getSystem());
+            preStat.setString(i++, object.getLabel());
+            preStat.setString(i++, object.getType());
+            preStat.setString(i++, object.getColor());
+            preStat.setString(i++, object.getParentLabel());
+            preStat.setString(i++, object.getUsrModif());
+            preStat.setTimestamp(i++, object.getDateModif());
+            preStat.setString(i++, object.getDescription());
+            preStat.setString(i++, object.getLongDesc());
+            preStat.setString(i++, object.getReqType());
+            preStat.setString(i++, object.getReqStatus());
+            preStat.setString(i++, object.getReqCriticity());
+            preStat.setInt(i++, object.getId());
+
+            preStat.executeUpdate();
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+            msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "UPDATE"));
+        } catch (Exception e) {
             LOG.warn("Unable to update label: " + e.getMessage());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
                     e.toString());
@@ -327,14 +365,19 @@ public class LabelDAO implements ILabelDAO {
         Integer id = ParameterParserUtil.parseIntegerParam(rs.getString("lab.id"), 0);
         String system = ParameterParserUtil.parseStringParam(rs.getString("lab.system"), "");
         String label = ParameterParserUtil.parseStringParam(rs.getString("lab.label"), "");
+        String type = ParameterParserUtil.parseStringParam(rs.getString("lab.type"), "");
         String color = ParameterParserUtil.parseStringParam(rs.getString("lab.color"), "");
         String parentLabel = ParameterParserUtil.parseStringParam(rs.getString("lab.parentLabel"), "");
+        String reqType = ParameterParserUtil.parseStringParam(rs.getString("lab.ReqType"), "");
+        String reqStatus = ParameterParserUtil.parseStringParam(rs.getString("lab.ReqStatus"), "");
+        String reqCriticity = ParameterParserUtil.parseStringParam(rs.getString("lab.ReqCriticity"), "");
         String description = ParameterParserUtil.parseStringParam(rs.getString("lab.description"), "");
+        String longdesc = ParameterParserUtil.parseStringParam(rs.getString("lab.longdesc"), "");
         String usrCreated = ParameterParserUtil.parseStringParam(rs.getString("lab.usrCreated"), "");
         Timestamp dateCreated = rs.getTimestamp("lab.dateCreated");
         String usrModif = ParameterParserUtil.parseStringParam(rs.getString("lab.usrModif"), "");
         Timestamp dateModif = rs.getTimestamp("lab.dateModif");
-        return factoryLabel.create(id, system, label, color, parentLabel, description, usrCreated, dateCreated, usrModif, dateModif);
+        return factoryLabel.create(id, system, label, type, color, parentLabel, reqType, reqStatus, reqCriticity, description, longdesc, usrCreated, dateCreated, usrModif, dateModif);
     }
 
     @Override
@@ -357,13 +400,18 @@ public class LabelDAO implements ILabelDAO {
             searchSQL.append(" and (`System` = ? )");
         }
 
-        if (!StringUtil.isNullOrEmpty(searchTerm)) {
+    	if (!StringUtil.isNullOrEmpty(searchTerm)) {
             searchSQL.append(" and (`id` like ?");
             searchSQL.append(" or `system` like ?");
             searchSQL.append(" or `label` like ?");
+            searchSQL.append(" or `type` like ?");
             searchSQL.append(" or `color` like ?");
             searchSQL.append(" or `parentLabel` like ?");
+            searchSQL.append(" or `ReqType` like ?");
+            searchSQL.append(" or `ReqStatus` like ?");
+            searchSQL.append(" or `ReqCriticity` like ?");
             searchSQL.append(" or `description` like ?");
+            searchSQL.append(" or `longdesc` like ?");
             searchSQL.append(" or `usrCreated` like ?");
             searchSQL.append(" or `dateCreated` like ?");
             searchSQL.append(" or `usrModif` like ?");
@@ -378,6 +426,7 @@ public class LabelDAO implements ILabelDAO {
             }
             searchSQL.append(" )");
         }
+        
         query.append(searchSQL);
         query.append(" order by ").append(columnName).append(" asc");
 
@@ -386,13 +435,20 @@ public class LabelDAO implements ILabelDAO {
             LOG.debug("SQL : " + query.toString());
         }
         try (Connection connection = databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+                PreparedStatement preStat = connection.prepareStatement(query.toString());
+        		Statement stm = connection.createStatement();) {
 
             int i = 1;
             if (!StringUtil.isNullOrEmpty(system)) {
                 preStat.setString(i++, system);
             }
-            if (!StringUtil.isNullOrEmpty(searchTerm)) {
+
+        	if (!StringUtil.isNullOrEmpty(searchTerm)) {
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -407,35 +463,39 @@ public class LabelDAO implements ILabelDAO {
             for (String individualColumnSearchValue : individalColumnSearchValues) {
                 preStat.setString(i++, individualColumnSearchValue);
             }
+            
+            try(ResultSet resultSet = preStat.executeQuery();
+            		ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");) {
+            	
+            	//gets the data
+                while (resultSet.next()) {
+                    distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
+                }
 
-            ResultSet resultSet = preStat.executeQuery();
+                int nrTotalRows = 0;
 
-            //gets the data
-            while (resultSet.next()) {
-                distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
-            }
+                if (rowSet != null && rowSet.next()) {
+                    nrTotalRows = rowSet.getInt(1);
+                }
 
-            //get the total number of rows
-            resultSet = preStat.executeQuery("SELECT FOUND_ROWS()");
-            int nrTotalRows = 0;
-
-            if (resultSet != null && resultSet.next()) {
-                nrTotalRows = resultSet.getInt(1);
-            }
-
-            if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
-                LOG.error("Partial Result in the query.");
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else if (distinctValues.size() <= 0) {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            }
+                if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
+                    LOG.error("Partial Result in the query.");
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else if (distinctValues.size() <= 0) {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                }
+            }catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+            } 
         } catch (Exception e) {
             LOG.warn("Unable to execute query : " + e.toString());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
@@ -449,5 +509,5 @@ public class LabelDAO implements ILabelDAO {
         answer.setDataList(distinctValues);
         return answer;
     }
-  
+
 }

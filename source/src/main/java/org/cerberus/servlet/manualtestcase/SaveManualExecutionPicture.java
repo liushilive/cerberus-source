@@ -1,3 +1,22 @@
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This file is part of Cerberus.
+ *
+ * Cerberus is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Cerberus is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.cerberus.servlet.manualtestcase;
 
 import java.io.*;
@@ -14,11 +33,12 @@ import org.apache.commons.fileupload.FileUploadBase.FileSizeLimitExceededExcepti
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.TestCaseStepActionExecution;
 import org.cerberus.crud.service.IParameterService;
 import org.cerberus.engine.execution.IRecorderService;
-import org.cerberus.log.MyLogger;
+import org.cerberus.servlet.zzpublic.ResultCI;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -30,6 +50,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 public class SaveManualExecutionPicture extends HttpServlet {
 
     private final static Integer UPLOAD_PICTURE_MAXSIZE = 1048576;//1 MB
+    private static final Logger LOG = LogManager.getLogger(SaveManualExecutionPicture.class);
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -49,7 +70,7 @@ public class SaveManualExecutionPicture extends HttpServlet {
         // Create a new file upload handler
         ServletFileUpload upload = new ServletFileUpload(factory);
 
-        Integer imgPathMaxSize = parameterService.getParameterByKey("cerberus_screenshot_max_size", "", UPLOAD_PICTURE_MAXSIZE);
+        Integer imgPathMaxSize = parameterService.getParameterIntegerByKey("cerberus_screenshot_max_size", "", UPLOAD_PICTURE_MAXSIZE);
         
         // Set overall request size constraint
         upload.setFileSizeMax(imgPathMaxSize);//max size for the file
@@ -72,9 +93,9 @@ public class SaveManualExecutionPicture extends HttpServlet {
 
             //this handles an action each time
         } catch (FileSizeLimitExceededException ex) {
-            MyLogger.log(SaveManualExecutionPicture.class.getName(), Level.ERROR, "File size exceed the limit: " + ex.toString());
+            LOG.warn("File size exceed the limit: " + ex.toString());
         } catch (FileUploadException ex) {
-            MyLogger.log(SaveManualExecutionPicture.class.getName(), Level.ERROR, "Exception occurred while uploading file: " + ex.toString());
+            LOG.warn("Exception occurred while uploading file: " + ex.toString());
         }
         if (uploadedFile != null) {
 
@@ -84,7 +105,7 @@ public class SaveManualExecutionPicture extends HttpServlet {
                 //getServletContext().getMimeType(fileName);
                 recorderService.recordUploadedFile(tcsae.getId(), tcsae, uploadedFile);
             } else {
-                MyLogger.log(SaveManualExecutionPicture.class.getName(), Level.ERROR, "Problem with the file you're trying to upload. It is not an image."
+                LOG.warn("Problem with the file you're trying to upload. It is not an image."
                         + "Name: " + uploadedFile.getName() + "; Content-type: " + uploadedFile.getContentType());
             }
         }
@@ -105,7 +126,7 @@ public class SaveManualExecutionPicture extends HttpServlet {
 ////        ITestCaseStepActionExecutionService testCaseStepActionExecutionService = appContext.getBean(ITestCaseStepActionExecutionService.class);
 //
 //        try {
-//            String imgPath = parameterService.findParameterByKey("cerberus_mediastorage_path", "").getValue();
+//            String imgPath = parameterService.findParameterByKey("cerberus_exeautomedia_path", "").getValue();
 //
 //            File dir = new File(imgPath + runId);
 //            dir.mkdirs();

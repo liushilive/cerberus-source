@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -20,13 +22,13 @@ package org.cerberus.servlet.crud.countryenvironment;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.CountryEnvDeployType;
 import org.cerberus.crud.entity.CountryEnvLink;
 import org.cerberus.crud.entity.CountryEnvParam;
@@ -57,6 +59,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -67,7 +70,12 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "UpdateCountryEnvParam", urlPatterns = {"/UpdateCountryEnvParam"})
 public class UpdateCountryEnvParam extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(UpdateCountryEnvParam.class);
+
     private final String OBJECT_NAME = "CountryEnvParam";
+
+    @Autowired
+    private ICountryEnvironmentParametersService countryEnvironmentParametersService;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -207,7 +215,7 @@ public class UpdateCountryEnvParam extends HttpServlet {
                      * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/UpdateCountryEnvParam", "UPDATE", "Updated CountryEnvParam : ['" + system + "','" + country + "','" + environment + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateCountryEnvParam", "UPDATE", "Updated CountryEnvParam : ['" + system + "','" + country + "','" + environment + "']", request);
                 }
 
                 // Update the Database with the new list.
@@ -259,6 +267,7 @@ public class UpdateCountryEnvParam extends HttpServlet {
 
     private List<CountryEnvironmentParameters> getCountryEnvironmentApplicationFromParameter(HttpServletRequest request, ApplicationContext appContext, String system, String country, String environment, JSONArray json) throws JSONException {
         List<CountryEnvironmentParameters> ceaList = new ArrayList();
+        ICountryEnvironmentParametersService ceaService = appContext.getBean(ICountryEnvironmentParametersService.class);
         IFactoryCountryEnvironmentParameters ceaFactory = appContext.getBean(IFactoryCountryEnvironmentParameters.class);
 
         for (int i = 0; i < json.length(); i++) {
@@ -274,9 +283,22 @@ public class UpdateCountryEnvParam extends HttpServlet {
             String var2 = tcsaJson.getString("var2");
             String var3 = tcsaJson.getString("var3");
             String var4 = tcsaJson.getString("var4");
+            String strPoolSize = tcsaJson.getString("poolSize");
+            int poolSize;
+            if (strPoolSize.isEmpty()) {
+                poolSize = CountryEnvironmentParameters.DEFAULT_POOLSIZE;
+            }
+            else {
+                try {
+                    poolSize = Integer.parseInt(strPoolSize);
+                } catch (NumberFormatException e) {
+                    LOG.warn("Unable to parse pool size: " + strPoolSize + ". Applying default value");
+                    poolSize = CountryEnvironmentParameters.DEFAULT_POOLSIZE;
+                }
+            }
 
             if (!delete) {
-                CountryEnvironmentParameters cea = ceaFactory.create(system, country, environment, application, ip, domain, url, urlLogin, var1, var2, var3, var4);
+                CountryEnvironmentParameters cea = ceaFactory.create(system, country, environment, application, ip, domain, url, urlLogin, var1, var2, var3, var4, poolSize);
                 ceaList.add(cea);
             }
         }
@@ -338,10 +360,9 @@ public class UpdateCountryEnvParam extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateCountryEnvParam.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateCountryEnvParam.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -360,10 +381,9 @@ public class UpdateCountryEnvParam extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateCountryEnvParam.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateCountryEnvParam.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -42,7 +44,7 @@ public interface ICountryEnvironmentParametersDAO {
      * @param application
      * @return
      */
-    AnswerItem readByKey(String system, String country, String environment, String application);
+    AnswerItem<CountryEnvironmentParameters> readByKey(String system, String country, String environment, String application);
 
     List<String[]> getEnvironmentAvailable(String country, String application);
 
@@ -84,5 +86,6 @@ public interface ICountryEnvironmentParametersDAO {
      * @return
      */
     Answer update(CountryEnvironmentParameters object);
+
 
 }

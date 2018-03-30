@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,5 +27,5 @@ import org.cerberus.crud.entity.Documentation;
  */
 public interface IFactoryDocumentation {
     
-    Documentation create(String docTable,String docField,String docValue,String docLabel,String docDesc);
+    Documentation create(String docTable,String docField,String docValue,String docLabel,String docDesc, String anchor);
 }

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -35,7 +35,8 @@ import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -44,7 +45,7 @@ import org.apache.log4j.Logger;
 @WebServlet(name = "importFile", urlPatterns = {"/importFile"})
 public class importFile extends HttpServlet {
 
-    private static final Logger LOG = Logger.getLogger(importFile.class);
+    private static final Logger LOG = LogManager.getLogger(importFile.class);
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -73,7 +74,7 @@ public class importFile extends HttpServlet {
                             pathFile.mkdirs();
                         }
 
-                        uploadedFile = new File(pathFile + "/" + fileName);
+                        uploadedFile = new File(pathFile + File.separator + fileName);
                         LOG.debug(uploadedFile.getAbsolutePath());
                         item.write(uploadedFile);
                     } else {

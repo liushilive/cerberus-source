@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -29,6 +31,11 @@ import org.cerberus.engine.entity.MessageGeneral;
 public class CerberusException extends Exception {
 
     private MessageGeneral MessageError;
+
+    public CerberusException(MessageGeneral message, Throwable throwble) {
+        super(throwble);
+        this.MessageError = message;
+    }
 
     public CerberusException(MessageGeneral message) {
         this.MessageError = message;

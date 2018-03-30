@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,13 +20,13 @@
 package org.cerberus.servlet.crud.buildrevisionchange;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.BuildRevisionParameters;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.service.IBuildRevisionParametersService;
@@ -52,6 +52,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "UpdateBuildRevisionParameters", urlPatterns = {"/UpdateBuildRevisionParameters"})
 public class UpdateBuildRevisionParameters extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(UpdateBuildRevisionParameters.class);
     private final String OBJECT_NAME = "BuildRevisionParameters";
 
     /**
@@ -88,25 +89,12 @@ public class UpdateBuildRevisionParameters extends HttpServlet {
         String build = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("build"), "", charset);
         String revision = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("revision"), "", charset);
         String release = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("release"), "", charset);
-        String application = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("application"), "", charset);
-        String project = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("project"), "", charset);
-        String ticketidfixed = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("ticketidfixed"), "", charset);
-        String bugidfixed = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("bugidfixed"), "", charset);
-        String releaseowner = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("releaseowner"), "", charset);
-        String subject = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("subject"), "", charset);
-        String jenkinsbuildid = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("jenkinsbuildid"), "", charset);
-        String mavenGroupID = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("mavengroupid"), "", charset);
-        String mavenArtifactID = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("mavenartifactid"), "", charset);
-        String mavenVersion = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("mavenversion"), "", charset);
         // Parameter that we cannot secure as we need the html --> We DECODE them
-        String link = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("link"), "", charset);
-        String repositoryUrl = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("repositoryurl"), "", charset);
         
         Integer brpid = 0;
 
         String[] myId = request.getParameterValues("id");
         StringBuilder output_message = new StringBuilder();
-        MessageEvent final_msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
         int massErrorCounter = 0;
         for (String myId1 : myId) {
 
@@ -195,7 +183,7 @@ public class UpdateBuildRevisionParameters extends HttpServlet {
                             /**
                              * Update was successful. Adding Log entry.
                              */
-                            logEventService.createPrivateCalls("/UpdateBuildRevisionParameters", "UPDATE", "Updated BuildRevisionParameters : ['" + brpid + "'|'" + build + "'|'" + revision + "'|'" + release + "']", request);
+                            logEventService.createForPrivateCalls("/UpdateBuildRevisionParameters", "UPDATE", "Updated BuildRevisionParameters : ['" + brpid + "'|'" + build + "'|'" + revision + "'|'" + release + "']", request);
                         } else {
                             massErrorCounter++;
                             output_message.append("<br>id : ").append(myId1).append(" - ").append(ans.getResultMessage().getDescription());
@@ -224,7 +212,7 @@ public class UpdateBuildRevisionParameters extends HttpServlet {
                         .replace("%OPERATION%", "Mass Update") + "\n\nAll " + myId.length + " object(s) updated successfuly.");
                 ans.setResultMessage(msg);
             }
-            logEventService.createPrivateCalls("/UpdateBuildRevisionParameters", "MASSUPDATE", msg.getDescription(), request);
+            logEventService.createForPrivateCalls("/UpdateBuildRevisionParameters", "MASSUPDATE", msg.getDescription(), request);
         }
 
         /**
@@ -253,10 +241,9 @@ public class UpdateBuildRevisionParameters extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateBuildRevisionParameters.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateBuildRevisionParameters.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -275,10 +262,9 @@ public class UpdateBuildRevisionParameters extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateBuildRevisionParameters.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateBuildRevisionParameters.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

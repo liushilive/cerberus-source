@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,22 +20,15 @@
 package org.cerberus.crud.service.impl;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import org.apache.log4j.Level;
 import org.cerberus.crud.dao.ITestCaseStepDAO;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.TestCaseStep;
-import org.cerberus.crud.entity.TestCaseStepAction;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.log.MyLogger;
 import org.cerberus.crud.service.ITestCaseStepService;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerList;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +41,8 @@ public class TestCaseStepService implements ITestCaseStepService {
 
     @Autowired
     private ITestCaseStepDAO testCaseStepDAO;
+    @Autowired
+    private TestCaseStepActionService testCaseStepActionService;
 
     @Override
     public List<TestCaseStep> getListOfSteps(String test, String testcase) {
@@ -60,26 +55,24 @@ public class TestCaseStepService implements ITestCaseStepService {
     }
 
     @Override
-    public void insertTestCaseStep(TestCaseStep testCaseStep) throws CerberusException {
-        testCaseStepDAO.insertTestCaseStep(testCaseStep);
-    }
-
-    @Override
-    public boolean insertListTestCaseStep(List<TestCaseStep> testCaseStepList) {
-        for (TestCaseStep tcs : testCaseStepList) {
-            try {
-                insertTestCaseStep(tcs);
-            } catch (CerberusException ex) {
-                MyLogger.log(TestCaseStepService.class.getName(), Level.FATAL, ex.toString());
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
     public TestCaseStep findTestCaseStep(String test, String testcase, Integer step) {
         return testCaseStepDAO.findTestCaseStep(test, testcase, step);
+    }
+
+    @Override
+    public TestCaseStep modifyTestCaseStepDataFromUsedStep(TestCaseStep masterStep) {
+        if (masterStep.getUseStep().equals("Y")) {
+            TestCaseStep usedStep = findTestCaseStep(masterStep.getUseStepTest(), masterStep.getUseStepTestCase(), masterStep.getUseStepStep());
+            // Copy the usedStep property to main step. Loop and conditionoper are taken from used step.
+            if (usedStep != null) {
+                masterStep.setLoop(usedStep.getLoop());
+                masterStep.setConditionOper(usedStep.getConditionOper());
+                masterStep.setConditionVal1(usedStep.getConditionVal1());
+                masterStep.setConditionVal2(usedStep.getConditionVal2());
+            }
+        }
+
+        return masterStep;
     }
 
     @Override
@@ -126,8 +119,6 @@ public class TestCaseStepService implements ITestCaseStepService {
                 }
             }
         }
-        this.insertListTestCaseStep(tcsToUpdateOrInsert);
-        updateTestCaseStepUsingTestCaseStepInList(tcsToUpdateOrInsert);
 
         /**
          * Iterate on (TestCaseStep From Database - TestCaseStep From Page). If
@@ -150,6 +141,10 @@ public class TestCaseStepService implements ITestCaseStepService {
             this.deleteListTestCaseStep(tcsToDelete);
 
         }
+
+        // We insert only at the end (after deletion of all potencial enreg - linked with #1281)
+        this.createList(tcsToUpdateOrInsert);
+        updateTestCaseStepUsingTestCaseStepInList(tcsToUpdateOrInsert);
     }
 
     private void updateTestCaseStepUsingTestCaseStepInList(List<TestCaseStep> testCaseStepList) throws CerberusException {
@@ -167,6 +162,11 @@ public class TestCaseStepService implements ITestCaseStepService {
     @Override
     public List<TestCaseStep> getTestCaseStepUsingTestCaseInParamter(String test, String testCase) throws CerberusException {
         return testCaseStepDAO.getTestCaseStepUsingTestCaseInParamter(test, testCase);
+    }
+
+    @Override
+    public List<TestCaseStep> getTestCaseStepsUsingTestInParameter(final String test) throws CerberusException {
+        return testCaseStepDAO.getTestCaseStepsUsingTestInParameter(test);
     }
 
     @Override
@@ -192,6 +192,26 @@ public class TestCaseStepService implements ITestCaseStepService {
     @Override
     public AnswerList readByTestTestCase(String test, String testcase) {
         return testCaseStepDAO.readByTestTestCase(test, testcase);
+    }
+
+    @Override
+    public AnswerList readByLibraryUsed(String test, String testcase, int step) {
+        return testCaseStepDAO.readByLibraryUsed(test, testcase, step);
+    }
+
+    @Override
+    public AnswerList readByTestTestCaseWithDependency(String test, String testcase) {
+        AnswerList steps = this.readByTestTestCase(test, testcase);
+        AnswerList response = null;
+        List<TestCaseStep> tcseList = new ArrayList();
+        for (Object step : steps.getDataList()) {
+            TestCaseStep tces = (TestCaseStep) step;
+            AnswerList actions = testCaseStepActionService.readByVarious1WithDependency(test, testcase, tces.getStep());
+            tces.setTestCaseStepAction(actions.getDataList());
+            tcseList.add(tces);
+        }
+        response = new AnswerList(tcseList, steps.getTotalRows(), new MessageEvent(MessageEventEnum.DATA_OPERATION_OK));
+        return response;
     }
 
     @Override

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,7 +21,6 @@ package org.cerberus.servlet.crud.transversaltables;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -31,6 +30,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.Parameter;
 import org.cerberus.crud.service.IParameterService;
@@ -58,6 +59,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 public class ReadParameter extends HttpServlet {
 
     private IParameterService parameterService;
+    private static final Logger LOG = LogManager.getLogger(ReadParameter.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -126,7 +128,7 @@ public class ReadParameter extends HttpServlet {
             response.getWriter().print(jsonResponse.toString());
 
         } catch (JSONException e) {
-            org.apache.log4j.Logger.getLogger(ReadParameter.class.getName()).log(org.apache.log4j.Level.ERROR, null, e);
+            LOG.warn(e);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }
@@ -146,7 +148,7 @@ public class ReadParameter extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadParameter.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -164,7 +166,7 @@ public class ReadParameter extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadParameter.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -184,12 +186,17 @@ public class ReadParameter extends HttpServlet {
         String columnToSort[] = sColumns.split(",");
         String columnName = columnToSort[columnToSortParameter];
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
 
         Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
             if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
                 List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+                if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                }            
             }
         }
 
@@ -198,6 +205,7 @@ public class ReadParameter extends HttpServlet {
         JSONArray jsonArray = new JSONArray();
         if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
             for (Parameter param : (List<Parameter>) resp.getDataList()) {
+                param = parameterService.secureParameter(param);
                 jsonArray.put(convertParameterToJSONObject(param));
             }
         }
@@ -222,10 +230,12 @@ public class ReadParameter extends HttpServlet {
         Parameter p = null;
         if (answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
             p = (Parameter) answer.getItem();
-            JSONObject response = convertParameterToJSONObject(p);
+            JSONObject response = convertParameterToJSONObject(parameterService.secureParameter(p));
             object.put("contentTable", response);
         }
         object.put("hasPermissions", userHasPermissions);
+        object.put("isSecured", parameterService.isToSecureParameter(p));
+        object.put("isSystemManaged", parameterService.isSystemManaged(p));
         item.setItem(object);
         item.setResultMessage(answer.getResultMessage());
 
@@ -249,11 +259,17 @@ public class ReadParameter extends HttpServlet {
         String sColumns = ParameterParserUtil.parseStringParam(request.getParameter("sColumns"), "para,valC,valS,descr");
         String columnToSort[] = sColumns.split(",");
 
-        Map<String, List<String>> individualSearch = new HashMap<String, List<String>>();
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
+
+        Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
             if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
-                List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+            	List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
+            	if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                } 
             }
         }
 

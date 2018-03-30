@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,7 +20,8 @@
 package org.cerberus.util.servlet;
 
 import javax.servlet.http.HttpServletRequest;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -28,7 +29,7 @@ import org.apache.log4j.Logger;
  */
 public final class ServletUtil {
 
-    private static final Logger LOG = Logger.getLogger(ServletUtil.class);
+    private static final Logger LOG = LogManager.getLogger(ServletUtil.class);
 
     private static final long DEFAULT_WAIT_MS = 20;
 
@@ -46,9 +47,23 @@ public final class ServletUtil {
     public static void servletStart(HttpServletRequest request) {
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Servlet " + request.getServletPath() + " - Waiting : " + DEFAULT_WAIT_MS);
+
+            // Wait in order to simulate some slow response time.
+            long timeToWait = DEFAULT_WAIT_MS;
             try {
-                Thread.sleep(DEFAULT_WAIT_MS);
+                switch (request.getServletPath()) {
+                    case "/ReadCampaign":
+                        timeToWait = 10;
+                        break;
+                    case "/FindInvariantByID":
+                        timeToWait = 30;
+                        break;
+                    default:
+                }
+                LOG.debug("Servlet " + request.getServletPath() + " - Waiting : " + timeToWait);
+                LOG.debug("Servlet Query String " + request.getQueryString());
+                Thread.sleep(timeToWait);
+
             } catch (InterruptedException ex) {
                 LOG.error(ex);
             }

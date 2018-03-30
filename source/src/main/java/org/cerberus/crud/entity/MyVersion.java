@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -24,6 +26,15 @@ public class MyVersion {
 
     private String key;
     private int value;
+    private String valueString;
+
+    public String getValueString() {
+        return valueString;
+    }
+
+    public void setValueString(String valueString) {
+        this.valueString = valueString;
+    }
 
     public String getKey() {
         return key;
@@ -40,6 +51,5 @@ public class MyVersion {
     public void setValue(int value) {
         this.value = value;
     }
-
 
 }

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -24,13 +24,8 @@ import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.cerberus.crud.entity.Application;
 import org.cerberus.crud.entity.ApplicationObject;
-import org.cerberus.crud.entity.CountryEnvironmentParameters;
-import org.cerberus.crud.factory.IFactoryCountryEnvironmentParameters;
 import org.cerberus.crud.service.IApplicationObjectService;
-import org.cerberus.crud.service.IApplicationService;
-import org.cerberus.crud.service.ICountryEnvironmentParametersService;
 import org.cerberus.crud.service.ILogEventService;
 import org.cerberus.crud.service.impl.LogEventService;
 import org.cerberus.engine.entity.MessageEvent;
@@ -42,11 +37,8 @@ import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerUtil;
 import org.cerberus.util.servlet.ServletUtil;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.owasp.html.PolicyFactory;
-import org.owasp.html.Sanitizers;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -58,8 +50,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -67,6 +59,8 @@ import java.util.logging.Logger;
  */
 @WebServlet(name = "UpdateApplicationObject", urlPatterns = {"/UpdateApplicationObject"})
 public class UpdateApplicationObject extends HttpServlet {
+
+    private static final Logger LOG = LogManager.getLogger(UpdateApplicationObject.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -106,7 +100,7 @@ public class UpdateApplicationObject extends HttpServlet {
                 FileItem fileItem = it.next();
                 boolean isFormField = fileItem.isFormField();
                 if (isFormField) {
-                    fileData.put(fileItem.getFieldName(), ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileItem.getString(), null, charset));
+                    fileData.put(fileItem.getFieldName(), fileItem.getString("UTF-8"));
                 } else {
                     file = fileItem;
                 }
@@ -120,16 +114,15 @@ public class UpdateApplicationObject extends HttpServlet {
          */
         // Parameter that are already controled by GUI (no need to decode) --> We SECURE them
         // Parameter that needs to be secured --> We SECURE+DECODE them
-        String application = fileData.get("application");
-        String object = fileData.get("object");
-        String value = fileData.get("value");
+        String application = ParameterParserUtil.parseStringParamAndDecode(fileData.get("application"), null, charset);
+        String object = ParameterParserUtil.parseStringParamAndDecode(fileData.get("object"), null, charset);
+        String value = ParameterParserUtil.parseStringParam(fileData.get("value"), null);
 
         String usrmodif = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getRemoteUser(), "", charset);
         String datemodif = new Timestamp(new java.util.Date().getTime()).toString();
         // Parameter that we cannot secure as we need the html --> We DECODE them
 
         // Getting list of application from JSON Call
-
         // Prepare the final answer.
         MessageEvent msg1 = new MessageEvent(MessageEventEnum.GENERIC_OK);
         Answer finalAnswer = new Answer(msg1);
@@ -170,9 +163,9 @@ public class UpdateApplicationObject extends HttpServlet {
                 ApplicationObject applicationData = (ApplicationObject) resp.getItem();
 
                 String fileName = applicationData.getScreenShotFileName();
-                if(file != null){
+                if (file != null) {
                     ans = applicationObjectService.uploadFile(applicationData.getID(), file);
-                    if(ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())){
+                    if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                         fileName = file.getName();
                     }
                 }
@@ -181,15 +174,15 @@ public class UpdateApplicationObject extends HttpServlet {
                 applicationData.setScreenShotFileName(fileName);
                 applicationData.setUsrModif(usrmodif);
                 applicationData.setDateModif(datemodif);
-                ans = applicationObjectService.update(applicationData);
+                ans = applicationObjectService.update(applicationData.getApplication(), applicationData.getObject(), applicationData);
                 finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
 
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     /**
-                     * Update was succesfull. Adding Log entry.
+                     * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/UpdateApplication", "UPDATE", "Updated Application : ['" + application + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateApplication", "UPDATE", "Updated Application : ['" + application + "']", request);
                 }
                 finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
             }
@@ -221,10 +214,9 @@ public class UpdateApplicationObject extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateApplicationObject.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateApplicationObject.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -243,10 +235,9 @@ public class UpdateApplicationObject extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateApplicationObject.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateApplicationObject.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

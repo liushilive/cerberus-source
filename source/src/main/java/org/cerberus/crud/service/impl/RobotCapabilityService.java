@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2016  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -53,7 +53,7 @@ public class RobotCapabilityService implements IRobotCapabilityService {
         if (robot == null) {
             return new AnswerList<>(new MessageEvent(MessageEventEnum.DATA_OPERATION_VALIDATIONS_ERROR).resolveDescription("DESCRIPTION", "null robot"));
         }
-        
+
         // Ready by robot
         return robotCapabilityDAO.readByRobot(robot);
     }
@@ -64,7 +64,7 @@ public class RobotCapabilityService implements IRobotCapabilityService {
         if (capability == null) {
             return new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_VALIDATIONS_ERROR).resolveDescription("DESCRIPTION", "null capability"));
         }
-        
+
         // Create capability
         return robotCapabilityDAO.create(capability);
     }
@@ -75,7 +75,7 @@ public class RobotCapabilityService implements IRobotCapabilityService {
         if (capabilities == null) {
             return new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_VALIDATIONS_ERROR).resolveDescription("DESCRIPTION", "null capabilities"));
         }
-        
+
         // Create capabilities
         Answer finalAnswer = new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_OK));
         for (RobotCapability capability : capabilities) {
@@ -90,7 +90,7 @@ public class RobotCapabilityService implements IRobotCapabilityService {
         if (capability == null) {
             return new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_VALIDATIONS_ERROR).resolveDescription("DESCRIPTION", "null capability"));
         }
-       
+
         // Update capability
         return robotCapabilityDAO.update(capability);
     }
@@ -101,7 +101,7 @@ public class RobotCapabilityService implements IRobotCapabilityService {
         if (capabilities == null) {
             return new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_VALIDATIONS_ERROR).resolveDescription("DESCRIPTION", "null capabilities"));
         }
-        
+
         // Update capabilities
         Answer finalAnswer = new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_OK));
         for (RobotCapability capability : capabilities) {
@@ -116,7 +116,7 @@ public class RobotCapabilityService implements IRobotCapabilityService {
         if (capability == null) {
             return new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_VALIDATIONS_ERROR).resolveDescription("DESCRIPTION", "null capability"));
         }
-        
+
         // Delete capability
         return robotCapabilityDAO.delete(capability);
     }
@@ -127,7 +127,7 @@ public class RobotCapabilityService implements IRobotCapabilityService {
         if (capabilities == null) {
             return new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_VALIDATIONS_ERROR).resolveDescription("DESCRIPTION", "null capabilities"));
         }
-        
+
         // Delete capabilities
         Answer finalAnswer = new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_OK));
         for (RobotCapability capability : capabilities) {
@@ -142,7 +142,7 @@ public class RobotCapabilityService implements IRobotCapabilityService {
         if (robot == null || newCapabilities == null) {
             return new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_VALIDATIONS_ERROR).resolveDescription("DESCRIPTION", "null robot or capabilities"));
         }
-        
+
         // Get the existing capabilities
         AnswerList<RobotCapability> existingCapabilities = readByRobot(robot);
         if (!existingCapabilities.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
@@ -168,15 +168,15 @@ public class RobotCapabilityService implements IRobotCapabilityService {
         }
         AnswerUtil.agregateAnswer(finalAnswer, update(toUpdate));
 
-        // Process create
-        List<RobotCapability> toCreate = new ArrayList<>(newCapabilities);
-        toCreate.removeAll(sameKeys);
-        AnswerUtil.agregateAnswer(finalAnswer, create(toCreate));
-
         // Process delete
         List<RobotCapability> toDelete = new ArrayList<>(oldCapabilities);
         toDelete.removeAll(sameKeys);
         AnswerUtil.agregateAnswer(finalAnswer, delete(toDelete));
+
+        // Process create
+        List<RobotCapability> toCreate = new ArrayList<>(newCapabilities);
+        toCreate.removeAll(sameKeys);
+        AnswerUtil.agregateAnswer(finalAnswer, create(toCreate));
 
         // Finally return the aggregated answer
         return finalAnswer;

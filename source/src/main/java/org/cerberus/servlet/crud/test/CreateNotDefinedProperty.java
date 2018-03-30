@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,6 +27,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.crud.entity.TestCaseCountryProperties;
@@ -56,6 +58,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
  */
 @WebServlet(name = "CreateNotDefinedProperty", urlPatterns = {"/CreateNotDefinedProperty"})
 public class CreateNotDefinedProperty extends HttpServlet {
+
+    private static final Logger LOG = LogManager.getLogger(CreateNotDefinedProperty.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -122,9 +126,9 @@ public class CreateNotDefinedProperty extends HttpServlet {
                             "---",
                             notDefinedProperty,
                             "",
+                            "0",
                             0,
-                            0,
-                            "STATIC", 0, 10000
+                            "STATIC", 0, 10000, 0
                     ));
                 }
 
@@ -136,7 +140,7 @@ public class CreateNotDefinedProperty extends HttpServlet {
                 if (answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     //  Adding Log entry.
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/CreateNotDefinedProperty", "CREATE", "Create NotDefinedProperty:" + " " + propertyName, request);
+                    logEventService.createForPrivateCalls("/CreateNotDefinedProperty", "CREATE", "Create NotDefinedProperty:" + " " + propertyName, request);
                 }
             } else {
                 rs = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
@@ -153,7 +157,7 @@ public class CreateNotDefinedProperty extends HttpServlet {
 
         } catch (JSONException ex) {
 
-            org.apache.log4j.Logger.getLogger(CreateTestDataLib.class.getName()).log(org.apache.log4j.Level.ERROR, null, ex);
+            LOG.warn(ex);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }

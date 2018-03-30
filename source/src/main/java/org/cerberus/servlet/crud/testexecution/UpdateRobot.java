@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -26,13 +26,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.Robot;
 import org.cerberus.crud.entity.RobotCapability;
@@ -59,6 +59,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "UpdateRobot", urlPatterns = {"/UpdateRobot"})
 public class UpdateRobot extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(UpdateRobot.class);
+
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -84,8 +86,9 @@ public class UpdateRobot extends HttpServlet {
         /**
          * Parsing and securing all required parameters.
          */
+        // Parameter that are already controled by GUI (no need to decode) --> We SECURE them
+        // Parameter that needs to be secured --> We SECURE+DECODE them
         String robot = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("robot"), null, charset);
-        String host = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("host"), null, charset);
         String port = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("port"), null, charset);
         String platform = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("platform"), null, charset);
         String browser = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("browser"), null, charset);
@@ -93,7 +96,15 @@ public class UpdateRobot extends HttpServlet {
         String active = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("active"), "Y", charset);
         String description = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("description"), "", charset);
         String userAgent = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("useragent"), "", charset);
-        List<RobotCapability> capabilities = (List<RobotCapability>) (request.getParameter("capabilities") == null ? Collections.emptyList() : gson.fromJson(request.getParameter("capabilities"), new TypeToken<List<RobotCapability>>(){}.getType()));
+        String screenSize = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("screensize"), "", charset);
+        String hostUser = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("hostUsername"), null, charset);
+        String hostPassword = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("hostPassword"), null, charset);
+        // Parameter that we cannot secure as we need the html --> We DECODE them
+        String host = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("host"), null, charset);
+        String robotDecli = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("robotDecli"), null, charset);
+        List<RobotCapability> capabilities = (List<RobotCapability>) (request.getParameter("capabilities") == null ? Collections.emptyList() : gson.fromJson(request.getParameter("capabilities"), new TypeToken<List<RobotCapability>>() {
+        }.getType()));
+
         // Securing capabilities by setting them the associated robot name
         // Check also if there is no duplicated capability
         Map<String, Object> capabilityMap = new HashMap<String, Object>();
@@ -127,23 +138,11 @@ public class UpdateRobot extends HttpServlet {
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "Robot host is missing."));
             ans.setResultMessage(msg);
-        } else if (StringUtil.isNullOrEmpty(port)) {
-            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
-            msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
-                    .replace("%OPERATION%", "Update")
-                    .replace("%REASON%", "Robot port is missing."));
-            ans.setResultMessage(msg);
         } else if (StringUtil.isNullOrEmpty(platform)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "Robot platform is missing."));
-            ans.setResultMessage(msg);
-        } else if (StringUtil.isNullOrEmpty(browser)) {
-            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
-            msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
-                    .replace("%OPERATION%", "Update")
-                    .replace("%REASON%", "Robot browser is missing."));
             ans.setResultMessage(msg);
         } else if (robotid_error) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
@@ -165,7 +164,7 @@ public class UpdateRobot extends HttpServlet {
             IRobotService robotService = appContext.getBean(IRobotService.class);
 
             AnswerItem resp = robotService.readByKeyTech(robotid);
-            if (!(resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getItem()!=null)) {
+            if (!(resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getItem() != null)) {
                 /**
                  * Object could not be found. We stop here and report the error.
                  */
@@ -191,14 +190,19 @@ public class UpdateRobot extends HttpServlet {
                 robotData.setDescription(description);
                 robotData.setUserAgent(userAgent);
                 robotData.setCapabilities(capabilities);
+                robotData.setScreenSize(screenSize);
+                robotData.setHostUser(hostUser);
+                robotData.setHostPassword(hostPassword);
+                robotData.setRobotDecli(robotDecli);
+
                 ans = robotService.update(robotData);
 
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     /**
-                     * Update was succesfull. Adding Log entry.
+                     * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/UpdateRobot", "UPDATE", "Updated Robot : ['" + robotid + "'|'" + robot + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateRobot", "UPDATE", "Updated Robot : ['" + robotid + "'|'" + robot + "']", request);
                 }
             }
         }
@@ -212,7 +216,6 @@ public class UpdateRobot extends HttpServlet {
         response.getWriter().print(jsonResponse);
         response.getWriter().flush();
     }
-    private static final Logger LOG = Logger.getLogger(UpdateRobot.class.getName());
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
@@ -230,10 +233,9 @@ public class UpdateRobot extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateRobot.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateRobot.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -252,10 +254,9 @@ public class UpdateRobot extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateRobot.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateRobot.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2016  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,11 +19,21 @@
  */
 package org.cerberus.service.appium.impl;
 
-import org.apache.log4j.Logger;
+import io.appium.java_client.TouchAction;
+import io.appium.java_client.ios.IOSTouchAction;
+import java.time.Duration;
+import java.util.HashMap;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.cerberus.crud.service.impl.ParameterService;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.engine.entity.Session;
+import org.cerberus.engine.entity.SwipeAction;
+import org.cerberus.engine.entity.SwipeAction.Direction;
 import org.cerberus.enums.MessageEventEnum;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -37,14 +47,30 @@ public class IOSAppiumService extends AppiumService {
     /**
      * Associated {@link Logger} to this class
      */
-    private static final Logger LOGGER = Logger.getLogger(IOSAppiumService.class);
+    private static final Logger LOG = LogManager.getLogger(IOSAppiumService.class);
+
+    @Autowired
+    private ParameterService parameters;
 
     /**
-     * Because of https://github.com/appium/java-client/issues/402
-     * we are unfortunately unable to press to whatever key on the IOS keyboard.
-     * This is due to an IOS limitation
+     * The Appium swipe duration parameter which is got thanks to the
+     * {@link ParameterService}
+     */
+    private static final String CERBERUS_APPIUM_SWIPE_DURATION_PARAMETER = "cerberus_appium_swipe_duration";
+
+    /**
+     * The default Appium swipe duration if no
+     * {@link AppiumService#APPIUM_SWIPE_DURATION_PARAMETER} has been defined
+     */
+    private static final int DEFAULT_CERBERUS_APPIUM_SWIPE_DURATION = 2000;
+
+    /**
+     * Because of https://github.com/appium/java-client/issues/402 we are
+     * unfortunately unable to press to whatever key on the IOS keyboard. This
+     * is due to an IOS limitation
      * <p>
-     * Then this method only press on recognized keys by IOS, which are enumerated from {@link KeyCode}
+     * Then this method only press on recognized keys by IOS, which are
+     * enumerated from {@link KeyCode}
      *
      * @param session the associated {@link Session}
      * @param keyName the key name to be pressed
@@ -65,7 +91,7 @@ public class IOSAppiumService extends AppiumService {
             session.getAppiumDriver().getKeyboard().pressKey(keyToPress.getCode());
             return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_KEYPRESS_NO_ELEMENT).resolveDescription("KEY", keyName);
         } catch (Exception e) {
-            LOGGER.warn("Unable to key press due to " + e.getMessage());
+            LOG.warn("Unable to key press due to " + e.getMessage());
             return new MessageEvent(MessageEventEnum.ACTION_FAILED_KEYPRESS_OTHER)
                     .resolveDescription("KEY", keyName)
                     .resolveDescription("REASON", e.getMessage());
@@ -73,9 +99,11 @@ public class IOSAppiumService extends AppiumService {
     }
 
     /**
-     * Due to https://discuss.appium.io/t/appium-ios-guide-hiding-the-keyboard-on-real-devices/8221,
-     * IOS keyboard can be only hidden by taping on a keyboard key.
-     * As same as the tutorial, the {@link Keys#RETURN} (so the {@link KeyCode#RETURN} in Cerberus language) is used to hide keyboard.
+     * Due to
+     * https://discuss.appium.io/t/appium-ios-guide-hiding-the-keyboard-on-real-devices/8221,
+     * IOS keyboard can be only hidden by taping on a keyboard key. As same as
+     * the tutorial, the {@link Keys#RETURN} (so the {@link KeyCode#RETURN} in
+     * Cerberus language) is used to hide keyboard.
      *
      * @param session
      * @return
@@ -83,9 +111,9 @@ public class IOSAppiumService extends AppiumService {
     @Override
     public MessageEvent hideKeyboard(Session session) {
         MessageEvent keyPressResult = keyPress(session, KeyCode.RETURN.name());
-        return new MessageEvent(keyPressResult.getCode() == MessageEventEnum.ACTION_SUCCESS_KEYPRESS_NO_ELEMENT.getCode() ?
-                MessageEventEnum.ACTION_SUCCESS_HIDEKEYBOARD :
-                MessageEventEnum.ACTION_FAILED_HIDEKEYBOARD);
+        return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_KEYPRESS_NO_ELEMENT.equals(keyPressResult.getSource())
+                ? MessageEventEnum.ACTION_SUCCESS_HIDEKEYBOARD
+                : MessageEventEnum.ACTION_FAILED_HIDEKEYBOARD);
     }
 
     /**
@@ -110,6 +138,42 @@ public class IOSAppiumService extends AppiumService {
             return code;
         }
 
+    }
+
+    @Override
+    public MessageEvent swipe(Session session, SwipeAction action) {
+        try {
+            Direction direction = this.getDirectionForSwipe(session, action);
+
+            // Get the parametrized swipe duration
+            Integer myduration = parameters.getParameterIntegerByKey(CERBERUS_APPIUM_SWIPE_DURATION_PARAMETER, "", DEFAULT_CERBERUS_APPIUM_SWIPE_DURATION);
+
+            // Do the swipe thanks to the Appium driver
+            TouchAction dragNDrop
+                    = new TouchAction(session.getAppiumDriver()).press(direction.getX1(), direction.getY1()).waitAction(Duration.ofMillis(myduration))
+                            .moveTo(direction.getX2(), direction.getY2()).release();
+            dragNDrop.perform();
+
+//            JavascriptExecutor js = (JavascriptExecutor) session.getAppiumDriver();
+//            HashMap<String, Integer> swipeObject = new HashMap<String, Integer>();
+//            swipeObject.put("startX", direction.getX1());
+//            swipeObject.put("startY", direction.getY1());
+//            swipeObject.put("endX", direction.getX2());
+//            swipeObject.put("endY", direction.getY2());
+//            swipeObject.put("duration", myduration);
+//            js.executeScript("mobile: swipe", swipeObject);
+
+            return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_SWIPE).resolveDescription("DIRECTION", action.getActionType().name());
+        } catch (IllegalArgumentException e) {
+            return new MessageEvent(MessageEventEnum.ACTION_FAILED_SWIPE)
+                    .resolveDescription("DIRECTION", action.getActionType().name())
+                    .resolveDescription("REASON", "Unknown direction");
+        } catch (Exception e) {
+            LOG.warn("Unable to swipe screen due to " + e.getMessage(), e);
+            return new MessageEvent(MessageEventEnum.ACTION_FAILED_SWIPE)
+                    .resolveDescription("DIRECTION", action.getActionType().name())
+                    .resolveDescription("REASON", e.getMessage());
+        }
     }
 
 }

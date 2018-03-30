@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -42,7 +42,8 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  *
@@ -50,7 +51,7 @@ import org.apache.log4j.Logger;
  */
 public class HTTPSession {
 
-    private static final Logger LOG = Logger.getLogger(HTTPSession.class);
+    private static final Logger LOG = LogManager.getLogger(HTTPSession.class);
 
     private DefaultHttpClient client;
     private BasicScheme basicAuth;

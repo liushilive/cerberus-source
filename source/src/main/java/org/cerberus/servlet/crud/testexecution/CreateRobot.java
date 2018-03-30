@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -20,36 +22,35 @@ package org.cerberus.servlet.crud.testexecution;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.cerberus.engine.entity.MessageEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Robot;
 import org.cerberus.crud.entity.RobotCapability;
-import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.exception.CerberusException;
 import org.cerberus.crud.factory.IFactoryRobot;
 import org.cerberus.crud.service.ILogEventService;
 import org.cerberus.crud.service.IRobotService;
 import org.cerberus.crud.service.impl.LogEventService;
+import org.cerberus.engine.entity.MessageEvent;
+import org.cerberus.enums.MessageEventEnum;
+import org.cerberus.exception.CerberusException;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.StringUtil;
 import org.cerberus.util.answer.Answer;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.context.ApplicationContext;
-import org.springframework.web.context.support.WebApplicationContextUtils;
 import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
+import org.springframework.context.ApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 
 /**
  *
@@ -57,6 +58,8 @@ import org.owasp.html.Sanitizers;
  */
 @WebServlet(name = "CreateRobot", urlPatterns = {"/CreateRobot"})
 public class CreateRobot extends HttpServlet {
+
+    private static final Logger LOG = LogManager.getLogger(CreateRobot.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -85,8 +88,9 @@ public class CreateRobot extends HttpServlet {
         /**
          * Parsing and securing all required parameters.
          */
+        // Parameter that are already controled by GUI (no need to decode) --> We SECURE them
+        // Parameter that needs to be secured --> We SECURE+DECODE them
         String robot = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("robot"), null, charset);
-        String host = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("host"), null, charset);
         String port = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("port"), null, charset);
         String platform = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("platform"), null, charset);
         String browser = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("browser"), null, charset);
@@ -94,7 +98,16 @@ public class CreateRobot extends HttpServlet {
         String active = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("active"), "Y", charset);
         String description = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("description"), "", charset);
         String userAgent = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("useragent"), "", charset);
-        List<RobotCapability> capabilities = (List<RobotCapability>) (request.getParameter("capabilities") == null ? Collections.emptyList() : gson.fromJson(request.getParameter("capabilities"), new TypeToken<List<RobotCapability>>(){}.getType()));
+        String screenSize = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("screensize"), "", charset);
+        String robotDecli = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("robotDecli"), "", charset);
+        String hostUser = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("hostUsername"), null, charset);
+        String hostPassword = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("hostPassword"), null, charset);
+        List<RobotCapability> capabilities = (List<RobotCapability>) (request.getParameter("capabilities") == null ? Collections.emptyList() : gson.fromJson(request.getParameter("capabilities"), new TypeToken<List<RobotCapability>>() {
+        }.getType()));
+
+
+        // Parameter that we cannot secure as we need the html --> We DECODE them
+        String host = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("host"), null, charset);
         // Securing capabilities by setting them the associated robot name
         // Check also if there is no duplicated capability
         Map<String, Object> capabilityMap = new HashMap<String, Object>();
@@ -118,32 +131,20 @@ public class CreateRobot extends HttpServlet {
         if (StringUtil.isNullOrEmpty(robot)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
-                    .replace("%OPERATION%", "Update")
+                    .replace("%OPERATION%", "Create")
                     .replace("%REASON%", "Robot name is missing."));
             ans.setResultMessage(msg);
         } else if (StringUtil.isNullOrEmpty(host)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
-                    .replace("%OPERATION%", "Update")
+                    .replace("%OPERATION%", "Create")
                     .replace("%REASON%", "Robot host is missing."));
-            ans.setResultMessage(msg);
-        } else if (StringUtil.isNullOrEmpty(port)) {
-            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
-            msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
-                    .replace("%OPERATION%", "Update")
-                    .replace("%REASON%", "Robot port is missing."));
             ans.setResultMessage(msg);
         } else if (StringUtil.isNullOrEmpty(platform)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
-                    .replace("%OPERATION%", "Update")
+                    .replace("%OPERATION%", "Create")
                     .replace("%REASON%", "Robot platform is missing."));
-            ans.setResultMessage(msg);
-        } else if (StringUtil.isNullOrEmpty(browser)) {
-            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
-            msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
-                    .replace("%OPERATION%", "Update")
-                    .replace("%REASON%", "Robot browser is missing."));
             ans.setResultMessage(msg);
         } else if (robotid_error) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
@@ -157,8 +158,7 @@ public class CreateRobot extends HttpServlet {
                     .replace("%OPERATION%", "Create")
                     .replace("%REASON%", "There is at least one duplicated capability. Please edit or remove it to continue."));
             ans.setResultMessage(msg);
-        }
-        else {
+        } else {
             /**
              * All data seems cleans so we can call the services.
              */
@@ -166,7 +166,7 @@ public class CreateRobot extends HttpServlet {
             IRobotService robotService = appContext.getBean(IRobotService.class);
             IFactoryRobot robotFactory = appContext.getBean(IFactoryRobot.class);
 
-            Robot robotData = robotFactory.create(robotid, robot, host, port, platform, browser, version, active, description, userAgent, capabilities);
+            Robot robotData = robotFactory.create(robotid, robot, host, port, platform, browser, version, active, description, userAgent, screenSize, hostUser, hostPassword, capabilities, robotDecli);
             ans = robotService.create(robotData);
 
             if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
@@ -174,7 +174,7 @@ public class CreateRobot extends HttpServlet {
                  * Object created. Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createPrivateCalls("/CreateRobot", "CREATE", "Create Robot : ['" + robot + "']", request);
+                logEventService.createForPrivateCalls("/CreateRobot", "CREATE", "Create Robot : ['" + robot + "']", request);
             }
         }
 
@@ -204,9 +204,9 @@ public class CreateRobot extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateRobot.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateRobot.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -224,9 +224,9 @@ public class CreateRobot extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateRobot.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateRobot.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

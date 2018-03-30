@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -119,7 +121,7 @@ public class CountryEnvironmentDatabase {
         hash = 29 * hash + (this.database != null ? this.database.hashCode() : 0);
         hash = 29 * hash + (this.connectionPoolName != null ? this.connectionPoolName.hashCode() : 0);
         hash = 29 * hash + (this.soapUrl != null ? this.soapUrl.hashCode() : 0);
-        hash = 29 * hash + (this.csvUrl != null ? this.soapUrl.hashCode() : 0);
+        hash = 29 * hash + (this.csvUrl != null ? this.csvUrl.hashCode() : 0);
         return hash;
     }
 

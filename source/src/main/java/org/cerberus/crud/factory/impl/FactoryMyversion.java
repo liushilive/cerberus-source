@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,10 +30,11 @@ import org.springframework.stereotype.Service;
 public class FactoryMyversion implements IFactoryMyversion {
 
     @Override
-    public MyVersion create(String key, int value) {
+    public MyVersion create(String key, int value, String valueString) {
         MyVersion newMyVersion = new MyVersion();
         newMyVersion.setKey(key);
         newMyVersion.setValue(value);
+        newMyVersion.setValueString(valueString);
 
         return newMyVersion;
 

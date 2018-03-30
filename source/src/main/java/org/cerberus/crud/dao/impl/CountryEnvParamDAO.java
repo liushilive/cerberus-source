@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -21,12 +23,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.ICountryEnvParamDAO;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.crud.entity.CountryEnvParam;
@@ -36,7 +39,6 @@ import org.cerberus.enums.MessageGeneralEnum;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.crud.factory.IFactoryCountryEnvParam;
 import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.log.MyLogger;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.SqlUtil;
 import org.cerberus.util.StringUtil;
@@ -57,7 +59,7 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
     @Autowired
     private IFactoryCountryEnvParam factoryCountryEnvParam;
 
-    private static final Logger LOG = Logger.getLogger(CountryEnvParamDAO.class);
+    private static final Logger LOG = LogManager.getLogger(CountryEnvParamDAO.class);
 
     private final String OBJECT_NAME = "CountryEnvParam";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -109,24 +111,24 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
                         result.add(this.loadFromResultSet(resultSet));
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(CountryEnvParamDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(CountryEnvParamDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(CountryEnvParamDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(CountryEnvParamDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         if (throwex) {
@@ -203,79 +205,58 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
         StringBuilder query = new StringBuilder();
         //SQL_CALC_FOUND_ROWS allows to retrieve the total number of columns by disrearding the limit clauses that 
         //were applied -- used for pagination p
-        query.append("SELECT * FROM countryenvparam WHERE system = ? AND active = 'Y'");
+        query.append("SELECT * FROM countryenvparam WHERE 1=1 ");
+        if (system != null) {
+            query.append("AND system = ? ");
+        }
+        query.append("AND active = 'Y'");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query.toString());
         }
-        Connection connection = this.databaseSpring.connect();
-        try {
-            PreparedStatement preStat = connection.prepareStatement(query.toString());
-            try {
+        
+        try(Connection connection = this.databaseSpring.connect();
+    		PreparedStatement preStat = connection.prepareStatement(query.toString());
+        		Statement stm = connection.createStatement()) {
+            if (system != null) {
                 preStat.setString(1, system);
-                ResultSet resultSet = preStat.executeQuery();
-                try {
-                    //gets the data
-                    while (resultSet.next()) {
-                        countryEnvParamList.add(this.loadFromResultSet(resultSet));
-                    }
-
-                    //get the total number of rows
-                    resultSet = preStat.executeQuery("SELECT FOUND_ROWS()");
-                    int nrTotalRows = 0;
-
-                    if (resultSet != null && resultSet.next()) {
-                        nrTotalRows = resultSet.getInt(1);
-                    }
-
-                    if (countryEnvParamList.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
-                        LOG.error("Partial Result in the query.");
-                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
-                        msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
-                        response = new AnswerList(countryEnvParamList, nrTotalRows);
-                    } else {
-                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                        msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                        response = new AnswerList(countryEnvParamList, nrTotalRows);
-                    }
-
-                } catch (SQLException exception) {
-                    LOG.error("Unable to execute query : " + exception.toString());
-                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Unable to retrieve the list of entries!"));
-
-                } finally {
-                    if (resultSet != null) {
-                        resultSet.close();
-                    }
+            }
+            
+            try(ResultSet resultSet = preStat.executeQuery();
+            		ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");) {
+                //gets the data
+                while (resultSet.next()) {
+                    countryEnvParamList.add(this.loadFromResultSet(resultSet));
                 }
 
+                //get the total number of rows
+                int nrTotalRows = 0;
+
+                if (rowSet != null && rowSet.next()) {
+                    nrTotalRows = rowSet.getInt(1);
+                }
+
+                if (countryEnvParamList.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
+                    LOG.error("Partial Result in the query.");
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
+                    response = new AnswerList(countryEnvParamList, nrTotalRows);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    response = new AnswerList(countryEnvParamList, nrTotalRows);
+                }
             } catch (SQLException exception) {
                 LOG.error("Unable to execute query : " + exception.toString());
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
                 msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Unable to retrieve the list of entries!"));
-            } finally {
-                if (preStat != null) {
-                    preStat.close();
-                }
-            }
-
+            } 
         } catch (SQLException exception) {
             LOG.error("Unable to execute query : " + exception.toString());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
             msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Unable to retrieve the list of entries!"));
-        } finally {
-            try {
-                if (!this.databaseSpring.isOnTransaction()) {
-                    if (connection != null) {
-                        connection.close();
-                    }
-                }
-            } catch (SQLException exception) {
-                LOG.error("Unable to close connection : " + exception.toString());
-            }
-        }
+        } 
         response.setResultMessage(msg);
         response.setDataList(countryEnvParamList);
         return response;
@@ -985,9 +966,8 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
         query.append(columnName);
         query.append(" as distinctValues FROM countryenvparam cep");
 
-        
         searchSQL.append(" where 1=1 ");
-        
+
         if (!StringUtil.isNullOrEmpty(system)) {
             searchSQL.append(" and (`System` = ? )");
         }
@@ -1028,62 +1008,67 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
             LOG.debug("SQL : " + query.toString());
         }
         try (Connection connection = databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+                PreparedStatement preStat = connection.prepareStatement(query.toString());
+        		Statement stm = connection.createStatement();) {
 
             int i = 1;
             if (!StringUtil.isNullOrEmpty(system)) {
                 preStat.setString(i++, system);
             }
             if (!StringUtil.isNullOrEmpty(searchTerm)) {
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                    preStat.setString(i++, "%" + searchTerm + "%");
-                }
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
+            }
             for (String individualColumnSearchValue : individalColumnSearchValues) {
                 preStat.setString(i++, individualColumnSearchValue);
             }
 
-            ResultSet resultSet = preStat.executeQuery();
+            try(ResultSet resultSet = preStat.executeQuery();
+            		ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");) {
+            	//gets the data
+                while (resultSet.next()) {
+                    distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
+                }
 
-            //gets the data
-            while (resultSet.next()) {
-                distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
-            }
+                int nrTotalRows = 0;
 
-            //get the total number of rows
-            resultSet = preStat.executeQuery("SELECT FOUND_ROWS()");
-            int nrTotalRows = 0;
+                if (rowSet != null && rowSet.next()) {
+                    nrTotalRows = rowSet.getInt(1);
+                }
 
-            if (resultSet != null && resultSet.next()) {
-                nrTotalRows = resultSet.getInt(1);
-            }
+                if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
+                    LOG.error("Partial Result in the query.");
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else if (distinctValues.size() <= 0) {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                }
+            }catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
 
-            if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
-                LOG.error("Partial Result in the query.");
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else if (distinctValues.size() <= 0) {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            }
+            } 
         } catch (Exception e) {
             LOG.warn("Unable to execute query : " + e.toString());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",

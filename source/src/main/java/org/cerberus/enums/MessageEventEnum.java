@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,47 +20,39 @@
 package org.cerberus.enums;
 
 /**
- * {Insert class description here}
- *
- * @author Tiago Bernardes
- * @version 1.0, 19/Dez/2012
- * @since 0.9.0
+ * Message is used to feedback the result of any Cerberus event. Events could by
+ * Property, Action, Control or even Step. For every event, we have: - a number
+ * - a 2 digit code that report the status of the event. - a clear message that
+ * will be reported to the user. describing what was done or the error that
+ * occured. - a boolean that define whether the complete test execution should
+ * stop or not. - a boolean that define whether a screenshot will be done in
+ * case of problem (only if screenshot option is set to 1). - the corresponding
+ * Execution message that will be updated at the execution level.
+ * <p/>
+ * Code standard is : All SUCCESS are x00 (same code for all). All FAILED are
+ * from x50 to x99 (different code for each). Pending is x99.
  */
 public enum MessageEventEnum {
 
-    /**
-     * Message is used to feedback the result of any Cerberus event. Events
-     * could by Property, Action, Control or even Step. For every event, we
-     * have: - a number - a 2 digit code that report the status of the event. -
-     * a clear message that will be reported to the user. describing what was
-     * done or the error that occured. - a boolean that define whether the
-     * complete test execution should stop or not. - a boolean that define
-     * whether a screenshot will be done in case of problem (only if screenshot
-     * option is set to 1). - the corresponding Execution message that will be
-     * updated at the execution level.
-     * <p/>
-     * Code standard is : All SUCCESS are x00 (same code for all). All FAILED
-     * are from x50 to x99 (different code for each). Pending is x99.
-     * 
-    **/
     PROPERTY_SUCCESS(100, "OK", "Property calculated successfully.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_SQL(100, "OK", "SQL executed against database '%DATABASE%' and JDBCPOOL '%JDBCPOOLNAME%'. SQL : '%SQL%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_SQL_RANDOM(100, "OK", "Random result fetch from SQL executed against database '%DATABASE%' and JDBCPOOL '%JDBCPOOLNAME%'. SQL : '%SQL%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_HTML(100, "OK", "HTML property calculated with '%VALUE%' from element '%ELEMENT%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    PROPERTY_SUCCESS_JS(100, "OK", "Javascript property calculated with '%VALUE%' from script '%SCRIPT%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_HTMLVISIBLE(100, "OK", "HTML Visible property calculated with '%VALUE%' from element '%ELEMENT%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    PROPERTY_SUCCESS_GETFROMXML(100, "OK", "Property from Xml '%VALUE1%' calculated and returned '%VALUE2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    PROPERTY_SUCCESS_GETFROMXML(100, "OK", "Path '%VALUE1%' from Xml calculated and returned '%VALUE%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETDIFFERENCESFROMXML(100, "OK", "Differences successfully computed between '%VALUE1%' and '%VALUE2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_RANDOM(100, "OK", "Random property %FORCED%calculated with '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_TEXT(100, "OK", "Text property calculated with '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_RANDOM_NEW(100, "OK", "Random New property calculated with '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETATTRIBUTEFROMHTML(100, "OK", "Attribute '%ATTRIBUTE%' has returned '%VALUE%' for element '%ELEMENT%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETFROMCOOKIE(100, "OK", "Parameter '%PARAM%' from cookie '%COOKIE%' has been found and returned '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    PROPERTY_SUCCESS_GETFROMJSON(100, "OK", "Value '%PARAM%' from Json '%URL%' has been found and returned '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    PROPERTY_SUCCESS_GETFROMJSON(100, "OK", "Path '%PARAM%' from Json has been found and returned '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETFROMGROOVY(100, "OK", "Groovy script property calculated with '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_TESTDATA(100, "OK", "TestData %PROPERTY% correctly returned '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_SOAP(100, "OK", "SOAP Request executed.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETFROMDATALIB(100, "OK", "Data Library entry %ENTRY% (%ENTRYID%) retrieved with success. First result fetch from SQL executed against database '%DATABASE%' and JDBCPOOL '%JDBCPOOLNAME%'. SQL : '%SQL%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    PROPERTY_SUCCESS_GETFROMDATALIB_GLOBAL(100, "OK", "Data Library entry %ENTRY% (%ENTRYID%) retrieved with success. %DATAMESSAGE% and %FILTERNATUREMESSAGE%. Result : %RESULT%", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    PROPERTY_SUCCESS_GETFROMDATALIB_GLOBAL(100, "OK", "Data Library entry %ENTRY% (%ENTRYID%) retrieved with success. %DATAMESSAGE% and %FILTERNATUREMESSAGE%.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETFROMDATALIB_SUBDATA(100, "OK", "Subdata retreived with success.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETFROMDATALIB_DATA(100, "OK", "Data Library entry %ENTRY% (%ENTRYID%) retrieved with success.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETFROMDATALIB_INTERNAL(100, "OK", "%NBROW% row(s) retrieved  from INTERNAL Test Data lib with success", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
@@ -70,8 +64,10 @@ public enum MessageEventEnum {
     PROPERTY_SUCCESS_GETFROMDATALIB_NATURERANDOM(100, "OK", "row %POS% out of %TOTALPOS% selected randomly", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETFROMDATALIB_NATURERANDOMNEW(100, "OK", "out of %TOTNB% entries, %REMNB% removed (Already used for the same property name, testcase in the same country environment and build), row %POS% out of %TOTALPOS% selected randomly", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_SUCCESS_GETFROMDATALIB_NATURENOTINUSE(100, "OK", "out of %TOTNB% entries, %REMNB% removed (Recent pending (PE) executions for the same property name in the same country, environment), row %POS% out of %TOTALPOS% selected randomly", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    PROPERTY_SUCCESS_CSV(100, "OK", "CSV found from '%URL%' and successfully parsed", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    PROPERTY_FAILED(150, "NA", "PROPERTY_ERROR Generic error on getting the property.", true, false, false, MessageGeneralEnum.EXECUTION_NA),
+    PROPERTY_SUCCESS_CSV(100, "OK", "CSV file found from '%URL%' and successfully parsed", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    PROPERTY_SUCCESS_FROMCACHE(100, "OK", "Property retrieved from cache entry. Execution ID : %ID% Generated at : %DATE%.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    PROPERTY_FAILED(150, "NA", "ERROR : Generic error on getting the property.", true, false, false, MessageGeneralEnum.EXECUTION_NA),
+    PROPERTY_FAILED_RECURSIVE(150, "FA", "Recursive calculation of property %PROPERTY% detected. The past property calculated in that context is : %HISTO%", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_NO_PROPERTY_DEFINITION(151, "NA", "Warning, Property not defined for %PROP% and country %COUNTRY%.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     PROPERTY_FAILED_SQL(152, "FA", "An error occur when connecting to ?! Error detail: ?", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_SQL_COLUMNNOTMATCHING(192, "FA", "Some column(s) do not match with the SQL Query! Columns mapping in error : %BADCOLUMNS%. Database: %DATABASE%. SQL: %SQL%", true, false, false, MessageGeneralEnum.EXECUTION_FA),
@@ -93,12 +89,12 @@ public enum MessageEventEnum {
     PROPERTY_FAILED_UNKNOWNPROPERTY(182, "FA", "Property '%PROP%' does not exist or is not supported by the engine.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_TEXTRANDOMLENGHT0(183, "FA", "RANDOM or RANDOMNEW text Property function cannot have a lenght at 0. Pick STATIC nature (if you want an empty string) or increase the lenght.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_TESTDATA_PROPERTYDONOTEXIST(184, "NA", "TestData %PROPERTY% do not exist!", true, true, false, MessageGeneralEnum.EXECUTION_NA),
-    PROPERTY_FAILED_JS_EXCEPTION(185, "NA", "Failed to Execute script!\nException reached : %EXCEPTION%.", true, true, true, MessageGeneralEnum.EXECUTION_NA),
-    PROPERTY_FAILED_GETFROMXML(186, "FA", "Failed to get Data from '%VALUE1%' because could not find xpath : '%VALUE2%'!", true, true, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_JS_EXCEPTION(185, "NA", "Failed to Execute script! Exception reached : %EXCEPTION%.", true, true, true, MessageGeneralEnum.EXECUTION_NA),
+    PROPERTY_FAILED_GETFROMXML(186, "FA", "Failed to get Data from '%VALUE2%' because could not find xpath : '%VALUE1%'!", true, true, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMCOOKIE_COOKIENOTFOUND(187, "FA", "Failed to get Parameter '%PARAM%' because could not find cookie '%COOKIE%'!", true, true, true, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMCOOKIE_PARAMETERNOTFOUND(187, "FA", "Cannot find Parameter '%PARAM%' form Cookie '%COOKIE%'. Parameter do not exist or is not supported!", true, true, true, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETDIFFERENCESFROMXML(188, "FA", "Failed to compute differences from '%VALUE1%' and '%VALUE2%'", true, true, false, MessageGeneralEnum.EXECUTION_FA),
-    PROPERTY_FAILED_GETFROMJSON_PARAMETERNOTFOUND(190, "FA", "Value %PARAM% not found in Json file from %URL%", true, true, true, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMJSON_PARAMETERNOTFOUND(190, "FA", "Value %PARAM% not found in Json. %ERROR%", true, true, true, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_CALCULATE_OBJECTPROPERTYNULL(191, "FA", "Both object and property are null. Please specify one of them.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMDATALIB_NOT_FOUND_ERROR(153, "FA", "The test data library entry %ITEM% is not available for the selected system %SYSTEM%, environment %ENVIRONMENT% and country %COUNTRY%.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMDATALIB_NOT_EXIST_ERROR(153, "FA", "The test data library entry %ITEM% do not exist.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
@@ -131,19 +127,22 @@ public enum MessageEventEnum {
     PROPERTY_FAILED_GETFROMDATALIB_RANDOMNEW_NOTENOUGTHRECORDS(904, "NA", "%REMNB% entry(ies) has been removed out of the %TOTNB%, (Already used for the same property name, testcase in the same country environment and build). Not enought data left to feed the %NBREQUEST% row requested.", true, false, false, MessageGeneralEnum.EXECUTION_NA),
     PROPERTY_FAILED_GETFROMDATALIB_NOTINUSE_NOMORERECORD(904, "NA", "there are no more data available. All %TOTNB% entries, has been removed (Recent pending (PE) executions for the same property name in the same country, environment).", true, false, false, MessageGeneralEnum.EXECUTION_NA),
     PROPERTY_FAILED_GETFROMDATALIB_NOTINUSE_NOTENOUGTHRECORDS(904, "NA", "%REMNB% entry(ies), has been removed out of the %TOTNB%, (Recent pending (PE) executions for the same property name in the same country, environment). Not enought data left to feed the %NBREQUEST% row requested.", true, false, false, MessageGeneralEnum.EXECUTION_NA),
-    PROPERTY_FAILED_GETFROMDATALIB_SOAP_NOSUBDATA(197, "FA", "No Subdata defined for Data Library entry %ENTRY% (%ENTRYID%)!", true, false, false, MessageGeneralEnum.EXECUTION_FA),
-    PROPERTY_FAILED_GETFROMDATALIB_SOAP_XMLEXCEPTION(197, "FA", "The evaluation of the xpath expression '%XPATH%' specified in the sub-data entry '%SUBDATA%' has failed! '%REASON%'", true, false, false, MessageGeneralEnum.EXECUTION_FA),
-    PROPERTY_FAILED_GETFROMDATALIB_SOAP_SOAPCALLFAILED(197, "FA", "%SOAPERROR% - Library entry '%ENTRY%' (%ENTRYID%)", true, false, false, MessageGeneralEnum.EXECUTION_FA),
-    PROPERTY_FAILED_GETFROMDATALIB_SOAP_URLKOANDNODATABASE(197, "FA", "The service URL '%SERVICEURL%' is not a valid URL and the corresponding DatabaseURL is not defined to prefix it", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_NOSUBDATA(197, "FA", "No Subdata defined for Data Library entry %ENTRY% (%ENTRYID%)!", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_XMLEXCEPTION(197, "FA", "The evaluation of the xpath expression '%XPATH%' specified in the sub-data entry '%SUBDATA%' has failed! '%REASON%'", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_JSONEXCEPTION(197, "FA", "The evaluation of the jsonPath expression '%XPATH%' specified in the sub-data entry '%SUBDATA%' has failed! '%REASON%'", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_NOTSUPPORTEDSERVICERESULT(197, "FA", "The service anwer is in %FORMAT% format that is not yet supported.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_SOAPCALLFAILED(197, "FA", "%SOAPERROR% - Library entry '%ENTRY%' (%ENTRYID%)", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_URLKOANDNODATABASE(197, "FA", "The service URL '%SERVICEURL%' is not a valid URL and the corresponding DatabaseURL is not defined to prefix it", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMDATALIB_CSV_URLKOANDNODATABASE(197, "FA", "The CSV service URL '%SERVICEURL%' is not a valid URL and the corresponding CSV Database URL is not defined to prefix it", true, false, false, MessageGeneralEnum.EXECUTION_FA),
-    PROPERTY_FAILED_GETFROMDATALIB_SOAP_URLKOANDDATABASESOAPURLNOTEXIST(197, "FA", "The service URL '%SERVICEURL%' is not a valid URL and the corresponding DatabaseURL %DATABASE% is not configured on the system %SYSTEM%, country %COUNTRY%, Environment %ENV%", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_URLKOANDDATABASESOAPURLNOTEXIST(197, "FA", "The service URL '%SERVICEURL%' is not a valid URL and the corresponding DatabaseURL %DATABASE% is not configured on the system %SYSTEM%, country %COUNTRY%, Environment %ENV%", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMDATALIB_CSV_URLKOANDDATABASECSVURLNOTEXIST(197, "FA", "The CSV service URL '%SERVICEURL%' is not a valid URL and the corresponding Csv DatabaseURL %DATABASE% is not configured on the system %SYSTEM%, country %COUNTRY%, Environment %ENV%", true, false, false, MessageGeneralEnum.EXECUTION_FA),
-    PROPERTY_FAILED_GETFROMDATALIB_SOAP_URLKO(197, "FA", "The service URL '%SERVICEURL%' (Calculated from concatenation of '%SOAPURL%' with '%SERVICEPATH%') is not a valid URL", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_URLKO(197, "FA", "The service URL '%SERVICEURL%' (Calculated from concatenation of '%SOAPURL%' with '%SERVICEPATH%') is not a valid URL", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMDATALIB_CSV_URLKO(197, "FA", "The CSV service URL '%SERVICEURL%' (Calculated from concatenation of '%SOAPURL%' with '%SERVICEPATH%') is not a valid URL", true, false, false, MessageGeneralEnum.EXECUTION_FA),
-    PROPERTY_FAILED_GETFROMDATALIB_SOAP_URLKOANDDATABASESOAPURLEMPTY(197, "FA", "The service URL '%SERVICEURL%' is not a valid URL and the corresponding DatabaseURL %DATABASE% on the system %SYSTEM%, country %COUNTRY%, Environment %ENV% has no SoapURL defined", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_URLKOANDDATABASESOAPURLEMPTY(197, "FA", "The service URL '%SERVICEURL%' is not a valid URL and the corresponding DatabaseURL %DATABASE% on the system %SYSTEM%, country %COUNTRY%, Environment %ENV% has no SoapURL defined", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMDATALIB_CSV_URLKOANDDATABASECSVURLEMPTY(197, "FA", "The CSV service URL '%SERVICEURL%' is not a valid URL and the corresponding Csv DatabaseURL %DATABASE% on the system %SYSTEM%, country %COUNTRY%, Environment %ENV% has no CsvURL defined", true, false, false, MessageGeneralEnum.EXECUTION_FA),
-    PROPERTY_FAILED_GETFROMDATALIB_SOAP_XML_NOTFOUND(197, "NA", "No elements found! The evaluation of the xpath expression '%XPATH%' specified in the sub-data entry '%SUBDATA%' didn't match any XML elements! inside XML %XMLCONTENT%", true, false, false, MessageGeneralEnum.EXECUTION_NA),
-    PROPERTY_FAILED_GETFROMDATALIB_SOAP_CHECK_XPATH(197, "FA", "The Element specified on the xpath '%XPATH%' is correct but no data was retrieved! Please verify the xpath expression '%XPATH%' specified in the sub-data entry '%SUBDATA%' ! If not already done, you can try to add /text() and the end of the xpath.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_XML_NOTFOUND(197, "NA", "No elements found! The evaluation of the xpath expression '%XPATH%' specified in the sub-data entry '%SUBDATA%' didn't match any XML elements! inside XML %XMLCONTENT%", true, false, false, MessageGeneralEnum.EXECUTION_NA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_JSON_NOTFOUND(197, "NA", "No elements found! The evaluation of the jsonPath expression '%XPATH%' specified in the sub-data entry '%SUBDATA%' didn't match any Json elements! inside JSON %XMLCONTENT%", true, false, false, MessageGeneralEnum.EXECUTION_NA),
+    PROPERTY_FAILED_GETFROMDATALIB_SERVICE_CHECK_XPATH(197, "FA", "The Element specified on the xpath '%XPATH%' is correct but no data was retrieved! Please verify the xpath expression '%XPATH%' specified in the sub-data entry '%SUBDATA%' ! If not already done, you can try to add /text() and the end of the xpath.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMDATALIB_CSV_GENERIC(194, "FA", "An error occurred while trying to get data from CSV from %URL%", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMDATALIB_CSV_FILENOTDEFINED(194, "FA", "CSV File location not defined in Data Library.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_GETFROMDATALIB_CSV_FILENOTFOUND(194, "FA", "An error occurred while trying to get CSV file calling %URL%. %EX%", true, false, false, MessageGeneralEnum.EXECUTION_FA),
@@ -152,10 +151,12 @@ public enum MessageEventEnum {
     PROPERTY_FAILED_GETFROMGROOVY_EXCEPTION(904, "FA", "Groovy evaluation error: %REASON%", true, true, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_FAILED_SOAPFROMLIB_NODATA(198, "NA", "SOAP Request executed but returned no data.", true, false, false, MessageGeneralEnum.EXECUTION_NA),
     PROPERTY_FAILED_FEATURENOTIMPLEMENTED(197, "FA", "Feature '%FEATURE%' is not yet implemented!", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    PROPERTY_FAILED_FEATURENOTSUPPORTED(197, "FA", "property type '%PROPTYPE%' is not supported for application type '%APPTYPE'.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     PROPERTY_PENDING(199, "PE", "Calculating property...", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     // *********** EXECUTION ACTIONS ***********
     ACTION_SUCCESS(200, "OK", "", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    ACTION_SUCCESS_SKIPACTION(200, "OK", "Action skipped", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    ACTION_SUCCESS_OPENAPP(200, "OK", "Application '%APP%' opened.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    ACTION_SUCCESS_CLOSEAPP(200, "OK", "Application '%APP%' closed.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_CLICK(200, "OK", "Element '%ELEMENT%' clicked.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_CLICKANDWAIT(200, "OK", "Element '%ELEMENT%' clicked and waited %TIME% ms.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_CLICKANDNOWAIT(200, "OK", "Element '%ELEMENT%' clicked and waited for page to load", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
@@ -167,11 +168,12 @@ public enum MessageEventEnum {
     ACTION_SUCCESS_MOUSEOVERANDWAIT(200, "OK", "Mouse moved over '%ELEMENT%' and waited %TIME% ms.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_WAIT_TIME(200, "OK", "Waited %TIME% ms.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_WAIT_ELEMENT(200, "OK", "Waited for %ELEMENT%.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    ACTION_SUCCESS_WAITVANISH_ELEMENT(200, "OK", "Waited for %ELEMENT% to disappear.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_KEYPRESS(200, "OK", "Element '%ELEMENT%' keypress with '%DATA%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_KEYPRESS_NO_ELEMENT(200, "OK", "Key '%KEY%' pressed with success.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_OPENURL(200, "OK", "Opened URL '%URL%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_SELECT(200, "OK", "Element '%ELEMENT%' selected with '%DATA%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    ACTION_SUCCESS_PROPERTYCALCULATED(200, "OK", "Property '%PROP%' has been calculated with value '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    ACTION_SUCCESS_CALCULATEPROPERTY(200, "OK", "Property '%PROP%' has been calculated with value '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_FOCUSTOIFRAME(200, "OK", "Focus of Selenium was changed to Iframe '%IFRAME%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_FOCUSDEFAULTIFRAME(200, "OK", "Focus of Selenium was changed to default Iframe", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_TAKESCREENSHOT(200, "OK", "Screenshot taken.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
@@ -180,7 +182,8 @@ public enum MessageEventEnum {
     ACTION_SUCCESS_MOUSEUP(200, "OK", "Mouse Left Click Released on Element '%ELEMENT%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_SWITCHTOWINDOW(200, "OK", "Focus of Selenium was changed to Window '%WINDOW%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_CLOSE_ALERT(200, "OK", "Alert popup is closed !", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    ACTION_SUCCESS_CALLSOAP(200, "OK", "Call to SOAP '%SOAPNAME%' executed successfully and stored to memory!", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    ACTION_SUCCESS_CALLSOAP(200, "OK", "Call to SOAP Operation '%SOAPMETHOD%' on Service Path %SERVICEPATH% executed successfully and stored to memory!", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    ACTION_SUCCESS_CALLSERVICE(200, "OK", "'%SERVICEMETHOD%' Call to Service '%SERVICENAME%' to '%SERVICEPATH%' executed successfully and stored to memory!", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_MOUSEDOWNMOUSEUP(200, "OK", "Mouse Left Click pressed and released on Element '%ELEMENT%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_REMOVEDIFFERENCE(200, "OK", "Difference '%DIFFERENCE%' removed from '%DIFFERENCES%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_HIDEKEYBOARD(200, "OK", "Keyboard hidden.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
@@ -188,10 +191,15 @@ public enum MessageEventEnum {
     ACTION_SUCCESS_SWIPE(200, "OK", "Screen swiped '%DIRECTION%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_EXECUTESQLUPDATE(200, "OK", "SQL '%SQL%' Executed against %JDBC% - %NBROWS% row(s) affected.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_SUCCESS_EXECUTESQLSTOREDPROCEDURE(200, "OK", "SQL '%SQL%' Executed against %JDBC% - %NBROWS% row(s) affected.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    ACTION_SUCCESS_EXECUTEJS(200, "OK", "Javascript executed successfuly and returned Value '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_FAILED(250, "FA", "Unknown Action Error.", true, true, false, MessageGeneralEnum.EXECUTION_FA),
-    ACTION_FAILED_CLICK(251, "FA", "Failed to click on '%ELEMENT%'.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
-    ACTION_FAILED_SELENIUM_CONNECTIVITY(252, "CA", "The test case is canceled due to lost connection to Selenium Server!", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_CLICK(251, "FA", "Failed to click on '%ELEMENT%'. %MESS%", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_SELENIUM_CONNECTIVITY(252, "CA", "The test case is cancelled due to lost connection to Selenium Server! Detailed error : %ERROR%", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_NO_SUCH_ELEMENT(253, "FA", "Identifier '%IDENTIFIER%=' isn't recognized! Use: id=, name=, class=, css= , xpath= , link= , picture= or data-cerberus=.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_UNKOWN_IDENTIFIER_SIKULI(253, "FA", "Identifier '%IDENTIFIER%=' isn't recognized! Use: picture= or text=.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_UNKOWN_IDENTIFIER_SELENIUM(253, "FA", "Identifier '%IDENTIFIER%=' isn't recognized! Use: id=, name=, class=, css= , xpath= , link= , coord=, picture= or data-cerberus=.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_UNKOWN_IDENTIFIER_SELENIUM_SELECT(253, "FA", "Identifier '%IDENTIFIER%=' isn't recognized! Use: value=, label=, index=, regexValue= , regexLabel= or regexIndex=.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_UNKOWN_IDENTIFIER_SQL(253, "FA", "Identifier '%IDENTIFIER%=' isn't recognized! Use: script= or procedure=.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_SQL_NOT_ALLOWED_IDENTIFIER(253, "FA", "Identifier '%IDENTIFIER%=' isn't recognized for this action! Use: script=, procedure=.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_NO_ELEMENT_TO_PERFORM_ACTION(254, "FA", "Object and Property are ‘null’. At least one is mandatory in order to perform the action %ACTION%.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_CLICKANDWAIT_GENERIC(255, "FA", "Object is 'null'. This is mandatory in order to perform the action click and wait.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
@@ -203,15 +211,18 @@ public enum MessageEventEnum {
     ACTION_FAILED_MOUSEOVER(260, "FA", "Object and property are ‘null’. At least one is mandatory in order to perform the action mouse over.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_MOUSEOVERANDWAIT_GENERIC(261, "FA", "Object is 'null'. This is mandatory in order to perform the action mouse over and wait.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_MOUSEOVERANDWAIT(262, "FA", "Mouse over '%ELEMENT%' but failed to wait '%TIME%' ms.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
-    ACTION_FAILED_WAIT(263, "FA", "Failed to wait '%TIME%' ms.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_WAIT(263, "FA", "Failed to wait '%TIME%' ms due to Exception : %MESSAGE%", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_WAIT_INVALID_FORMAT(263, "FA", "Format of the timeout defined for this action is not numeric", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
-    ACTION_FAILED_KEYPRESS(264, "FA", "Object and/or Property are ‘null’. Both are mandatory in order to perform the action type.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_KEYPRESS(264, "FA", "Element and KeyValue are both mandatory for %APPLICATIONTYPE% applications in order to perform the action.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_KEYPRESS_MISSINGKEY(264, "FA", "KeyValue in value 2 is mandatory in order to perform the action.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_KEYPRESS_ENV_ERROR(264, "FA", "Environment configurations don't allow you to perform the KeyPress operation.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_KEYPRESS_NOT_AVAILABLE(264, "FA", "KeyPress failed! %KEY% is not available.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_KEYPRESS_OTHER(264, "FA", "KeyPress failed for key '%KEY%' due to '%REASON%'.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_OPENURL(265, "FA", "Failed to open '%URL%'.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_OPENURL_TIMEOUT(265, "FA", "Failed to open '%URL%'. Timeout of %TIMEOUT% milliseconds exceeded.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
-    ACTION_FAILED_SELECT(266, "FA", "Object and/or Property are ‘null’. Both are mandatory in order to perform the action type.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_OPENAPP(265, "FA", "Failed to openApp. Please check that action is set correctly. Application name or path cannot be empty.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_CLOSEAPP(265, "FA", "Failed to openApp. Please check that action is set correctly. Application name or path cannot be empty.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_SELECT(266, "FA", "Element and Option are both mandatory in order to perform the action.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_CLICK_NO_SUCH_ELEMENT(267, "FA", "Failed to click because could not find element '%ELEMENT%'!", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_DOUBLECLICK_NO_SUCH_ELEMENT(268, "FA", "Failed to double click because could not find element '%ELEMENT%'!", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_TYPE_NO_SUCH_ELEMENT(269, "FA", "Failed to type because could not find element '%ELEMENT%'!", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
@@ -231,21 +242,23 @@ public enum MessageEventEnum {
     ACTION_FAILED_MOUSEDOWN_NO_SUCH_ELEMENT(283, "FA", "Failed to left click because could not find element '%ELEMENT%'!", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_SWITCHTOWINDOW_NO_SUCH_ELEMENT(280, "FA", "Failed to switch to window because could not find element '%WINDOW%'!", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_CLOSE_ALERT(280, "FA", "Failed to close to alert popup !", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
-    ACTION_FAILED_CALLSOAP(286, "FA", "Failed to call the SOAP Operation '%SOAPNAME%' on Service Path %SERVICEPATH% ! Caused by : %DESCRIPTION%.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_CALLSERVICE(286, "FA", "Failed to call the Service '%SERVICENAME%'. Caused by : %DESCRIPTION%.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_CALLSERVICE_TIMEOUT(286, "FA", "Failed to call the Service '%SERVICEURL%' due to timeout (%TIMEOUT% ms).", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_CALLSERVICEWITHPATH(286, "FA", "Failed to call the Service '%SERVICENAME%' on Service Path '%SERVICEPATH%'. Caused by : %DESCRIPTION%.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_CALLSERVICE_METHODMISSING(286, "FA", "Failed to call the Service because Method is not defined.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_CALLSERVICE_SERVICEPATHMISSING(286, "FA", "Failed to call the Service because Service Path is not defined.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_CALLSOAP(286, "FA", "Failed to call the SOAP Operation '%SOAPMETHOD%' on Service Path %SERVICEPATH% ! Caused by : %DESCRIPTION%.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_CALLSOAP_ENVELOPEMISSING(286, "FA", "Failed to call the SOAP because Envelope is not defined.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_CALLSOAP_SERVICEPATHMISSING(286, "FA", "Failed to call the SOAP because Service Path is not defined.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_CALLSOAP_METHODMISSING(286, "FA", "Failed to call the SOAP because Method is not defined.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
-    ACTION_FAILED_CALLSOAPBETA_NOTSOAP(192, "FA", "The library entry '%ENTRY%' is currently not of type SOAP!", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     ACTION_FAILED_REMOVEDIFFERENCE(287, "FA", "Failed to remove difference '%DIFFERENCE%' from '%DIFFERENCES%'", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_RIGHTCLICK_NO_SUCH_ELEMENT(288, "FA", "Failed to Right Click on element %ELEMENT% because could not find element '%ELEMENT%'!", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_SIKULI_SERVER_NOT_REACHABLE(289, "FA", "Sikuli Server is not reachable at %URL%. Please verify that the required dependencies are present.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_SIKULI_FILE_NOT_FOUND(289, "FA", "File %FILE% not found. Please verify that url defined in object field is correct and accessible from Cerberus Server.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_SIKULI_ELEMENT_NOT_FOUND(289, "FA", "Failed to perform the action %ACTION% probably due to Element %ELEMENT% not found.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_CALCULATEPROPERTY_MISSINGPROPERTY(289, "FA", "Failed to perform the action %ACTION% due to missing property to calculate.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
-    ACTION_CONDITION_NEVER(290, "NA", "Not executed following execution condition : %COND%.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    ACTION_CONDITION_IFPROPERTYEXIST_MISSINGPARAMETER(290, "NA", "Not executed following execution condition : %COND%. Missing mandatory parameter for %COND%.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    ACTION_CONDITION_IFPROPERTYEXIST_NOTEXIST(290, "NA", "Not executed following execution condition : %COND%. Property %PROP% do not exist for country %COUNTRY%.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    ACTION_CONDITION_UNKNOWN(290, "NA", "Not executed because execution condition : %COND% do not exist.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    ACTION_FAILED_CALCULATEPROPERTY_PROPERTYNOTFOUND(289, "FA", "Failed to perform the action %ACTION% bacause property %PROP% does not exist.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_EXECUTEJS(289, "FA", "Javascript failed with error : %EXCEPTION%.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_NOTEXECUTED_NO_PROPERTY_DEFINITION(290, "NA", "Not executed because Property '%PROP%' is not defined for the country '%COUNTRY%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     ACTION_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION(291, "FA", "Not executed because Action '%ACTION%' is not supported for application type '%APPLICATIONTYPE%'.", true, true, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_SQL_GENERIC(292, "FA", "An unknown error occur when connecting to %JDBC%.", true, false, false, MessageGeneralEnum.EXECUTION_FA_ACTION),
@@ -258,16 +271,19 @@ public enum MessageEventEnum {
     ACTION_FAILED_HIDEKEYBOARD(296, "FA", "Failed to hide keyboard. Check server logs.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_SWIPE(297, "FA", "Failed to swipe '%DIRECTION%' screen due to '%REASON%'.", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_FAILED_TIMEOUT(298, "FA", "Timeout exceeded when performing the action : %TIMEOUT% milliseconds", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
+    ACTION_FAILED_GENERIC(298, "FA", "Action Failed. %DETAIL%", true, true, true, MessageGeneralEnum.EXECUTION_FA_ACTION),
     ACTION_PENDING(299, "PE", "Doing Action...", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    ACTION_NOTEXECUTED(240, "NE", "Action not executed", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     // *********** EXECUTION CONTROLS ***********
     CONTROL_SUCCESS(300, "OK", "", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    CONTROL_SUCCESS_SKIPCONTROL(300, "OK", "Control linked to skipAction skipped as well", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     CONTROL_SUCCESS_EQUAL(300, "OK", "'%STRING1%' is equal to '%STRING2%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     CONTROL_SUCCESS_CONTAINS(300, "OK", "'%STRING1%' contains '%STRING2%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     CONTROL_SUCCESS_DIFFERENT(300, "OK", "'%STRING1%' is different from '%STRING2%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     CONTROL_SUCCESS_GREATER(300, "OK", "'%STRING1%' is greater than '%STRING2%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONTROL_SUCCESS_GREATEROREQUAL(300, "OK", "'%STRING1%' is greater or equal than '%STRING2%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     CONTROL_SUCCESS_MINOR(300, "OK", "'%STRING1%' is minor than '%STRING2%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    CONTROL_SUCCESS_PRESENT(300, "OK", "Element '%STRING1%' is present on the page.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONTROL_SUCCESS_MINOROREQUAL(300, "OK", "'%STRING1%' is minor or equal than '%STRING2%'.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONTROL_SUCCESS_PRESENT(300, "OK", "Element '%STRING1%' is present on the message/page/screen.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     CONTROL_SUCCESS_NOTPRESENT(300, "OK", "Element '%STRING1%' is not present on the page.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     CONTROL_SUCCESS_VISIBLE(300, "OK", "Element '%STRING1%' is visible on the page.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     CONTROL_SUCCESS_NOTVISIBLE(300, "OK", "Element '%STRING1%' is present and not visible on the page.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
@@ -292,14 +308,16 @@ public enum MessageEventEnum {
     CONTROL_FAILED_FATAL(352, "KO", "Fatal Control Failed", true, true, false, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_NO_SUCH_ELEMENT(353, "FA", "Element '%ELEMENT%' doesn't exist. Selenium Exception : %SELEX%.", true, true, true, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_SELENIUM_CONNECTIVITY(354, "CA", "The test case is cancelled due to lost connection to Selenium Server! Detailed error : %ERROR%", true, true, true, MessageGeneralEnum.EXECUTION_FA_CONNECTIVITY),
-    CONTROL_FAILED_PROPERTY_NOTNUMERIC(355, "KO", "At least one of the Properties is not numeric, can not compare properties!", true, false, false, MessageGeneralEnum.EXECUTION_KO),
+    CONTROL_FAILED_VALUES_NOTNUMERIC(355, "KO", "'%STRINGVALUE%' is not numeric, can not compare non numeric values!", true, false, false, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_URL_NOT_MATCH_APPLICATION(356, "FA", "Cannot find application host '%HOST%' inside current URL '%CURRENTURL%'. Maybe this is due to a redirection done on the web site. That can be corrected by modifying the application URL.", true, true, false, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_EQUAL(357, "KO", "'%STRING1%' is not equal to '%STRING2%'.", true, true, false, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_DIFFERENT(358, "KO", "'%STRING1%' is not different from '%STRING2%'.", true, true, false, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_GREATER(359, "KO", "'%STRING1%' is not greater than '%STRING2%'.", true, true, false, MessageGeneralEnum.EXECUTION_KO),
+    CONTROL_FAILED_GREATEROREQUAL(359, "KO", "'%STRING1%' is not greater or equal than '%STRING2%'.", true, true, false, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_MINOR(360, "KO", "'%STRING1%' is not minor than '%STRING2%'.", true, true, false, MessageGeneralEnum.EXECUTION_KO),
-    CONTROL_FAILED_PRESENT(361, "KO", "Element '%STRING1%' is not present on the page.", true, true, true, MessageGeneralEnum.EXECUTION_KO),
-    CONTROL_FAILED_PRESENT_NULL(362, "KO", "Object is 'null'. This is mandatory in order to perform the control verify element present", true, false, true, MessageGeneralEnum.EXECUTION_KO),
+    CONTROL_FAILED_MINOROREQUAL(360, "KO", "'%STRING1%' is not minor or equal than '%STRING2%'.", true, true, false, MessageGeneralEnum.EXECUTION_KO),
+    CONTROL_FAILED_PRESENT(361, "KO", "Element '%STRING1%' is not present on the message/page/screen.", true, true, true, MessageGeneralEnum.EXECUTION_KO),
+    CONTROL_FAILED_PRESENT_NULL(362, "KO", "Value1 is 'null'. This is mandatory in order to perform the control verify element present", true, false, true, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_NOTPRESENT(363, "KO", "Element '%STRING1%' is present on the page.", true, true, true, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_NOTPRESENT_NULL(364, "KO", "Object is 'null'. This is mandatory in order to perform the control verify element not present", true, false, true, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_VISIBLE(365, "KO", "Element '%STRING1%' not visible on the page.", true, true, true, MessageGeneralEnum.EXECUTION_KO),
@@ -333,15 +351,76 @@ public enum MessageEventEnum {
     CONTROL_FAILED_NOTCLICKABLE_NULL(362, "KO", "Object is 'null'. This is mandatory in order to perform the control verify element not clickable", true, false, true, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_ELEMENTEQUALS(388, "KO", "Element in path '%XPATH%' is not equal to '%EXPECTED_ELEMENT%'.", true, true, true, MessageGeneralEnum.EXECUTION_KO),
     CONTROL_FAILED_ELEMENTDIFFERENT(389, "KO", "Element in path '%XPATH%' is not different from '%DIFFERENT_ELEMENT%'.", true, true, true, MessageGeneralEnum.EXECUTION_KO),
-    CONTROL_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION(384, "KO", "Not executed because Control '%CONTROL%' is not supported for application type '%APPLICATIONTYPE%'.", true, true, false, MessageGeneralEnum.EXECUTION_FA),
+    CONTROL_NOTEXECUTED_NOTSUPPORTED_FOR_APPLICATION(384, "FA", "Control '%CONTROL%' is not supported for application type '%APPLICATIONTYPE%'.", true, true, false, MessageGeneralEnum.EXECUTION_FA),
+    CONTROL_NOTEXECUTED_NOTSUPPORTED_FOR_MESSAGETYPE(362, "FA", "Message type %TYPE% not supported for control '%CONTROL%'.", true, false, true, MessageGeneralEnum.EXECUTION_FA),
+    CONTROL_FAILED_NOOBJECTINMEMORY(362, "FA", "Cannot perform the control because no successfull Service/Page/Screen was accessed previously.", true, false, true, MessageGeneralEnum.EXECUTION_FA),
+    CONTROL_FAILED_GENERIC(362, "FA", "Cannot perform the control. %ERROR%", true, false, true, MessageGeneralEnum.EXECUTION_FA),
+    CONTROL_NOTEXECUTED(398, "NE", "Control not executed", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     CONTROL_PENDING(399, "PE", "Control beeing performed...", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     // *********** EXECUTION STEP ***********
     STEP_SUCCESS(400, "OK", "", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    STEP_NOTEXECUTED(410, "NE", "", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
     STEP_FAILED(450, "KO", "", false, true, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
-    STEP_PENDING(499, "PE", "Step running...", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    STEP_PENDING(499, "PE", "Step %STEP%.%STEPINDEX% running...", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    // *********** CONDITION OPERATION ***********
+    CONDITIONEVAL_PENDING(1200, "PE", "Evaluating Condition...", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FAILED_UNKNOWNCONDITION(1290, "FA", "condition '%COND%' do not exist.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_DECODE_GENERICERROR(1215, "FA", "Error when decoding '%VALUE%'.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_IFPROPERTYEXIST_MISSINGPARAMETER(1220, "FA", "Missing mandatory parameter for '%COND%'.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_IFELEMENTPRESENT_MISSINGPARAMETER(1220, "FA", "Missing mandatory parameter for '%COND%'.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_IFELEMENTNOTPRESENT_MISSINGPARAMETER(1220, "FA", "Missing mandatory parameter for '%COND%'.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_NOOBJECTINMEMORY(1220, "FA", "Cannot perform the control because no successfull Service/Page/Screen was accessed previously.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_NOTSUPPORTED_FOR_APPLICATION(1220, "FA", "Condition '%CONDITION%' is not supported for application type '%APPLICATIONTYPE%'.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_NOTSUPPORTED_FOR_MESSAGETYPE(1220, "FA", "Message type %TYPE% not supported for condition '%CONDITION%'.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_IFNUMERIC_GENERICCONVERSIONERROR(1230, "FA", "Cannot convert %STRINGVALUE% to numeric.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_SELENIUM_CONNECTIVITY(1230, "FA", "Lost connection to Selenium Server! Detailed error : %ERROR%.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FAILED_GENERIC(1230, "FA", "Failed to evaluate condition. Detailed error : %ERROR%.", false, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITIONEVAL_FALSE_NEVER(1210, "NA", "", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_IFPROPERTYEXIST(1240, "NA", "Property %PROP% do not exist for country %COUNTRY%.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_IFELEMENTPRESENT(1240, "NA", "Element %ELEMENT% not present.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_IFELEMENTNOTPRESENT(1240, "NA", "Element %ELEMENT% present.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_STRINGEQUAL(1210, "NA", "'%STR1%' is not equal to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_STRINGDIFFERENT(1210, "NA", "'%STR1%' is not different from '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_STRINGGREATER(1210, "NA", "'%STR1%' is not greater than '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_STRINGMINOR(1210, "NA", "'%STR1%' is not minor to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_STRINGCONTAINS(1210, "NA", "'%STR1%' does not contain '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_NUMERICEQUAL(1210, "NA", "'%STR1%' is not equal to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_NUMERICDIFFERENT(1210, "NA", "'%STR1%' is not different from '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_NUMERICGREATER(1210, "NA", "'%STR1%' is not greater than '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_NUMERICGREATEROREQUAL(1210, "NA", "'%STR1%' is not greater or equal than '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_NUMERICMINOR(1210, "NA", "'%STR1%' is not minor to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_FALSE_NUMERICMINOROREQUAL(1210, "NA", "'%STR1%' is not minor or equal to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_ALWAYS(1210, "OK", "", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_IFPROPERTYEXIST(1240, "OK", "Property %PROP% exist for country %COUNTRY%.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_IFELEMENTPRESENT(1240, "OK", "Element %ELEMENT% is present on Service/Page/Screen.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_IFELEMENTNOTPRESENT(1240, "OK", "Element %ELEMENT% is not present on Service/Page/Screen.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_STRINGEQUAL(1210, "OK", "'%STR1%' is equal to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_STRINGDIFFERENT(1210, "OK", "'%STR1%' is different from '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_STRINGGREATER(1210, "OK", "'%STR1%' is greater than '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_STRINGMINOR(1210, "OK", "'%STR1%' is minor to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_STRINGCONTAINS(1210, "OK", "'%STR1%' does contain '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_NUMERICEQUAL(1210, "OK", "'%STR1%' is equal to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_NUMERICDIFFERENT(1210, "OK", "'%STR1%' is different from '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_NUMERICGREATER(1210, "OK", "'%STR1%' is greater than '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_NUMERICGREATEROREQUAL(1210, "OK", "'%STR1%' is greater or equal than '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_NUMERICMINOR(1210, "OK", "'%STR1%' is minor to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITIONEVAL_TRUE_NUMERICMINOROREQUAL(1210, "OK", "'%STR1%' is minor or equal to '%STR2%'", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITION_TESTCASE_NOTEXECUTED(1280, "NA", "Testcase not executed following condition : '%COND%'. %MESSAGE%", false, false, false, MessageGeneralEnum.EXECUTION_FA),
+    CONDITION_TESTCASESTEP_NOTEXECUTED(1280, "NA", "Testcase Step not executed with loop '%LOOP%' following condition '%COND%'. %MESSAGE%", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITION_TESTCASESTEP_FAILED(1290, "FA", "Step not executed following %AREA%condition error : '%COND%'. %MESSAGE%", true, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITION_TESTCASEACTION_NOTEXECUTED(1280, "NA", "Action not executed following condition : '%COND%'. %MESSAGE%", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITION_TESTCASEACTION_FAILED(1290, "FA", "Action not executed following %AREA%condition error : '%COND%'. %MESSAGE%", true, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    CONDITION_TESTCASECONTROL_NOTEXECUTED(1280, "NA", "Control not executed following condition : '%COND%'. %MESSAGE%", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    CONDITION_TESTCASECONTROL_FAILED(1290, "FA", "Control not executed following %AREA%condition error : '%COND%'. %MESSAGE%", true, false, false, MessageGeneralEnum.EXECUTION_FA_CONDITION),
+    // *********** DATA OPERATION ***********
+    DECODE_SUCCESS(600, "OK", "Decode successful.", false, false, false, MessageGeneralEnum.EXECUTION_PE_TESTSTARTED),
+    DECODE_FAILED_VARIABLENOTDECODED(650, "FA", "Error on decoding %FIELD% because %NB% variable(s) is (are) unknown : (%VAR%). Please change the %FIELD% value with the correct syntax.", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    DECODE_FAILED_GENERIC(650, "FA", "Error on decoding %FIELD% linked with a property calculation that went wrong : %ERROR%", true, false, false, MessageGeneralEnum.EXECUTION_FA),
+    CASTING_OPERATION_FAILED(660, "FA", "Error on casting %FIELD% from string to integer : %ERROR%", true, false, false, MessageGeneralEnum.EXECUTION_FA),
     // *********** DATA OPERATION ***********
     DATA_OPERATION_OK(500, MessageCodeEnum.GENERIC_CODE_SUCCESS.getCodeString(), "%ITEM% - %OPERATION% was finished with success!", false, false, false, MessageGeneralEnum.DATA_OPERATION_SUCCESS),
     DATA_OPERATION_WARNING_PARTIAL_RESULT(500, MessageCodeEnum.GENERIC_CODE_WARNING.getCodeString(), "Result may contain partial result. %DESCRIPTION%", false, false, false, MessageGeneralEnum.DATA_OPERATION_WARNING),
+    DATA_OPERATION_WARNING_NOUPDATE(500, MessageCodeEnum.GENERIC_CODE_WARNING.getCodeString(), "No record was updated. %DESCRIPTION%", false, false, false, MessageGeneralEnum.DATA_OPERATION_WARNING),
     DATA_OPERATION_WARNING(500, MessageCodeEnum.GENERIC_CODE_WARNING.getCodeString(), "%ITEM% - %OPERATION% was finished successfuly with warnings! %REASON%", false, false, false, MessageGeneralEnum.DATA_OPERATION_WARNING),
     DATA_OPERATION_NO_DATA_FOUND(500, MessageCodeEnum.GENERIC_CODE_SUCCESS.getCodeString(), "Could not find any data that match the required criteria.", true, true, false, MessageGeneralEnum.DATA_OPERATION_SUCCESS),
     DATA_OPERATION_ERROR_EXPECTED(550, MessageCodeEnum.GENERIC_CODE_ERROR.getCodeString(), "%ITEM% - operation %OPERATION% failed to complete. %REASON%", false, false, false, MessageGeneralEnum.DATA_OPERATION_ERROR),
@@ -352,6 +431,7 @@ public enum MessageEventEnum {
     DATA_OPERATION_IMPORT_ERROR_FORMAT(906, MessageCodeEnum.GENERIC_CODE_ERROR.getCodeString(), "%ITEM% Import failed! Format %FORMAT% is invalid!", false, false, false, MessageGeneralEnum.DATA_OPERATION_ERROR),
     DATA_OPERATION_VALIDATIONS_OK(002, MessageCodeEnum.GENERIC_CODE_SUCCESS.getCodeString(), "Data is valid!", false, false, false, MessageGeneralEnum.DATA_OPERATION_SUCCESS),
     DATA_OPERATION_VALIDATIONS_ERROR(905, MessageCodeEnum.GENERIC_CODE_ERROR.getCodeString(), "Data is invalid! Details: %DESCRIPTION%", false, false, false, MessageGeneralEnum.DATA_OPERATION_ERROR),
+    FILE_ERROR(905, MessageCodeEnum.GENERIC_CODE_ERROR.getCodeString(), "Impossible to create the file! %MORE% reason: %DESCRIPTION%", false, false, false, MessageGeneralEnum.DATA_OPERATION_ERROR),
     // *********** GENERIC ***********
     GENERIC_OK(500, MessageCodeEnum.GENERIC_CODE_SUCCESS.getCodeString(), "Operation finished with success.", false, false, false, MessageGeneralEnum.GENERIC_SUCCESS),
     GENERIC_WARNING(500, MessageCodeEnum.GENERIC_CODE_WARNING.getCodeString(), "Operation finished with Warning :  %REASON%.", false, false, false, MessageGeneralEnum.GENERIC_WARNING),
@@ -367,14 +447,14 @@ public enum MessageEventEnum {
     private final boolean getPageSource;
     private final MessageGeneralEnum message;
 
-    private MessageEventEnum(int tempCode, String tempCodeString, String tempDesc, boolean tempStopTest, boolean tempDoScreenshot, boolean tempGetPageSource, MessageGeneralEnum tempMessage) {
-        this.code = tempCode;
-        this.codeString = tempCodeString;
-        this.description = tempDesc;
-        this.stopTest = tempStopTest;
-        this.doScreenshot = tempDoScreenshot;
-        this.getPageSource = tempGetPageSource;
-        this.message = tempMessage;
+    private MessageEventEnum(int code, String codeString, String description, boolean stopTest, boolean doScreenshot, boolean getPageSource, MessageGeneralEnum message) {
+        this.code = code;
+        this.codeString = codeString;
+        this.description = description;
+        this.stopTest = stopTest;
+        this.doScreenshot = doScreenshot;
+        this.getPageSource = getPageSource;
+        this.message = message;
     }
 
     public String getDescription() {

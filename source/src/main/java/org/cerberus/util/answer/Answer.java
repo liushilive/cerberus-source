@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -47,7 +47,7 @@ public class Answer {
         return this.resultMessage.getDescription();
     }
     
-    public String getMessageType(){
+    public String getMessageCodeString(){
         return this.resultMessage.getCodeString();
     }
     

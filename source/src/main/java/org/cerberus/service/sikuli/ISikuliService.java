@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,9 +19,11 @@
  */
 package org.cerberus.service.sikuli;
 
-import org.cerberus.engine.entity.Identifier;
+import java.io.File;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.engine.entity.Session;
+import org.cerberus.util.answer.AnswerItem;
+import org.json.JSONObject;
 
 /**
  *
@@ -29,5 +31,45 @@ import org.cerberus.engine.entity.Session;
  */
 public interface ISikuliService {
     
-    public MessageEvent doSikuliAction(Session session, String action, String locator, String text);
+    public boolean isSikuliServerReachable(Session session);
+    
+    /**
+     *
+     * @param session
+     * @param action
+     * @param locator
+     * @param text
+     * @return
+     */
+    public AnswerItem<JSONObject> doSikuliAction(Session session, String action, String locator, String text);
+    
+    public MessageEvent doSikuliActionClick(Session session, String locator, String text);
+    
+    public MessageEvent doSikuliActionOpenApp(Session session, String locator);
+    
+    public MessageEvent doSikuliActionCloseApp(Session session, String locator);
+    
+    public File takeScreenShotFile(Session session);
+
+    public MessageEvent doSikuliActionRightClick(Session session, String locator, String text);
+
+    public MessageEvent doSikuliActionSwitchApp(Session session, String locator);
+
+    public MessageEvent doSikuliActionDoubleClick(Session session, String locator, String text);
+
+    public MessageEvent doSikuliActionType(Session session, String locator, String property);
+
+    public MessageEvent doSikuliActionMouseOver(Session session, String locator, String text);
+
+    public MessageEvent doSikuliActionWait(Session session, String locator, String text);
+    
+    public MessageEvent doSikuliActionWaitVanish(Session session, String locator, String text);
+
+    public MessageEvent doSikuliActionKeyPress(Session session, String locator, String property);
+
+    public MessageEvent doSikuliVerifyElementPresent(Session session, String locator);
+    
+    public MessageEvent doSikuliVerifyElementNotPresent(Session session, String locator);
+    
+    public MessageEvent doSikuliVerifyTextInPage(Session session, String locator);
 }

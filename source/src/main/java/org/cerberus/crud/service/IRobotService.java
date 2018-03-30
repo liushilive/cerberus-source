@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,6 +21,7 @@ package org.cerberus.crud.service;
 
 import java.util.List;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 import org.cerberus.crud.entity.Robot;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.util.answer.Answer;
@@ -45,7 +46,7 @@ public interface IRobotService {
      * @param robot
      * @return
      */
-    AnswerItem<Robot> readByKey(String robot);
+    Robot readByKey(String robot) throws CerberusException;
 
     /**
      *
@@ -60,7 +61,7 @@ public interface IRobotService {
      * @param columnName
      * @param sort
      * @param searchParameter
-     * @param string
+     * @param individualSearch
      * @return
      */
     AnswerList<Robot> readByCriteria(int startPosition, int length, String columnName, String sort, String searchParameter, Map<String, List<String>> individualSearch);
@@ -85,6 +86,38 @@ public interface IRobotService {
      * @return
      */
     Answer update(Robot robot);
+
+    /**
+     *
+     * @param robot
+     * @param request
+     * @return
+     */
+    boolean hasPermissionsRead(Robot robot, HttpServletRequest request);
+
+    /**
+     *
+     * @param robot
+     * @param request
+     * @return
+     */
+    boolean hasPermissionsUpdate(Robot robot, HttpServletRequest request);
+
+    /**
+     *
+     * @param robot
+     * @param request
+     * @return
+     */
+    boolean hasPermissionsCreate(Robot robot, HttpServletRequest request);
+
+    /**
+     *
+     * @param robot
+     * @param request
+     * @return
+     */
+    boolean hasPermissionsDelete(Robot robot, HttpServletRequest request);
 
     /**
      *

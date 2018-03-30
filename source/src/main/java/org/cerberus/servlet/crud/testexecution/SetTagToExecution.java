@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,14 +21,16 @@ package org.cerberus.servlet.crud.testexecution;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.cerberus.crud.service.ITagService;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.crud.service.ITestCaseExecutionService;
+import org.cerberus.util.StringUtil;
 import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
 import org.springframework.context.ApplicationContext;
@@ -40,6 +42,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
  */
 public class SetTagToExecution extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(SetTagToExecution.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -56,23 +60,31 @@ public class SetTagToExecution extends HttpServlet {
         PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
         ITestCaseExecutionService executionService = appContext.getBean(ITestCaseExecutionService.class);
-        
+
         try {
             String id = policy.sanitize(request.getParameter("executionId"));
             String tag = policy.sanitize(request.getParameter("newTag"));
             executionService.setTagToExecution(Long.valueOf(id), tag);
+
+            // Create Tag when exist.
+            if (!StringUtil.isNullOrEmpty(tag)) {
+                // We create or update it.
+                ITagService tagService = appContext.getBean(ITagService.class);
+                tagService.createAuto(tag, "", request.getRemoteUser());
+            }
+
             /* TODO output your page here. You may use following sample code. */
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
-            out.println("<title>Servlet SetTagToExecution</title>");            
+            out.println("<title>Servlet SetTagToExecution</title>");
             out.println("</head>");
             out.println("<body>");
             out.println("<h1>Servlet SetTagToExecution at " + request.getContextPath() + "</h1>");
             out.println("</body>");
             out.println("</html>");
         } catch (CerberusException ex) {
-            Logger.getLogger(SetTagToExecution.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } finally {
             out.close();
         }

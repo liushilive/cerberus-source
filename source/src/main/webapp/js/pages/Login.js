@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
-
     });
 });
 
@@ -34,10 +32,20 @@ function initPage() {
         showUnexpectedError(null, "Error", "Login or Password incorrect !");
     }
 
+    // We trim username.
+    $('#username').change(function () {
+        var usr = $('#username').val();
+        $('#username').val(usr.trim());
+    });
+
+
+    $("#forgotpassword-box").submit(function () {
+        return false;
+    });
 }
 
 function forgotPassword() {
-    
+
     var login = $("#loginForgotPassword").val();
     $("body").block({message: "processing"});
     var jqxhr = $.ajax({
@@ -60,6 +68,8 @@ function forgotPassword() {
             $("body").unblock();
         }
     });
+
+    return false;
 }
 
 function showForgotPasswordFormulary() {
@@ -68,4 +78,11 @@ function showForgotPasswordFormulary() {
     $("#alertMessageForgotPassword").hide();
     $("#forgot-password-box").show();
 
+}
+
+function showLoginBoxFormulary() {
+    $("#login-box").show();
+    $("#alertMessageLogin").hide();
+    $("#alertMessageForgotPassword").hide();
+    $("#forgot-password-box").hide();
 }

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,7 @@
  */
 package org.cerberus.crud.factory.impl;
 
+import java.sql.Timestamp;
 import org.cerberus.crud.entity.Application;
 import org.cerberus.crud.factory.IFactoryApplication;
 import org.springframework.stereotype.Service;
@@ -33,27 +34,32 @@ public class FactoryApplication implements IFactoryApplication {
     public Application create(String application, String description
             , int sort, String type, String system, String subsystem
             , String svnurl, String deploytype, String mavengroupid
-            , String bugTrackerUrl, String bugTrackerNewUrl) {
-        Application newApplication = new Application();
-        newApplication.setApplication(application);
-        newApplication.setDeploytype(deploytype);
-        newApplication.setDescription(description);
-        newApplication.setMavengroupid(mavengroupid);
-        newApplication.setSort(sort);
-        newApplication.setSubsystem(subsystem);
-        newApplication.setSvnurl(svnurl);
-        newApplication.setSystem(system);
-        newApplication.setType(type);
-        newApplication.setBugTrackerUrl(bugTrackerUrl);
-        newApplication.setBugTrackerNewUrl(bugTrackerNewUrl);
-        return newApplication;
+            , String bugTrackerUrl, String bugTrackerNewUrl,
+            String usrCreated, Timestamp dateCreated, String usrModif, Timestamp dateModif) {
+        Application newObject = new Application();
+        newObject.setApplication(application);
+        newObject.setDeploytype(deploytype);
+        newObject.setDescription(description);
+        newObject.setMavengroupid(mavengroupid);
+        newObject.setSort(sort);
+        newObject.setSubsystem(subsystem);
+        newObject.setSvnurl(svnurl);
+        newObject.setSystem(system);
+        newObject.setType(type);
+        newObject.setBugTrackerUrl(bugTrackerUrl);
+        newObject.setBugTrackerNewUrl(bugTrackerNewUrl);
+        newObject.setUsrModif(usrModif);
+        newObject.setUsrCreated(usrCreated);
+        newObject.setDateModif(dateModif);
+        newObject.setDateCreated(dateCreated);
+        return newObject;
     }
 
     @Override
     public Application create(String application) {
-        Application newApplication = new Application();
-        newApplication.setApplication(application);
-        return newApplication;
+        Application newObject = new Application();
+        newObject.setApplication(application);
+        return newObject;
     }
 
 

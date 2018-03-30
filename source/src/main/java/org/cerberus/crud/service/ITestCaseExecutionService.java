@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,7 @@
  */
 package org.cerberus.crud.service;
 
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 import org.cerberus.crud.entity.TestCase;
@@ -74,14 +75,6 @@ public interface ITestCaseExecutionService {
      */
     TestCaseExecution findTCExecutionByKey(long id) throws CerberusException;
 
-    /**
-     * @param campaign the campaign name for the execution list
-     * @param tag the tag name of the execution list
-     * @return a list of testCaseExecution done on the campaign name and tag
-     * with tag name.
-     * @throws CerberusException when no executions can be found.
-     */
-    List<TestCaseExecution> findExecutionsByCampaignNameAndTag(String campaign, String tag) throws CerberusException;
 
     /**
      *
@@ -129,11 +122,56 @@ public interface ITestCaseExecutionService {
 
     AnswerList findTagList(int tagnumber) throws CerberusException;
 
-    AnswerList readByTagByCriteria(String tag, int start, int amount, String column, String dir, String searchTerm, Map<String, List<String>> individualSearch) throws CerberusException;
+    /**
+     *
+     * @param tag
+     * @param start
+     * @param amount
+     * @param sort
+     * @param searchTerm
+     * @param individualSearch
+     * @return
+     * @throws CerberusException
+     */
+    AnswerList readByTagByCriteria(String tag, int start, int amount, String sort, String searchTerm, Map<String, List<String>> individualSearch) throws CerberusException;
 
-    public AnswerList readDistinctEnvCoutnryBrowserByTag(String tag);
+    /**
+     *
+     * @param start
+     * @param amount
+     * @param sort
+     * @param searchTerm
+     * @param individualSearch
+     * @return
+     * @throws CerberusException
+     */
+    AnswerList readByCriteria( int start, int amount, String sort, String searchTerm, Map<String, List<String>> individualSearch, List<String> individualLike) throws CerberusException;
 
-    public AnswerList readDistinctColumnByTag(String tag, boolean env, boolean country, boolean browser, boolean app);
+    /**
+     *
+     * @param tag
+     * @return
+     * @throws CerberusException
+     */
+    AnswerList readByTag(String tag) throws CerberusException;
+
+    /**
+     *
+     * @param tag
+     * @return
+     */
+    AnswerList readDistinctEnvCoutnryBrowserByTag(String tag);
+
+    /**
+     *
+     * @param tag
+     * @param env
+     * @param country
+     * @param browser
+     * @param app
+     * @return
+     */
+    AnswerList readDistinctColumnByTag(String tag, boolean env, boolean country, boolean browser, boolean app);
 
     List<TestCaseExecution> createAllTestCaseExecution(List<TestCase> testCaseList, List<String> envList, List<String> country);
 
@@ -181,5 +219,15 @@ public interface ITestCaseExecutionService {
      */
     void convert(Answer answer) throws CerberusException;
 
+    public AnswerList readDistinctValuesByCriteria(String system, String test, String searchParameter, Map<String, List<String>> individualSearch, String columnName);
 
+    /**
+     *
+     * @param tag
+     * @return
+     * @throws ParseException
+     * @throws CerberusException
+     */
+    public List<TestCaseExecution> readLastExecutionAndExecutionInQueueByTag(String tag) throws ParseException, CerberusException;
+   
 }

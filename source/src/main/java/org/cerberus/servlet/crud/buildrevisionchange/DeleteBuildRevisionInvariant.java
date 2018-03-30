@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,13 +20,13 @@
 package org.cerberus.servlet.crud.buildrevisionchange;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.BuildRevisionInvariant;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
@@ -50,6 +52,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "DeleteBuildRevisionInvariant1", urlPatterns = {"/DeleteBuildRevisionInvariant1"})
 public class DeleteBuildRevisionInvariant extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(DeleteBuildRevisionInvariant.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -145,10 +149,10 @@ public class DeleteBuildRevisionInvariant extends HttpServlet {
 
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     /**
-                     * Delete was succesfull. Adding Log entry.
+                     * Delete was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/DeleteBuildRevisionInvariant", "DELETE", "Delete BuildRevisionInvariant : ['" + system + "'|'" + level + "'|'" + seq + "']", request);
+                    logEventService.createForPrivateCalls("/DeleteBuildRevisionInvariant", "DELETE", "Delete BuildRevisionInvariant : ['" + system + "'|'" + level + "'|'" + seq + "']", request);
                 }
             }
         }
@@ -180,11 +184,9 @@ public class DeleteBuildRevisionInvariant extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(DeleteBuildRevisionInvariant.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(DeleteBuildRevisionInvariant.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -203,11 +205,9 @@ public class DeleteBuildRevisionInvariant extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(DeleteBuildRevisionInvariant.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(DeleteBuildRevisionInvariant.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

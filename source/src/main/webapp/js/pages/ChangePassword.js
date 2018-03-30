@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,8 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-//$.when($.getScript("js/pages/global/global.js")).then(function () {
+//$.when($.getScript("js/global/global.js")).then(function () {
 
 $(document).ready(function () {
 //First check if page is called from pressing forgot Password link

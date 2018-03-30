@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,13 +20,13 @@
 package org.cerberus.servlet.crud.test;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.TestCase;
 import org.cerberus.crud.entity.TestCaseCountry;
@@ -54,6 +56,8 @@ import org.owasp.html.Sanitizers;
 @WebServlet(name = "CreateTestCaseCountry", urlPatterns = {"/CreateTestCaseCountry"})
 public class CreateTestCaseCountry extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(CreateTestCaseCountry.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -148,7 +152,7 @@ public class CreateTestCaseCountry extends HttpServlet {
                      * Object created. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/CreateTestCaseCountry", "CREATE", "Create TestCaseCountry : ['" + test + "'|'" + testcase + "'|'" + country + "']", request);
+                    logEventService.createForPrivateCalls("/CreateTestCaseCountry", "CREATE", "Create TestCaseCountry : ['" + test + "'|'" + testcase + "'|'" + country + "']", request);
                 }
             }
         }
@@ -179,9 +183,9 @@ public class CreateTestCaseCountry extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateTestCaseCountry.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateTestCaseCountry.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -199,9 +203,9 @@ public class CreateTestCaseCountry extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateTestCaseCountry.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateTestCaseCountry.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

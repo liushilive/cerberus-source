@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,9 +29,9 @@ import org.cerberus.crud.entity.TestCaseStepExecution;
  */
 public interface IFactoryTestCaseStepActionExecution {
 
-    TestCaseStepActionExecution create(long id, String test, String testCase, int step,
-            int sequence, int sort, String returnCode, String returnMessage, String conditionOper, String conditionVal1, String action, String value1Init, String value2Init,
-            String value1, String value2, String forceExeStatus, long start, long end, long startLong, long endLong,
-            MessageEvent resultMessage, String description, TestCaseStepAction testCaseStepAction, TestCaseStepExecution testCaseStepExecution);
+    TestCaseStepActionExecution create(long id, String test, String testCase, int step, int index, int sequence, int sort, String returnCode, String returnMessage,
+            String conditionOper, String conditionVal1Init, String conditionVal2Init, String conditionVal1, String conditionVal2, String action, String value1Init, String value2Init, String value1, String value2,
+            String forceExeStatus, long start, long end, long startLong, long endLong, MessageEvent resultMessage, String description, TestCaseStepAction testCaseStepAction,
+            TestCaseStepExecution testCaseStepExecution);
 
 }

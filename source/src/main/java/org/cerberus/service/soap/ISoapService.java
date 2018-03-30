@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,10 +20,12 @@
 package org.cerberus.service.soap;
 
 import java.io.IOException;
+import java.util.List;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
-import org.cerberus.engine.entity.SOAPExecution;
+import org.cerberus.crud.entity.AppService;
+import org.cerberus.crud.entity.AppServiceHeader;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.util.answer.AnswerItem;
 import org.xml.sax.SAXException;
@@ -38,13 +40,15 @@ public interface ISoapService {
      * 
      * @param pBody Body of the SOAP message
      * @param method Method/Action of the WSDL which will be used
+     * @param header List of header values to add in request.
+     * @param token will be added to header in 'cerberus-token' entry if not null.
      * @return SOAPMessage generated
      * @throws SOAPException
      * @throws IOException
      * @throws SAXException
      * @throws ParserConfigurationException 
      */
-    SOAPMessage createSoapRequest(final String pBody, final String method) throws SOAPException, IOException, SAXException, ParserConfigurationException;
+    SOAPMessage createSoapRequest(final String pBody, final String method, List<AppServiceHeader> header, String token) throws SOAPException, IOException, SAXException, ParserConfigurationException;
     
     /**
      * 
@@ -58,10 +62,14 @@ public interface ISoapService {
      * Call Soap Message 
      * @param envelope
      * @param servicePath
-     * @param method
+     * @param operation
      * @param attachmentUrl
+     * @param header
+     * @param token
+     * @param timeOutMs
+     * @param system
      * @return 
      */
-    AnswerItem<SOAPExecution> callSOAP(String envelope, String servicePath, String method, String attachmentUrl);
+    AnswerItem<AppService> callSOAP(String envelope, String servicePath, String operation, String attachmentUrl, List<AppServiceHeader> header, String token, int timeOutMs, String system);
     
 }

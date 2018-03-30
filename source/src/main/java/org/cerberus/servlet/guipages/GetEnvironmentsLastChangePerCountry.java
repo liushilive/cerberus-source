@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -28,6 +28,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.CountryEnvParam_log;
 import org.cerberus.crud.entity.Invariant;
 
@@ -54,6 +56,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "GetEnvironmentsLastChangePerCountry", urlPatterns = {"/GetEnvironmentsLastChangePerCountry"})
 public class GetEnvironmentsLastChangePerCountry extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(GetEnvironmentsLastChangePerCountry.class);
+    
     private IInvariantService invariantService;
     private ICountryEnvParam_logService ceplService;
 
@@ -125,7 +129,7 @@ public class GetEnvironmentsLastChangePerCountry extends HttpServlet {
             response.getWriter().print(jsonResponse.toString());
 
         } catch (JSONException e) {
-            org.apache.log4j.Logger.getLogger(GetEnvironmentsLastChangePerCountry.class.getName()).log(org.apache.log4j.Level.ERROR, null, e);
+            LOG.warn(e);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }
@@ -139,7 +143,7 @@ public class GetEnvironmentsLastChangePerCountry extends HttpServlet {
         invariantService = appContext.getBean(IInvariantService.class);
         ceplService = appContext.getBean(ICountryEnvParam_logService.class);
 
-        AnswerList resp = invariantService.readInvariantCountryListEnvironmentLastChanges(system, nbDays);
+        AnswerList resp = invariantService.readCountryListEnvironmentLastChanges(system, nbDays);
 
         JSONArray jsonArray = new JSONArray();
         if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values

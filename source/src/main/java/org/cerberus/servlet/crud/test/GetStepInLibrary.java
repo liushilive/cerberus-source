@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,17 +21,18 @@ package org.cerberus.servlet.crud.test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.TestCaseStep;
+import org.cerberus.crud.service.ITestCaseService;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.log.MyLogger;
 import org.cerberus.crud.service.ITestCaseStepService;
+import org.cerberus.util.ParameterParserUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,6 +48,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "GetStepInLibrary", urlPatterns = {"/GetStepInLibrary"})
 public class GetStepInLibrary extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(GetStepInLibrary.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -59,13 +62,16 @@ public class GetStepInLibrary extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException, CerberusException {
         PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
-        String system = policy.sanitize(request.getParameter("system"));
+//        String system = policy.sanitize(request.getParameter("system"));
+        String system = ParameterParserUtil.parseStringParamAndSanitize(request.getParameter("system"), null);
         String test = policy.sanitize(request.getParameter("test"));
         String testCase = policy.sanitize(request.getParameter("testCase"));
+        String withTestCase = policy.sanitize(request.getParameter("withTestCase"));
 
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
         ITestCaseStepService testCaseStepService = appContext.getBean(ITestCaseStepService.class);
-                 
+        ITestCaseService testCaseService = appContext.getBean(ITestCaseService.class);
+
         JSONArray array = new JSONArray();
         JSONObject jsonObject = new JSONObject();
         try {
@@ -95,7 +101,7 @@ public class GetStepInLibrary extends HttpServlet {
             response.setContentType("application/json");
             response.getWriter().print(jsonObject.toString());
         } catch (JSONException exception) {
-            MyLogger.log(GetTestCaseForTest.class.getName(), Level.WARN, exception.toString());
+            LOG.warn(exception.toString());
         }
     }
 
@@ -114,7 +120,7 @@ public class GetStepInLibrary extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(GetStepInLibrary.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -132,7 +138,7 @@ public class GetStepInLibrary extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(GetStepInLibrary.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

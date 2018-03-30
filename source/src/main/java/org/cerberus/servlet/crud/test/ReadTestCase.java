@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -33,9 +33,9 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
-import org.cerberus.crud.entity.CampaignContent;
-import org.cerberus.engine.entity.MessageEvent;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.cerberus.crud.entity.CampaignParameter;
 import org.cerberus.crud.entity.TestCase;
 import org.cerberus.crud.entity.TestCaseCountry;
 import org.cerberus.crud.entity.TestCaseCountryProperties;
@@ -43,7 +43,6 @@ import org.cerberus.crud.entity.TestCaseLabel;
 import org.cerberus.crud.entity.TestCaseStep;
 import org.cerberus.crud.entity.TestCaseStepAction;
 import org.cerberus.crud.entity.TestCaseStepActionControl;
-import org.cerberus.crud.service.ICampaignContentService;
 import org.cerberus.crud.service.ITestCaseCountryPropertiesService;
 import org.cerberus.crud.service.ITestCaseCountryService;
 import org.cerberus.crud.service.ITestCaseLabelService;
@@ -51,12 +50,8 @@ import org.cerberus.crud.service.ITestCaseService;
 import org.cerberus.crud.service.ITestCaseStepActionControlService;
 import org.cerberus.crud.service.ITestCaseStepActionService;
 import org.cerberus.crud.service.ITestCaseStepService;
-import org.cerberus.crud.service.impl.TestCaseCountryService;
-import org.cerberus.crud.service.impl.TestCaseLabelService;
-import org.cerberus.crud.service.impl.TestCaseService;
-import org.cerberus.crud.service.impl.TestCaseStepActionControlService;
-import org.cerberus.crud.service.impl.TestCaseStepActionService;
-import org.cerberus.crud.service.impl.TestCaseStepService;
+import org.cerberus.crud.service.impl.CampaignParameterService;
+import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.answer.AnswerItem;
@@ -68,8 +63,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
+import org.cerberus.crud.service.ICampaignParameterService;
 
 /**
  * @author cerberus
@@ -83,17 +80,18 @@ public class ReadTestCase extends HttpServlet {
     private ITestCaseStepActionService testCaseStepActionService;
     private ITestCaseStepActionControlService testCaseStepActionControlService;
     private ITestCaseLabelService testCaseLabelService;
+    private ICampaignParameterService campaignParameterService;
 
-    private static final Logger LOG = Logger.getLogger(ReadTestCase.class);
+    private static final Logger LOG = LogManager.getLogger(ReadTestCase.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -123,6 +121,7 @@ public class ReadTestCase extends HttpServlet {
         boolean withStep = ParameterParserUtil.parseBooleanParam(request.getParameter("withStep"), false);
         String columnName = ParameterParserUtil.parseStringParam(request.getParameter("columnName"), "");
 
+        campaignParameterService = appContext.getBean(ICampaignParameterService.class);
         // Global boolean on the servlet that define if the user has permition to edit and delete object.
         boolean userHasPermissions = request.isUserInRole("TestAdmin");
 
@@ -135,10 +134,10 @@ public class ReadTestCase extends HttpServlet {
                 answer = findTestCaseByTestTestCase(test, testCase, appContext, request);
                 jsonResponse = (JSONObject) answer.getItem();
             } else if (!Strings.isNullOrEmpty(test) && testCase != null && withStep) {
-                answer = findTestCaseWithStep(appContext, test, testCase);
+                answer = findTestCaseWithStep(appContext, request, test, testCase);
                 jsonResponse = (JSONObject) answer.getItem();
             } else if (!Strings.isNullOrEmpty(test) && getMaxTC) {
-                testCaseService = appContext.getBean(TestCaseService.class);
+                testCaseService = appContext.getBean(ITestCaseService.class);
                 String max = testCaseService.getMaxNumberTestCase(test);
                 if (max == null) {
                     max = "0";
@@ -146,7 +145,7 @@ public class ReadTestCase extends HttpServlet {
                 jsonResponse.put("maxTestCase", Integer.valueOf(max));
                 answer.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_OK));
             } else if (filter) {
-                answer = findTestCaseByVariousCriteria(appContext, request);
+                answer = findTestCaseByVarious(appContext, request);
                 jsonResponse = (JSONObject) answer.getItem();
             } else if (!Strings.isNullOrEmpty(campaign)) {
                 answer = findTestCaseByCampaign(appContext, campaign);
@@ -166,7 +165,7 @@ public class ReadTestCase extends HttpServlet {
 
             response.getWriter().print(jsonResponse.toString());
         } catch (JSONException e) {
-            org.apache.log4j.Logger.getLogger(ReadTestCase.class.getName()).log(org.apache.log4j.Level.ERROR, null, e);
+            LOG.warn(e);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }
@@ -174,14 +173,13 @@ public class ReadTestCase extends HttpServlet {
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-
     /**
      * Handles the HTTP <code>GET</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -192,10 +190,10 @@ public class ReadTestCase extends HttpServlet {
     /**
      * Handles the HTTP <code>POST</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -217,8 +215,8 @@ public class ReadTestCase extends HttpServlet {
         AnswerItem answer = new AnswerItem();
         JSONObject object = new JSONObject();
 
-        testCaseService = appContext.getBean(TestCaseService.class);
-        testCaseCountryService = appContext.getBean(TestCaseCountryService.class);
+        testCaseService = appContext.getBean(ITestCaseService.class);
+        testCaseCountryService = appContext.getBean(ITestCaseCountryService.class);
         testCaseLabelService = appContext.getBean(ITestCaseLabelService.class);
 
         int startPosition = Integer.valueOf(ParameterParserUtil.parseStringParam(request.getParameter("iDisplayStart"), "0"));
@@ -227,6 +225,8 @@ public class ReadTestCase extends HttpServlet {
         String searchParameter = ParameterParserUtil.parseStringParam(request.getParameter("sSearch"), "");
         String sColumns = ParameterParserUtil.parseStringParam(request.getParameter("sColumns"), "tec.test,tec.testcase,tec.application,project,ticket,description,behaviororvalueexpected,readonly,bugtrackernewurl,deploytype,mavengroupid");
         String columnToSort[] = sColumns.split(",");
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"),"").split(",")));
+
 
         //Get Sorting information
         int numberOfColumnToSort = Integer.parseInt(ParameterParserUtil.parseStringParam(request.getParameter("iSortingCols"), "1"));
@@ -248,7 +248,11 @@ public class ReadTestCase extends HttpServlet {
         for (int a = 0; a < columnToSort.length; a++) {
             if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
                 List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+                if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                }
             }
         }
 
@@ -280,27 +284,22 @@ public class ReadTestCase extends HttpServlet {
             String key = label.getTest() + "_" + label.getTestcase();
 
             if (testCaseWithLabel.containsKey(key)) {
-                JSONObject jo = new JSONObject().put("name", label.getLabel().getLabel()).put("color", label.getLabel().getColor());
+                JSONObject jo = new JSONObject().put("name", label.getLabel().getLabel()).put("color", label.getLabel().getColor()).put("description", label.getLabel().getDescription());
                 testCaseWithLabel.get(key).put(jo);
             } else {
-                JSONObject jo = new JSONObject().put("name", label.getLabel().getLabel()).put("color", label.getLabel().getColor());
+                JSONObject jo = new JSONObject().put("name", label.getLabel().getLabel()).put("color", label.getLabel().getColor()).put("description", label.getLabel().getDescription());
                 testCaseWithLabel.put(key, new JSONArray().put(jo));
             }
         }
 
         JSONArray jsonArray = new JSONArray();
-        boolean isTest = request.isUserInRole("Test");
-        boolean isTestAdmin = request.isUserInRole("TestAdmin");
         if (testCaseList.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
             for (TestCase testCase : (List<TestCase>) testCaseList.getDataList()) {
                 String key = testCase.getTest() + "_" + testCase.getTestCase();
                 JSONObject value = convertToJSONObject(testCase);
-                value.put("hasPermissionsDelete", isTestAdmin);
-                if (testCase.getStatus().equalsIgnoreCase("WORKING")) { // If testcase is WORKING only TestAdmin can update it
-                    value.put("hasPermissionsUpdate", isTestAdmin);
-                } else {
-                    value.put("hasPermissionsUpdate", isTest);
-                }
+                value.put("hasPermissionsDelete", testCaseService.hasPermissionsDelete(testCase, request));
+                value.put("hasPermissionsUpdate", testCaseService.hasPermissionsUpdate(testCase, request));
+                value.put("hasPermissionsCreate", testCaseService.hasPermissionsCreate(testCase, request));
                 value.put("countryList", testCaseWithCountry.get(key));
                 value.put("labels", testCaseWithLabel.get(key));
 
@@ -308,9 +307,9 @@ public class ReadTestCase extends HttpServlet {
             }
         }
 
-        object.put("hasPermissions", isTest);
-        object.put("hasPermissionsCreate", isTest);
-        object.put("hasPermissionsDelete", isTestAdmin);
+//        object.put("hasPermissions", testCaseService.hasPermissions(request));
+        object.put("hasPermissionsCreate", testCaseService.hasPermissionsCreate(null, request));
+
         object.put("contentTable", jsonArray);
         object.put("iTotalRecords", testCaseList.getTotalRows());
         object.put("iTotalDisplayRecords", testCaseList.getTotalRows());
@@ -323,18 +322,15 @@ public class ReadTestCase extends HttpServlet {
     private AnswerItem findTestCaseByTestTestCase(String test, String testCase, ApplicationContext appContext, HttpServletRequest request) throws JSONException {
         AnswerItem item = new AnswerItem();
         JSONObject object = new JSONObject();
-        boolean hasPermissionsUpdate = false;
-        boolean isTest = request.isUserInRole("Test");
-        boolean isTestAdmin = request.isUserInRole("TestAdmin");
 
-        testCaseService = appContext.getBean(TestCaseService.class);
-        testCaseCountryService = appContext.getBean(TestCaseCountryService.class);
-        testCaseLabelService = appContext.getBean(TestCaseLabelService.class);
+        testCaseService = appContext.getBean(ITestCaseService.class);
+        testCaseCountryService = appContext.getBean(ITestCaseCountryService.class);
+        testCaseLabelService = appContext.getBean(ITestCaseLabelService.class);
 
-        //finds the project     
+        //finds the project
         AnswerItem answerTestCase = testCaseService.readByKey(test, testCase);
 
-        if (answerTestCase.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+        if (answerTestCase.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && answerTestCase.getItem() != null) {
             //if the service returns an OK message then we can get the item and convert it to JSONformat
             TestCase tc = (TestCase) answerTestCase.getItem();
             JSONObject response = convertToJSONObject(tc);
@@ -357,13 +353,7 @@ public class ReadTestCase extends HttpServlet {
 
             object.put("contentTable", response);
 
-            // Access right calculation.
-            if (tc.getStatus().equalsIgnoreCase("WORKING")) { // If testcase is WORKING only TestAdmin can update it
-                hasPermissionsUpdate = isTestAdmin;
-            } else {
-                hasPermissionsUpdate = isTest;
-            }
-            object.put("hasPermissionsUpdate", hasPermissionsUpdate);
+            object.put("hasPermissionsUpdate", testCaseService.hasPermissionsUpdate(tc, request));
 
         }
 
@@ -373,7 +363,7 @@ public class ReadTestCase extends HttpServlet {
         return item;
     }
 
-    private AnswerItem findTestCaseByVariousCriteria(ApplicationContext appContext, HttpServletRequest request) throws JSONException {
+    private AnswerItem findTestCaseByVarious(ApplicationContext appContext, HttpServletRequest request) throws JSONException {
         AnswerItem item = new AnswerItem();
         JSONObject object = new JSONObject();
         JSONArray dataArray = new JSONArray();
@@ -389,10 +379,11 @@ public class ReadTestCase extends HttpServlet {
         String[] priority = request.getParameterValues("priority");
         String[] group = request.getParameterValues("group");
         String[] status = request.getParameterValues("status");
+        String[] labelid = request.getParameterValues("labelid");
         int length = ParameterParserUtil.parseIntegerParam(request.getParameter("length"), -1);
 
-        testCaseService = appContext.getBean(TestCaseService.class);
-        AnswerList answer = testCaseService.readByVariousCriteria(test, idProject, app, creator, implementer, system, testBattery, campaign, priority, group, status, length);
+        testCaseService = appContext.getBean(ITestCaseService.class);
+        AnswerList answer = testCaseService.readByVarious(test, idProject, app, creator, implementer, system, campaign, labelid, priority, group, status, length);
 
         if (answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
             for (TestCase tc : (List<TestCase>) answer.getDataList()) {
@@ -411,22 +402,26 @@ public class ReadTestCase extends HttpServlet {
         JSONObject jsonResponse = new JSONObject();
         JSONArray dataArray = new JSONArray();
 
-        ICampaignContentService campaignContentService = appContext.getBean(ICampaignContentService.class);
-        testCaseService = appContext.getBean(TestCaseService.class);
+        String[] campaignList = new String[1];
+        campaignList[0] = campaign;
+        testCaseService = appContext.getBean(ITestCaseService.class);
+        
+        final AnswerItem<Map<String, List<String>>> parsedCampaignParameters = campaignParameterService.parseParametersByCampaign(campaign);
 
-        AnswerList testBatteryAnswer = campaignContentService.readByCampaignByCriteria(campaign, 0, 0, "testbattery", "asc", "", "");
-        List<CampaignContent> testBatteryList = testBatteryAnswer.getDataList();
-        String[] testBattery = new String[testBatteryList.size()];
-
-        for (int index = 0; index < testBatteryList.size(); index++) {
-            testBattery[index] = testBatteryList.get(index).getTestbattery();
+        List<String> countries = parsedCampaignParameters.getItem().get(CampaignParameter.COUNTRY_PARAMETER);
+        
+        AnswerItem<List<TestCase>> resp = null;
+        
+        if(countries !=  null && !countries.isEmpty()) {
+        	resp = testCaseService.findTestCaseByCampaignNameAndCountries(campaign, countries.toArray(new String[countries.size()]));
+        }else {
+        	resp = testCaseService.findTestCaseByCampaignNameAndCountries(campaign, null);            
         }
-
-        AnswerList resp = testCaseService.readByVariousCriteria(null, null, null, null, null, null, testBattery, null, null, null, null, -1);
-
-        if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
-            for (TestCase tc : (List<TestCase>) resp.getDataList()) {
-                dataArray.put(convertToJSONObject(tc));
+        
+        if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
+            for (Object c : resp.getItem()) {
+                TestCase cc = (TestCase) c;
+                dataArray.put(convertToJSONObject(cc));
             }
         }
 
@@ -436,20 +431,20 @@ public class ReadTestCase extends HttpServlet {
         return answer;
     }
 
-    private AnswerItem findTestCaseWithStep(ApplicationContext appContext, String test, String testCase) throws JSONException {
+    private AnswerItem findTestCaseWithStep(ApplicationContext appContext, HttpServletRequest request, String test, String testCase) throws JSONException {
         AnswerItem item = new AnswerItem();
         JSONObject object = new JSONObject();
         HashMap<String, JSONObject> hashProp = new HashMap<String, JSONObject>();
         JSONObject jsonResponse = new JSONObject();
 
-        testCaseService = appContext.getBean(TestCaseService.class);
-        testCaseCountryService = appContext.getBean(TestCaseCountryService.class);
-        testCaseStepService = appContext.getBean(TestCaseStepService.class);
-        testCaseStepActionService = appContext.getBean(TestCaseStepActionService.class);
-        testCaseStepActionControlService = appContext.getBean(TestCaseStepActionControlService.class);
+        testCaseService = appContext.getBean(ITestCaseService.class);
+        testCaseCountryService = appContext.getBean(ITestCaseCountryService.class);
+        testCaseStepService = appContext.getBean(ITestCaseStepService.class);
+        testCaseStepActionService = appContext.getBean(ITestCaseStepActionService.class);
+        testCaseStepActionControlService = appContext.getBean(ITestCaseStepActionControlService.class);
         ITestCaseCountryPropertiesService testCaseCountryPropertiesService = appContext.getBean(ITestCaseCountryPropertiesService.class);
 
-        //finds the project     
+        //finds the testcase     
         AnswerItem answer = testCaseService.readByKey(test, testCase);
 
         AnswerList testCaseCountryList = testCaseCountryService.readByTestTestCase(null, test, testCase);
@@ -462,6 +457,9 @@ public class ReadTestCase extends HttpServlet {
             TestCase tc = (TestCase) answer.getItem();
             object = convertToJSONObject(tc);
             object.put("countryList", new JSONObject());
+            jsonResponse.put("hasPermissionsDelete", testCaseService.hasPermissionsDelete(tc, request));
+            jsonResponse.put("hasPermissionsUpdate", testCaseService.hasPermissionsUpdate(tc, request));
+            jsonResponse.put("hasPermissionsStepLibrary", (request.isUserInRole("TestStepLibrary")));
         }
 
         for (TestCaseCountry country : (List<TestCaseCountry>) testCaseCountryList.getDataList()) {
@@ -471,6 +469,7 @@ public class ReadTestCase extends HttpServlet {
         JSONArray stepList = new JSONArray();
         Gson gson = new Gson();
         for (TestCaseStep step : (List<TestCaseStep>) testCaseStepList.getDataList()) {
+            step = testCaseStepService.modifyTestCaseStepDataFromUsedStep(step);
             JSONObject jsonStep = new JSONObject(gson.toJson(step));
 
             //Fill JSON with step info
@@ -562,7 +561,6 @@ public class ReadTestCase extends HttpServlet {
                         jsonStep.getJSONArray("actionList").put(jsonAction);
                     }
                 }
-
             }
             stepList.put(jsonStep);
         }
@@ -599,18 +597,24 @@ public class ReadTestCase extends HttpServlet {
         AnswerItem answer = new AnswerItem();
         JSONObject object = new JSONObject();
 
-        testCaseService = appContext.getBean(TestCaseService.class);
-        testCaseCountryService = appContext.getBean(TestCaseCountryService.class);
+        testCaseService = appContext.getBean(ITestCaseService.class);
+        testCaseCountryService = appContext.getBean(ITestCaseCountryService.class);
 
         String searchParameter = ParameterParserUtil.parseStringParam(request.getParameter("sSearch"), "");
         String sColumns = ParameterParserUtil.parseStringParam(request.getParameter("sColumns"), "tec.test,tec.testcase,application,project,ticket,description,behaviororvalueexpected,readonly,bugtrackernewurl,deploytype,mavengroupid");
         String columnToSort[] = sColumns.split(",");
 
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
+
         Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
             if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
-                List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+            	List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
+            	if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                } 
             }
         }
 

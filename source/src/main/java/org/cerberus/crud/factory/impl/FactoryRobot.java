@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -33,13 +33,15 @@ import org.springframework.stereotype.Service;
 public class FactoryRobot implements IFactoryRobot {
 
     @Override
-    public Robot create(Integer robotID, String robot, String host, String port, String platform ,
-    String browser, String version, String active, String description, String userAgent) {
-        return create(robotID, robot, host, port, platform, browser, version, active, description, userAgent, new ArrayList<RobotCapability>());
+    public Robot create(Integer robotID, String robot, String host, String port, String platform,
+            String browser, String version, String active, String description, String userAgent, String screenSize, String hostUser, String hostPassword, String robotDecli) {
+        Robot r = create(robotID, robot, host, port, platform, browser, version, active, description, userAgent, screenSize, hostUser, hostPassword, new ArrayList<>(), robotDecli);
+        return r;
     }
 
     @Override
-    public Robot create(Integer robotID, String robot, String host, String port, String platform, String browser, String version, String active, String description, String userAgent, List<RobotCapability> capabilities) {
+    public Robot create(Integer robotID, String robot, String host, String port, String platform, String browser, String version, String active, String description, String userAgent,
+             String screenSize, String hostUser, String hostPassword, List<RobotCapability> capabilities, String robotDecli) {
         Robot newRobot = new Robot();
         newRobot.setRobotID(robotID);
         newRobot.setRobot(robot);
@@ -52,8 +54,11 @@ public class FactoryRobot implements IFactoryRobot {
         newRobot.setDescription(description);
         newRobot.setUserAgent(userAgent);
         newRobot.setCapabilities(capabilities);
+        newRobot.setScreenSize(screenSize);
+        newRobot.setHostUser(hostUser);
+        newRobot.setHostPassword(hostPassword);
+        newRobot.setRobotDecli(robotDecli);
         return newRobot;
     }
 
-    
 }

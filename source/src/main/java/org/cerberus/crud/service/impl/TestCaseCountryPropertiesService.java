@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,7 +22,8 @@ package org.cerberus.crud.service.impl;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.dao.ITestCaseCountryPropertiesDAO;
 import org.cerberus.crud.dao.ITestCaseStepActionDAO;
 import org.cerberus.engine.entity.MessageEvent;
@@ -30,8 +31,8 @@ import org.cerberus.database.DatabaseSpring;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.crud.entity.TestCase;
 import org.cerberus.crud.entity.TestCaseCountryProperties;
+import org.cerberus.crud.service.IParameterService;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.log.MyLogger;
 import org.cerberus.crud.service.ITestCaseCountryPropertiesService;
 import org.cerberus.crud.service.ITestCaseService;
 import org.cerberus.util.answer.Answer;
@@ -55,15 +56,22 @@ public class TestCaseCountryPropertiesService implements ITestCaseCountryPropert
     @Autowired
     ITestCaseService testCaseService;
     @Autowired
+    IParameterService parameterService;
+    @Autowired
     private DatabaseSpring dbmanager;
 
     private final String OBJECT_NAME = "TestCaseCountryProperties";
 
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(CountryEnvironmentDatabaseService.class);
+    private static final Logger LOG = LogManager.getLogger(CountryEnvironmentDatabaseService.class);
 
     @Override
     public List<TestCaseCountryProperties> findListOfPropertyPerTestTestCaseCountry(String test, String testCase, String country) {
         return testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCaseCountry(test, testCase, country);
+    }
+    
+    @Override
+    public List<TestCaseCountryProperties> findOnePropertyPerTestTestCase(String test, String testcase, String oneproperty){
+    	return testCaseCountryPropertiesDAO.findOnePropertyPerTestTestCase(test,testcase,oneproperty);
     }
 
     @Override
@@ -97,7 +105,7 @@ public class TestCaseCountryPropertiesService implements ITestCaseCountryPropert
             try {
                 insertTestCaseCountryProperties(tccp);
             } catch (CerberusException ex) {
-                MyLogger.log(TestCaseStepService.class.getName(), Level.FATAL, ex.toString());
+                LOG.warn(ex.toString());
                 return false;
             }
         }
@@ -128,47 +136,109 @@ public class TestCaseCountryPropertiesService implements ITestCaseCountryPropert
 
     @Override
     public List<TestCaseCountryProperties> findAllWithDependencies(String test, String testcase, String country) throws CerberusException {
-        List<TestCaseCountryProperties> tccpList = new ArrayList();
-        List<TestCaseCountryProperties> tccpListPerCountry = new ArrayList();
-        TestCase mainTC = testCaseService.findTestCaseByKey(test, testcase);
 
-        //find all properties of preTests
-        List<TestCase> tcptList = testCaseService.findTestCaseActiveByCriteria("Pre Testing", mainTC.getApplication(), country);
-        for (TestCase tcase : tcptList) {
-            tccpList.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCase(tcase.getTest(), tcase.getTestCase()));
-            tccpListPerCountry.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCaseCountry(tcase.getTest(), tcase.getTestCase(), country));
-        }
+        if (parameterService.getParameterBooleanByKey("cerberus_property_countrylevelheritage", "", false)) {
 
-        //find all properties of the used step
-        List<TestCase> tcList = testCaseService.findUseTestCaseList(test, testcase);
-        for (TestCase tcase : tcList) {
-            tccpList.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCase(tcase.getTest(), tcase.getTestCase()));
-            tccpListPerCountry.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCaseCountry(tcase.getTest(), tcase.getTestCase(), country));
-        }
+            // Heritage is done at property + country level.
+            List<TestCaseCountryProperties> tccpList = new ArrayList();
+            List<TestCaseCountryProperties> tccpListPerCountry = new ArrayList();
+            TestCase mainTC = testCaseService.findTestCaseByKey(test, testcase);
 
-        //find all properties of the testcase
-        tccpList.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCase(test, testcase));
-        tccpListPerCountry.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCaseCountry(test, testcase, country));
+            //find all properties of preTests
+            List<TestCase> tcptList = testCaseService.findTestCaseActiveByCriteria("Pre Testing", mainTC.getApplication(), country);
+            for (TestCase tcase : tcptList) {
+                tccpList.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCase(tcase.getTest(), tcase.getTestCase()));
+                tccpListPerCountry.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCaseCountry(tcase.getTest(), tcase.getTestCase(), country));
+            }
 
-        //Keep only one property by name
-        //all properties that are defined for the country are included
-        HashMap tccpMap = new HashMap();
-        for (TestCaseCountryProperties tccp : tccpListPerCountry) {
-            tccpMap.put(tccp.getProperty(), tccp);
-        }
-        //These if/else instructions are done because of the way how the propertyService verifies if
-        //the properties exist for the country. 
-        for (TestCaseCountryProperties tccp : tccpList) {
-            TestCaseCountryProperties p = (TestCaseCountryProperties) tccpMap.get(tccp.getProperty());
-            if (p == null) {
-                tccpMap.put(tccp.getProperty(), tccp);
-            } else if (p.getCountry().compareTo(country) != 0 && tccp.getCountry().compareTo(country) == 0) {
+            //find all properties of the used step
+            List<TestCase> tcList = testCaseService.findUseTestCaseList(test, testcase);
+            for (TestCase tcase : tcList) {
+                tccpList.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCase(tcase.getTest(), tcase.getTestCase()));
+                tccpListPerCountry.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCaseCountry(tcase.getTest(), tcase.getTestCase(), country));
+            }
+
+            //find all properties of the testcase
+            tccpList.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCase(test, testcase));
+            tccpListPerCountry.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCaseCountry(test, testcase, country));
+
+            //Keep only one property by name
+            //all properties that are defined for the country are included
+            HashMap tccpMap = new HashMap();
+            for (TestCaseCountryProperties tccp : tccpListPerCountry) {
                 tccpMap.put(tccp.getProperty(), tccp);
             }
-        }
+            //These if/else instructions are done because of the way how the propertyService verifies if
+            //the properties exist for the country. 
+            for (TestCaseCountryProperties tccp : tccpList) {
+                TestCaseCountryProperties p = (TestCaseCountryProperties) tccpMap.get(tccp.getProperty());
+                if (p == null) {
+                    tccpMap.put(tccp.getProperty(), tccp);
+                } else if (p.getCountry().compareTo(country) != 0 && tccp.getCountry().compareTo(country) == 0) {
+                    tccpMap.put(tccp.getProperty(), tccp);
+                }
+            }
 
-        List<TestCaseCountryProperties> result = new ArrayList<TestCaseCountryProperties>(tccpMap.values());
-        return result;
+            List<TestCaseCountryProperties> result = new ArrayList<TestCaseCountryProperties>(tccpMap.values());
+            return result;
+
+        } else {
+
+            // Heritage is done at property + country level.
+            List<TestCaseCountryProperties> tccpList = new ArrayList();
+            TestCase mainTC = testCaseService.findTestCaseByKey(test, testcase);
+
+            /**
+             * We load here all the properties countries from all related
+             * testcases linked with test/testcase The order the load is done is
+             * important as it will define the priority of each property.
+             * properties coming from Pre Testing is the lower prio then, the
+             * property coming from the useStep and then, top priority is the
+             * property on the test + testcase.
+             */
+            //find all properties of preTests
+            List<TestCase> tcptList = testCaseService.findTestCaseActiveByCriteria("Pre Testing", mainTC.getApplication(), country);
+            for (TestCase tcase : tcptList) {
+                tccpList.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCase(tcase.getTest(), tcase.getTestCase()));
+            }
+            //find all properties of the used step
+            List<TestCase> tcList = testCaseService.findUseTestCaseList(test, testcase);
+            for (TestCase tcase : tcList) {
+                tccpList.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCase(tcase.getTest(), tcase.getTestCase()));
+            }
+            //find all properties of the testcase
+            tccpList.addAll(testCaseCountryPropertiesDAO.findListOfPropertyPerTestTestCase(test, testcase));
+
+            /**
+             * We loop here the previous list, keeping by property, the last
+             * value (top priority). That will define the level to consider
+             * property on the test. testcase.
+             */
+            HashMap<String, TestCaseCountryProperties> tccpMap1 = new HashMap<String, TestCaseCountryProperties>();
+            for (TestCaseCountryProperties tccp : tccpList) {
+                tccpMap1.put(tccp.getProperty(), tccp);
+            }
+
+            /**
+             * We then loop again in order to keep the selected properties for
+             * the given country and level found on the previous step by
+             * property.
+             */
+            List<TestCaseCountryProperties> result = new ArrayList<TestCaseCountryProperties>();
+            for (TestCaseCountryProperties tccp : tccpList) {
+                if (tccp.getCountry().equals(country)) {
+                    TestCaseCountryProperties tccp_level = (TestCaseCountryProperties) tccpMap1.get(tccp.getProperty());
+                    if ((tccp_level != null)
+                            && (((tccp.getTest().equals("Pre Testing")) && (tccp_level.getTest().equals("Pre Testing")))
+                            || ((tccp.getTest().equals(test)) && (tccp.getTestCase().equals(testcase)) && (tccp_level.getTest().equals(test)) && (tccp_level.getTestCase().equals(testcase)))
+                            || ((tccp.getTest().equals(tccp_level.getTest())) && (tccp.getTestCase().equals(tccp_level.getTestCase()))))) {
+                        result.add(tccp);
+                    }
+                }
+            }
+
+            return result;
+        }
     }
 
     @Override
@@ -255,10 +325,6 @@ public class TestCaseCountryPropertiesService implements ITestCaseCountryPropert
                 }
             }
         }
-        if (!listToUpdateOrInsert.isEmpty()) {
-            ans = this.createList(listToUpdateOrInsert);
-            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
-        }
 
         /**
          * Iterate on (Object From Database - Object From Page). If Object in
@@ -278,6 +344,12 @@ public class TestCaseCountryPropertiesService implements ITestCaseCountryPropert
         }
         if (!listToDelete.isEmpty()) {
             ans = this.deleteList(listToDelete);
+            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
+        }
+
+        // We insert only at the end (after deletion of all potencial enreg - linked with #1281)
+        if (!listToUpdateOrInsert.isEmpty()) {
+            ans = this.createList(listToUpdateOrInsert);
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
         }
         return finalAnswer;

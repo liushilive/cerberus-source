@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -24,15 +26,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.IUserGroupDAO;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.crud.entity.UserGroup;
 import org.cerberus.crud.entity.User;
 import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.log.MyLogger;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerList;
@@ -83,7 +84,7 @@ public class UserGroupDAO implements IUserGroupDAO {
     /**
      * The associated {@link Logger} to this class
      */
-    private static final Logger LOG = Logger.getLogger(UserSystemDAO.class);
+    private static final Logger LOG = LogManager.getLogger(UserSystemDAO.class);
 
     /**
      * The associated entity name to this DAO
@@ -105,19 +106,19 @@ public class UserGroupDAO implements IUserGroupDAO {
                 int res = preStat.executeUpdate();
                 bool = res > 0;
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                LOG.warn("Unable to execute query : "+exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+            LOG.warn("Unable to execute query : "+exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(TestCaseStepActionControlDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return bool;
@@ -138,19 +139,19 @@ public class UserGroupDAO implements IUserGroupDAO {
                 int res = preStat.executeUpdate();
                 bool = res > 0;
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                LOG.warn("Unable to execute query : "+exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+            LOG.warn("Unable to execute query : "+exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(TestCaseStepActionControlDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return bool;
@@ -175,24 +176,24 @@ public class UserGroupDAO implements IUserGroupDAO {
                         list.add(group);
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                    LOG.warn("Unable to execute query : "+exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+                LOG.warn("Unable to execute query : "+exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
+            LOG.warn("Unable to execute query : "+exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(TestCaseStepActionControlDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return list;
@@ -207,18 +208,21 @@ public class UserGroupDAO implements IUserGroupDAO {
             PreparedStatement preStat = connection.prepareStatement(Query.READ_BY_USER)) {
             // Prepare and execute query
             preStat.setString(1, login);
-            ResultSet resultSet = preStat.executeQuery();
+            try(ResultSet resultSet = preStat.executeQuery();){
+            	List<UserGroup> result = new ArrayList<>();
+                while (resultSet.next()) {
+                    result.add(loadUserGroupFromResultSet(resultSet));
+                }
+                ans.setDataList(result);
 
-            // Parse query
-            List<UserGroup> result = new ArrayList<>();
-            while (resultSet.next()) {
-                result.add(loadUserGroupFromResultSet(resultSet));
-            }
-            ans.setDataList(result);
-
-            // Set the final message
-            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK).resolveDescription("ITEM", OBJECT_NAME)
-                    .resolveDescription("OPERATION", "CREATE");
+                // Set the final message
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK).resolveDescription("ITEM", OBJECT_NAME)
+                        .resolveDescription("OPERATION", "CREATE");
+            }catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+            } 
         } catch (Exception e) {
             LOG.warn("Unable to read UserGroup: " + e.getMessage());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
@@ -226,7 +230,6 @@ public class UserGroupDAO implements IUserGroupDAO {
         } finally {
             ans.setResultMessage(msg);
         }
-
         return ans;
     }
 

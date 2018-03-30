@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -17,7 +19,13 @@
  */
 package org.cerberus.crud.entity;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * @author bcivel
@@ -28,6 +36,10 @@ public class TestCaseStep {
     private String testCase;
     private int step;
     private int sort;
+    private String loop;
+    private String conditionOper;
+    private String conditionVal1;
+    private String conditionVal2;
     private String description;
     private String useStep;  //  Y if the step use a step from another test 
     private String useStepTest; //  The test of the used step
@@ -38,6 +50,16 @@ public class TestCaseStep {
     private boolean isStepInUseByOtherTestCase;
     private int initialStep;
     private TestCase testCaseObj;
+
+    /**
+     * Invariant PROPERTY TYPE String.
+     */
+    public static final String LOOP_ONCEIFCONDITIONTRUE = "onceIfConditionTrue";
+    public static final String LOOP_ONCEIFCONDITIONFALSE = "onceIfConditionFalse";
+    public static final String LOOP_DOWHILECONDITIONTRUE = "doWhileConditionTrue";
+    public static final String LOOP_DOWHILECONDITIONFALSE = "doWhileConditionFalse";
+    public static final String LOOP_WHILECONDITIONTRUEDO = "whileConditionTrueDo";
+    public static final String LOOP_WHILECONDITIONFALSEDO = "whileConditionFalseDo";
 
     public TestCase getTestCaseObj() {
         return testCaseObj;
@@ -62,7 +84,7 @@ public class TestCaseStep {
     public void setInitialStep(int initialStep) {
         this.initialStep = initialStep;
     }
-    
+
     public boolean isIsStepInUseByOtherTestCase() {
         return isStepInUseByOtherTestCase;
     }
@@ -70,7 +92,7 @@ public class TestCaseStep {
     public void setIsStepInUseByOtherTestCase(boolean isStepInUseByOtherTestCase) {
         this.isStepInUseByOtherTestCase = isStepInUseByOtherTestCase;
     }
-    
+
     public String getUseStep() {
         return useStep;
     }
@@ -131,6 +153,38 @@ public class TestCaseStep {
         this.sort = sort;
     }
 
+    public String getLoop() {
+        return loop;
+    }
+
+    public void setLoop(String loop) {
+        this.loop = loop;
+    }
+
+    public String getConditionOper() {
+        return conditionOper;
+    }
+
+    public void setConditionOper(String conditionOper) {
+        this.conditionOper = conditionOper;
+    }
+
+    public String getConditionVal1() {
+        return conditionVal1;
+    }
+
+    public void setConditionVal1(String conditionVal1) {
+        this.conditionVal1 = conditionVal1;
+    }
+
+    public String getConditionVal2() {
+        return conditionVal2;
+    }
+
+    public void setConditionVal2(String conditionVal2) {
+        this.conditionVal2 = conditionVal2;
+    }
+
     public void setStep(int step) {
         this.step = step;
     }
@@ -178,6 +232,10 @@ public class TestCaseStep {
         hash = 29 * hash + (this.testCase != null ? this.testCase.hashCode() : 0);
         hash = 29 * hash + this.step;
         hash = 29 * hash + this.sort;
+        hash = 29 * hash + (this.loop != null ? this.loop.hashCode() : 0);
+        hash = 29 * hash + (this.conditionOper != null ? this.conditionOper.hashCode() : 0);
+        hash = 29 * hash + (this.conditionVal1 != null ? this.conditionVal1.hashCode() : 0);
+        hash = 29 * hash + (this.conditionVal2 != null ? this.conditionVal2.hashCode() : 0);
         hash = 29 * hash + (this.description != null ? this.description.hashCode() : 0);
         hash = 29 * hash + (this.useStep != null ? this.useStep.hashCode() : 0);
         hash = 29 * hash + (this.useStepTest != null ? this.useStepTest.hashCode() : 0);
@@ -207,6 +265,18 @@ public class TestCaseStep {
         if (this.sort != other.sort) {
             return false;
         }
+        if (this.loop != other.loop && (this.loop == null || !this.loop.equals(other.loop))) {
+            return false;
+        }
+        if (this.conditionOper != other.conditionOper && (this.conditionOper == null || !this.conditionOper.equals(other.conditionOper))) {
+            return false;
+        }
+        if (this.conditionVal1 != other.conditionVal1 && (this.conditionVal1 == null || !this.conditionVal1.equals(other.conditionVal1))) {
+            return false;
+        }
+        if (this.conditionVal2 != other.conditionVal2 && (this.conditionVal2 == null || !this.conditionVal2.equals(other.conditionVal2))) {
+            return false;
+        }
         if ((this.description == null) ? (other.description != null) : !this.description.equals(other.description)) {
             return false;
         }
@@ -230,8 +300,39 @@ public class TestCaseStep {
 
     @Override
     public String toString() {
-        return "TestCaseStep{" + "test=" + test + ", testCase=" + testCase + ", step=" + step + ", description=" + description + ", useStep=" + useStep + ", useStepTest=" + useStepTest + ", useStepTestCase=" + useStepTestCase + ", useStepStep=" + useStepStep + ", inLibrary=" + inLibrary +'}';
+        return "TestCaseStep{" + "test=" + test + ", testCase=" + testCase + ", step=" + step + ", description=" + description + ", useStep=" + useStep + ", useStepTest=" + useStepTest + ", useStepTestCase=" + useStepTestCase + ", useStepStep=" + useStepStep + ", inLibrary=" + inLibrary + '}';
     }
-    
-    
+
+    public JSONObject toJson() {
+        JSONObject result = new JSONObject();
+        try {
+            result.put("test", this.getTest());
+            result.put("testcase", this.getTestCase());
+            result.put("step", this.getStep());
+            result.put("sort", this.getSort());
+            result.put("conditionOper", this.getConditionOper());
+            result.put("conditionVal1", this.getConditionVal1());
+            result.put("conditionVal2", this.getConditionVal2());
+            result.put("description", this.getDescription());
+            result.put("useStep", this.getUseStep());
+            result.put("useStepTest", this.getUseStepTest());
+            result.put("useStepTestCase", this.getUseStepTestCase());
+            result.put("useStepStep", this.getUseStepStep());
+            result.put("inLibrary", this.getInLibrary());
+            result.put("initialStep", this.getInitialStep());
+            result.put("loop", this.getLoop());
+            JSONArray array = new JSONArray();
+            if (this.getTestCaseStepAction() != null) {
+                for (Object testCaseStepExecution : this.getTestCaseStepAction()) {
+                    array.put(((TestCaseStepAction) testCaseStepExecution).toJson());
+                }
+            }
+            result.put("testCaseStepActionList", array);
+        } catch (JSONException ex) {
+            Logger LOG = LogManager.getLogger(TestCaseStep.class);
+            LOG.warn(ex);
+        }
+        return result;
+    }
+
 }

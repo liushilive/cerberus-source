@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,6 +21,7 @@ package org.cerberus.crud.service;
 
 import java.util.List;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 
 import org.cerberus.crud.entity.TestCase;
 import org.cerberus.exception.CerberusException;
@@ -49,6 +50,8 @@ public interface ITestCaseService {
 
     List<TestCase> findTestCaseByTestSystem(String test, String system);
 
+    List<TestCase> findTestCaseByApplication(String application);
+
     List<TestCase> findTestCaseActiveByCriteria(String test, String application, String country);
 
     boolean updateTestCaseInformation(TestCase testCase);
@@ -57,14 +60,8 @@ public interface ITestCaseService {
 
     boolean createTestCase(TestCase testCase) throws CerberusException;
 
-    /**
-     * @since 0.9.1
-     */
     List<TestCase> findTestCaseByAllCriteria(TestCase tCase, String text, String system);
 
-    /**
-     * @since 0.9.1
-     */
     List<String> findUniqueDataOfColumn(String column);
 
     /**
@@ -89,35 +86,13 @@ public interface ITestCaseService {
     boolean deleteTestCase(TestCase testCase);
 
     /**
-     * @param name       Key of the table
-     * @param columnName Name of the column
-     * @param value      New value of the columnName
-     */
-    void updateTestCaseField(TestCase tc, String columnName, String value);
-
-    /**
-     * @param tCase
-     * @param system
-     * @return
-     * @since 1.0.2
-     */
-    List<TestCase> findTestCaseByGroupInCriteria(TestCase tCase, String system);
-
-    /**
      * @param campaign the campaign name
-     * @return the list of TCase used in the campaign
-     * @since 1.0.2
-     */
-    List<TestCase> findTestCaseByCampaignName(String campaign);
-
-    /**
-     * @param campaign  the campaign name
      * @param countries arrays of country
      * @return the list of TCase used in the campaign and activated for the
      * countries
      * @since 1.0.2
      */
-    List<TestCase> findTestCaseByCampaignNameAndCountries(String campaign, String[] countries);
+    AnswerItem<List<TestCase>> findTestCaseByCampaignNameAndCountries(String campaign, String[] countries);
 
     public void updateTestCase(TestCase tc) throws CerberusException;
 
@@ -138,8 +113,8 @@ public interface ITestCaseService {
      * Method that get all the testcases that use a determined testdatalib entry
      *
      * @param testDataLibId testdatalib unique identifier
-     * @param name          testdatalib name
-     * @param country       country for which testdatalib is defined
+     * @param name testdatalib name
+     * @param country country for which testdatalib is defined
      * @return an answer with the test cases and a message indicating the status
      * of the operation
      */
@@ -159,7 +134,6 @@ public interface ITestCaseService {
      */
     public AnswerList readByTestByCriteria(String system, String test, int start, int amount, String sortInformation, String searchTerm, Map<String, List<String>> individualSearch);
 
-
     /**
      * @param test
      * @param testCase
@@ -167,14 +141,129 @@ public interface ITestCaseService {
      */
     public AnswerItem readByKey(String test, String testCase);
 
-    public AnswerList readByVariousCriteria(String[] test, String[] idProject, String[] app, String[] creator, String[] implementer, String[] system,
-                                            String[] testBattery, String[] campaign, String[] priority, String[] group, String[] status, int length);
+    /**
+     * @param test
+     * @param testCase
+     * @return
+     */
+    public AnswerItem readByKeyWithDependency(String test, String testCase);
+
+    /**
+     *
+     * @param test
+     * @param idProject
+     * @param app
+     * @param creator
+     * @param implementer
+     * @param system
+     * @param campaign
+     * @param labelid
+     * @param priority
+     * @param group
+     * @param status
+     * @param length
+     * @return
+     */
+    public AnswerList<List<TestCase>> readByVarious(String[] test, String[] idProject, String[] app, String[] creator, String[] implementer, String[] system,
+            String[] campaign, String[] labelid, String[] priority, String[] group, String[] status, int length);
 
     public AnswerList<List<String>> readDistinctValuesByCriteria(String system, String test, String searchParameter, Map<String, List<String>> individualSearch, String columnName);
 
-    public Answer update(TestCase testCase);
+    /**
+     *
+     * @param keyTest
+     * @param keyTestCase
+     * @param testCase
+     * @return
+     */
+    public Answer update(String keyTest, String keyTestCase, TestCase testCase);
 
+    /**
+     *
+     * @param testCase
+     * @return
+     */
     public Answer create(TestCase testCase);
 
+    /**
+     *
+     * @param testCase
+     * @return
+     */
     public Answer delete(TestCase testCase);
+
+    /**
+     *
+     * @param answerItem
+     * @return
+     * @throws CerberusException
+     */
+    TestCase convert(AnswerItem answerItem) throws CerberusException;
+
+    /**
+     *
+     * @param answerList
+     * @return
+     * @throws CerberusException
+     */
+    List<TestCase> convert(AnswerList answerList) throws CerberusException;
+
+    /**
+     *
+     * @param answer
+     * @throws CerberusException
+     */
+    void convert(Answer answer) throws CerberusException;
+
+    /**
+     * This method returns a boolean that define if the object can be access by
+     * user authenticated by request. in case object is null it return if the
+     * user defined by request can globally access any object
+     *
+     * @param testCase
+     * @param request
+     * @return
+     */
+    boolean hasPermissionsRead(TestCase testCase, HttpServletRequest request);
+
+    /**
+     * This method returns a boolean that define if the object can be updated by
+     * user authenticated by request. in case object is null it return if the
+     * user defined by request can globally update any object
+     *
+     * @param testCase
+     * @param request
+     * @return
+     */
+    boolean hasPermissionsUpdate(TestCase testCase, HttpServletRequest request);
+
+    /**
+     * This method returns a boolean that define if the object can be deleted by
+     * user authenticated by request. in case object is null it return if the
+     * user defined by request can globally delete any object
+     *
+     * @param testCase
+     * @param request
+     * @return
+     */
+    boolean hasPermissionsDelete(TestCase testCase, HttpServletRequest request);
+
+    /**
+     * This method returns a boolean that define if the object can be created by
+     * user authenticated by request. in case object is null it return if the
+     * user defined by request can globally create any object
+     *
+     * @param testCase
+     * @param request
+     * @return
+     */
+    public boolean hasPermissionsCreate(TestCase testCase, HttpServletRequest request);
+    
+    /**
+     * 
+     * @param service
+     * @return
+     */
+    public AnswerList findTestCasesThatUseService(String service);
+
 }

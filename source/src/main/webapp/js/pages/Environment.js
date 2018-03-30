@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -179,6 +182,8 @@ function displayPageLabel() {
             + '<br>' + doc.getDocOnline("countryenvironmentparameters", "Var2"));
     $("#var3Header").html(doc.getDocOnline("countryenvironmentparameters", "Var3") 
             + '<br>' + doc.getDocOnline("countryenvironmentparameters", "Var4"));
+    $("#poolSizeHeader").html(doc.getDocOnline("countryenvironmentparameters", "poolSize"));
+
     // Databases List
     $("[name='databaseHeader']").html(doc.getDocOnline("countryenvironmentdatabase", "Database"));
     $("[name='connectionPoolNameHeader']").html(doc.getDocOnline("countryenvironmentdatabase", "ConnectionPoolName"));
@@ -258,7 +263,7 @@ function loadEnvTable(selectCountry, selectEnvironment, selectBuild, selectRevis
 
     var configurations = new TableConfigurationsServerSide("environmentsTable", contentUrl, "contentTable", aoColumnsFunc("environmentsTable"), [3, 'asc']);
 
-    var table = createDataTableWithPermissions(configurations, renderOptionsForEnv, "#environmentList");
+    var table = createDataTableWithPermissions(configurations, renderOptionsForEnv, "#environmentList", undefined, true);
     return table;
 }
 
@@ -321,7 +326,7 @@ function deleteEntryHandlerClick() {
 
         }
         //show message in the main page
-        showMessageMainPage(messageType, data.message);
+        showMessageMainPage(messageType, data.message, false);
         //close confirmation window
         $('#confirmationModal').modal('hide');
     }).fail(handleErrorAjaxAfterTimeout);
@@ -334,7 +339,7 @@ function deleteEntryClick(system, country, environment) {
     messageComplete = messageComplete.replace("%SYSTEM%", system);
     messageComplete = messageComplete.replace("%COUNTRY%", country);
     messageComplete = messageComplete.replace("%ENVIRONMENT%", environment);
-    showModalConfirmation(deleteEntryHandlerClick, doc.getDocLabel("page_environment", "button_delete"), messageComplete, system, country, environment, "");
+    showModalConfirmation(deleteEntryHandlerClick, undefined, doc.getDocLabel("page_environment", "button_delete"), messageComplete, system, country, environment, "");
 }
 
 function addEntryModalSaveHandler() {
@@ -458,7 +463,8 @@ function editEntryModalSaveHandler() {
             application: JSON.stringify(table_application),
             database: JSON.stringify(table_database),
             dependencies: JSON.stringify(table_dependencies),
-            deployType: JSON.stringify(table_deployType)},
+            deployType: JSON.stringify(table_deployType)
+        },
         success: function (data) {
             hideLoaderInModal('#editEnvModal');
             if (getAlertType(data.messageType) === "success") {
@@ -568,7 +574,7 @@ function loadChangeTable(selectSystem, selectCountry, selectEnvironment) {
 
     var configurations = new TableConfigurationsServerSide("lastChangeTable", contentUrl, "contentTable", aoColumnsFuncChange("lastChangeTable"), [0, "desc"]);
 
-    var table = createDataTableWithPermissions(configurations, undefined, "#lastChangeList");
+    var table = createDataTableWithPermissions(configurations, undefined, "#lastChangeList", undefined, true);
     return table;
 }
 
@@ -583,7 +589,7 @@ function loadEventTable(selectSystem, selectCountry, selectEnvironment) {
 
     var configurations = new TableConfigurationsServerSide("lastEventTable", contentUrl, "contentTable", aoColumnsFuncEvent("lastEventTable"), [0, "desc"]);
 
-    var table = createDataTableWithPermissions(configurations, undefined, "#lastEventList");
+    var table = createDataTableWithPermissions(configurations, undefined, "#lastEventList", undefined, true);
     return table;
 }
 
@@ -678,6 +684,7 @@ function appendApplicationRow(app) {
     var variable2 = $("<input  maxlength=\"150\" placeholder=\"-- " + doc.getDocLabel("countryenvironmentparameters", "Var2") + " --\">").addClass("form-control input-sm").val(app.var2);
     var variable3 = $("<input  maxlength=\"150\" placeholder=\"-- " + doc.getDocLabel("countryenvironmentparameters", "Var3") + " --\">").addClass("form-control input-sm").val(app.var3);
     var variable4 = $("<input  maxlength=\"150\" placeholder=\"-- " + doc.getDocLabel("countryenvironmentparameters", "Var4") + " --\">").addClass("form-control input-sm").val(app.var4);
+    var poolSizeInput = $("<input  maxlength=\"150\" placeholder=\"-- " + doc.getDocLabel("countryenvironmentparameters", "poolSize") + " --\">").addClass("form-control input-sm").val(app.poolSize);
     
     var table = $("#applicationTableBody");
 
@@ -688,6 +695,7 @@ function appendApplicationRow(app) {
     var urlName = $("<td></td>").append(urlInput).append(domainInput);
     var vars1 = $("<td></td>").append(variable1).append(variable2);
     var vars2 = $("<td></td>").append(variable3).append(variable4);
+    var poolSize = $("<td></td>").append(poolSizeInput);
     
     deleteBtn.click(function () {
         app.toDelete = (app.toDelete) ? false : true;
@@ -724,12 +732,16 @@ function appendApplicationRow(app) {
     variable4.change(function () {
         app.var4 = $(this).val();
     });
+    poolSizeInput.change(function () {
+        app.poolSize = $(this).val();
+    });
     row.append(deleteBtnRow);
     row.append(application);
     row.append(ipName);
     row.append(urlName);
     row.append(vars1);
     row.append(vars2);
+    row.append(poolSize);
     app.application = selectApplication.prop("value"); // Value that has been requested by dtb parameter may not exist in combo vlaues so we take the real selected value.
     row.data("application", app);
     table.append(row);
@@ -746,6 +758,7 @@ function addNewApplicationRow() {
         var2: "",
         var3: "",
         var4: "",
+        poolSize: "",
         toDelete: false
     };
     appendApplicationRow(newApplication);
@@ -1228,6 +1241,7 @@ function aoColumnsFunc(tableId) {
             "sWidth": "100px",
             "title": doc.getDocOnline("invariant", "ENVIRONMENT")},
         {"data": "description",
+            "like":true,
             "sName": "description",
             "sWidth": "150px",
             "title": doc.getDocOnline("countryenvparam", "Description")},

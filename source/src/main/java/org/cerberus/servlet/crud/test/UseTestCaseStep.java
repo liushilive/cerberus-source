@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,20 +22,19 @@ package org.cerberus.servlet.crud.test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.crud.entity.TestCaseCountryProperties;
 import org.cerberus.crud.entity.TestCaseStep;
 import org.cerberus.crud.entity.TestCaseStepAction;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.crud.factory.IFactoryTestCaseStep;
-import org.cerberus.log.MyLogger;
 import org.cerberus.crud.service.ITestCaseCountryPropertiesService;
 import org.cerberus.crud.service.ITestCaseCountryService;
 import org.cerberus.crud.service.ITestCaseStepActionService;
@@ -52,6 +51,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 public class UseTestCaseStep extends HttpServlet {
 
     private ApplicationContext appContext;
+    private static final Logger LOG = LogManager.getLogger(UseTestCaseStep.class);
 
     @Autowired
     private DatabaseSpring database;
@@ -76,23 +76,27 @@ public class UseTestCaseStep extends HttpServlet {
         String test = request.getParameter("Test");
         String testCase = request.getParameter("TestCase");
         Integer step = Integer.valueOf(request.getParameter("Step"));
+        String loop = request.getParameter("Loop");
+        String conditionOper = request.getParameter("ConditionOper");
+        String conditionVal1 = request.getParameter("ConditionVal1");
+        String conditionVal2 = request.getParameter("ConditionVal2");
         String description = request.getParameter("Description");
         String fromTest = request.getParameter("FromTest");
         String fromTestCase = request.getParameter("FromTestCase");
         Integer fromStep = Integer.valueOf(request.getParameter("FromStep"));
         String importProperty = "N";
         if (request.getParameter("ImportProperty") != null) {
-            MyLogger.log(ImportTestCaseStep.class.getName(), org.apache.log4j.Level.DEBUG, request.getParameter("ImportProperty"));
+            LOG.debug(request.getParameter("ImportProperty"));
             importProperty = request.getParameter("ImportProperty");
         }
 
-        TestCaseStep tcs = testCaseStepFactory.create(test, testCase, step, description, "Y", fromTest, fromTestCase, fromStep, null);
+        TestCaseStep tcs = testCaseStepFactory.create(test, testCase, step, step, loop, conditionOper, conditionVal1, conditionVal2, description, "Y", fromTest, fromTestCase, fromStep, null);
 
         /**
          * Import Step, properties
          */
-        MyLogger.log(ImportTestCaseStep.class.getName(), org.apache.log4j.Level.DEBUG, "Use Step");
-        testCaseStepService.insertTestCaseStep(tcs);
+        LOG.debug("Use Step");
+        testCaseStepService.create(tcs);
         if (importProperty.equalsIgnoreCase("Y")) {
             /**
              * Get List of Country of the origin testcase and the destination
@@ -119,7 +123,7 @@ public class UseTestCaseStep extends HttpServlet {
                 }
             }
 
-            MyLogger.log(ImportTestCaseStep.class.getName(), org.apache.log4j.Level.DEBUG, "Rewrite TestCaseCountryProperties");
+            LOG.debug("Rewrite TestCaseCountryProperties");
             if (tccListString != null) {
                 tccListString.retainAll(tccFromListString);
                 if (tccListString.size() > 0 && propertyNamesOfStep.size() > 0) {
@@ -164,7 +168,7 @@ public class UseTestCaseStep extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ImportTestCaseStep.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -182,7 +186,7 @@ public class UseTestCaseStep extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ImportTestCaseStep.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

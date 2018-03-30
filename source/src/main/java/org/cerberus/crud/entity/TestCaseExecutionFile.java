@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,11 +20,15 @@
 package org.cerberus.crud.entity;
 
 import java.sql.Timestamp;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * @author vertigo
  */
 public class TestCaseExecutionFile {
+
+    private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger(TestCaseExecutionFile.class);
 
     private long id;
     private long exeId;
@@ -35,6 +41,21 @@ public class TestCaseExecutionFile {
     private String usrModif;
     private Timestamp dateModif;
 
+    /**
+     * Invariant PROPERTY TYPE String.
+     */
+    public static final String FILETYPE_XML = "XML";
+    public static final String FILETYPE_TXT = "TXT";
+    public static final String FILETYPE_JSON = "JSON";
+    public static final String FILETYPE_HTML = "HTML";
+    public static final String FILETYPE_JPG = "JPG";
+    public static final String FILETYPE_PNG = "PNG";
+    public static final String FILETYPE_GIF = "GIF";
+    public static final String FILETYPE_JPEG = "JPEG";
+    public static final String FILETYPE_BIN = "BIN";
+    public static final String FILETYPE_PDF = "PDF";
+    
+    
     public long getId() {
         return id;
     }
@@ -115,4 +136,23 @@ public class TestCaseExecutionFile {
         this.dateModif = dateModif;
     }
 
+    public JSONObject toJson() {
+        JSONObject result = new JSONObject();
+        try {
+            result.put("id", this.getId());
+            result.put("level", this.getLevel());
+            result.put("fileDesc", this.getFileDesc());
+            result.put("fileName", this.getFileName());
+            result.put("fileType", this.getFileType());
+        } catch (JSONException ex) {
+            LOG.error(ex.toString());
+        }
+        return result;
+    }
+
+    public String toString() {
+        String result = "";
+        result = this.getFileDesc() + " - " + this.getFileType() + " - " + this.getFileName() + " - " + this.getLevel();
+        return result;
+    }
 }

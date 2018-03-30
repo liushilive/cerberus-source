@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,6 +27,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest; 
 import javax.servlet.http.HttpServletResponse; 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.TestDataLibData;
 import org.cerberus.crud.service.ITestDataLibDataService;  
@@ -34,6 +36,7 @@ import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.util.answer.AnswerItem; 
 import org.cerberus.util.answer.AnswerList; 
 import org.cerberus.util.answer.AnswerUtil;
+import org.cerberus.util.servlet.ServletUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -49,6 +52,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "ReadTestDataLibData", urlPatterns = {"/ReadTestDataLibData"})
 public class ReadTestDataLibData extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(ReadTestDataLibData.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -73,7 +78,9 @@ public class ReadTestDataLibData extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("utf8");
         
-        
+        // Calling Servlet Transversal Util.
+        ServletUtil.servletStart(request);
+
          /**
          * Parsing and securing all required parameters.
          */
@@ -85,7 +92,7 @@ public class ReadTestDataLibData extends HttpServlet {
                 testdatalibid_error = false;
             }
         } catch (NumberFormatException ex) {
-            org.apache.log4j.Logger.getLogger(ReadTestDataLibData.class.getName()).log(org.apache.log4j.Level.WARN, null, ex);
+            LOG.warn(ex);
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Test Data Library Data"));
             msg.setDescription(msg.getDescription().replace("%OPERATION%", "Read by test data lib id"));
@@ -116,7 +123,7 @@ public class ReadTestDataLibData extends HttpServlet {
             response.getWriter().print(jsonResponse.toString());
 
         } catch (JSONException e) {
-            org.apache.log4j.Logger.getLogger(ReadTestDataLibData.class.getName()).log(org.apache.log4j.Level.ERROR, null, e);
+            LOG.warn(e);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }

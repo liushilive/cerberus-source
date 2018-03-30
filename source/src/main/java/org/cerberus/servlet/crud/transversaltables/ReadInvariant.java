@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,10 +27,11 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.entity.Invariant;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.service.IInvariantService;
-import org.cerberus.crud.service.IParameterService;
 import org.cerberus.crud.service.impl.InvariantService;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.exception.CerberusException;
@@ -56,6 +57,8 @@ public class ReadInvariant extends HttpServlet {
 
     private IInvariantService invariantService;
 
+    private static final Logger LOG = LogManager.getLogger("ReadInvariant");
+
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -70,6 +73,8 @@ public class ReadInvariant extends HttpServlet {
         String echo = request.getParameter("sEcho");
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
         PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
+        invariantService = appContext.getBean(InvariantService.class);
+        String charset = request.getCharacterEncoding();
 
         response.setContentType("application/json");
         response.setCharacterEncoding("utf8");
@@ -86,10 +91,10 @@ public class ReadInvariant extends HttpServlet {
             JSONObject jsonResponse = new JSONObject();
             String access = request.getParameter("access");
             if (request.getParameter("idName") == null && access != null) {
-                if(!Strings.isNullOrEmpty(request.getParameter("columnName"))){
+                if (!Strings.isNullOrEmpty(request.getParameter("columnName"))) {
                     answer = findDistinctValuesOfColumn(appContext, request, request.getParameter("columnName"), access);
                     jsonResponse = (JSONObject) answer.getItem();
-                }else {
+                } else {
                     answer = findInvariantList(appContext, access, request, response);
                     jsonResponse = (JSONObject) answer.getItem();
                 }
@@ -99,16 +104,18 @@ public class ReadInvariant extends HttpServlet {
                 answer = findInvariantListByIdName(appContext, access, idName);
                 jsonResponse = (JSONObject) answer.getItem();
             } else {
-                String idName = policy.sanitize(request.getParameter("idName"));
-                String value = policy.sanitize(request.getParameter("value"));
+                String idName = request.getParameter("idName");
+                String value = request.getParameter("value");
                 try {
                     answer = findInvariantListBykey(appContext, idName, value);
-                    jsonResponse.put("invariant",convertInvariantToJSONObject((Invariant)answer.getItem()));
-                }catch(CerberusException e){
+                    JSONObject inv = new JSONObject();
+                    inv = convertInvariantToJSONObject((Invariant) answer.getItem());
+                    inv.put("hasPermissionsUpdate", invariantService.hasPermissionsUpdate((Invariant) answer.getItem(), request));
+                    jsonResponse.put("contentTable", inv);
+                } catch (CerberusException e) {
                     answer = new AnswerItem();
                     MessageEvent msg = new MessageEvent(MessageEventEnum.ACTION_FAILED);
                     answer.setResultMessage(msg);
-                    jsonResponse.put("invariant",convertInvariantToJSONObject((Invariant)answer.getItem()));
                 }
             }
 
@@ -119,7 +126,7 @@ public class ReadInvariant extends HttpServlet {
             response.getWriter().print(jsonResponse.toString());
 
         } catch (JSONException e) {
-            org.apache.log4j.Logger.getLogger(ReadInvariant.class.getName()).log(org.apache.log4j.Level.ERROR, null, e);
+            LOG.warn(e);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }
@@ -169,7 +176,7 @@ public class ReadInvariant extends HttpServlet {
         AnswerItem answer = new AnswerItem();
         JSONObject object = new JSONObject();
 
-        //finds the list of invariants by idname     
+        //finds the list of invariants by idname
         invariantService = appContext.getBean(InvariantService.class);
         answerService = invariantService.readByIdname(idName);
         JSONArray jsonArray = new JSONArray();
@@ -197,7 +204,7 @@ public class ReadInvariant extends HttpServlet {
         //finds the list of invariants by idname
         invariantService = appContext.getBean(InvariantService.class);
 
-        answer.setItem(invariantService.findInvariantByIdValue(idName,value));
+        answer.setItem(invariantService.convert(invariantService.readByKey(idName, value)));
 
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
         msg.setDescription(msg.getDescription().replace("%ITEM%", "Invariant").replace("%OPERATION%", "SELECT"));
@@ -225,20 +232,24 @@ public class ReadInvariant extends HttpServlet {
         String columnName = columnToSort[columnToSortParameter];
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
         AnswerList answerService;
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
 
         Map<String, List<String>> individualSearch = new HashMap<String, List<String>>();
         for (int a = 0; a < columnToSort.length; a++) {
-            if (null!=request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
+            if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
                 List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
-            }
+                if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                }            }
         }
 
-        if("PUBLIC".equals(access)){
+        if ("PUBLIC".equals(access)) {
             answerService = invariantService.readByPublicByCriteria(startPosition, length, columnName, sort, searchParameter, individualSearch);
-        }else if("PRIVATE".equals(access)){
+        } else if ("PRIVATE".equals(access)) {
             answerService = invariantService.readByPrivateByCriteria(startPosition, length, columnName, sort, searchParameter, individualSearch);
-        }else{
+        } else {
             answerService = invariantService.readByCriteria(startPosition, length, columnName, sort, searchParameter, "");
         }
 
@@ -273,18 +284,24 @@ public class ReadInvariant extends HttpServlet {
         String column = ParameterParserUtil.parseStringParam(request.getParameter("columnName"), "");
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
 
-        Map<String, List<String>> individualSearch = new HashMap<String, List<String>>();
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
+
+        Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
-            if (null!=request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
-                List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+            if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
+            	List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
+            	if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                } 
             }
         }
 
         AnswerList applicationList;
-        if("PUBLIC".equals(access)){
+        if ("PUBLIC".equals(access)) {
             applicationList = invariantService.readDistinctValuesByPublicByCriteria(columnName, sort, searchParameter, individualSearch, column);
-        }else{
+        } else {
             applicationList = invariantService.readDistinctValuesByPrivateByCriteria(columnName, sort, searchParameter, individualSearch, column);
         }
 

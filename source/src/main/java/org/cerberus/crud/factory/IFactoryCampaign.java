@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,8 +30,11 @@ public interface IFactoryCampaign {
     /**
      * @param campaignID Technical ID of the Campaign.
      * @param campaign Id name of the Campaign
+     * @param distribList
+     * @param notifyStartTagExecution
+     * @param notifyEndTagExecution
      * @param description Description of the Campaign.
      * @return Campaign Object
      */
-    Campaign create(Integer campaignID, String campaign, String description);
+    Campaign create(Integer campaignID, String campaign, String distribList, String notifyStartTagExecution, String notifyEndTagExecution, String description);
 }

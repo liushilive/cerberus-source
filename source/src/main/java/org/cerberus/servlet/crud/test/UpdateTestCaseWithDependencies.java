@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -28,6 +28,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.UserGroup;
 import org.cerberus.crud.entity.Invariant;
 import org.cerberus.crud.entity.TestCase;
@@ -58,6 +60,7 @@ import org.cerberus.crud.service.impl.TestCaseStepActionControlService;
 import org.cerberus.crud.service.impl.TestCaseStepActionService;
 import org.cerberus.enums.MessageGeneralEnum;
 import org.cerberus.exception.CerberusException;
+import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.answer.AnswerList;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
@@ -69,6 +72,8 @@ import org.cerberus.crud.service.IUserGroupService;
  * @author bcivel
  */
 public class UpdateTestCaseWithDependencies extends HttpServlet {
+
+    private static final Logger LOG = LogManager.getLogger(UpdateTestCaseWithDependencies.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -122,7 +127,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
                 if (groupList.contains("TestAdmin")) {
                     Test newTest = tService.findTestByKey(initialTest);
                     newTest.setTest(tc.getTest());
-                    tService.createTest(newTest);
+                    tService.convert(tService.create(newTest));
                 } else {
                     response.sendError(403, MessageGeneralEnum.GUI_TEST_CREATION_NOT_HAVE_RIGHT.getDescription());
                     return;
@@ -237,6 +242,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
                 }
             }
         }
+
         tccpService.insertListTestCaseCountryProperties(tccpToUpdateOrInsert);
 
         /**
@@ -315,7 +321,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(LogEventService.class);
-        logEventService.createPrivateCalls("/UpdateTestCase", "UPDATE", "Update testcase : ['" + tc.getTest() + "'|'" + tc.getTestCase() + "']", request);
+        logEventService.createForPrivateCalls("/UpdateTestCase", "UPDATE", "Update testcase : ['" + tc.getTest() + "'|'" + tc.getTestCase() + "']", request);
 
         String encodedTest = URLEncoder.encode(tc.getTest(), "UTF-8");
         String encodedTestCase = URLEncoder.encode(tc.getTestCase(), "UTF-8");
@@ -407,6 +413,9 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
         String description = request.getParameter("valueDetail");
         String howTo = request.getParameter("howtoDetail");
         String active = request.getParameter("editTcActive");
+        String conditionOper = request.getParameter("editConditionOper");
+        String conditionVal1 = request.getParameter("editConditionVal1");
+        String conditionVal2 = request.getParameter("editConditionVal2");
         String fromSprint = request.getParameter("editFromBuild");
         String fromRevision = request.getParameter("editFromRev");
         String toSprint = request.getParameter("editToBuild");
@@ -417,9 +426,10 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
         String comment = request.getParameter("editComment");
         String function = request.getParameter("editFunction");
         String userAgent = request.getParameter("editUserAgent");
+        String screenSize = request.getParameter("editScreenSize");
         return testCaseFactory.create(test, testCase, origin, refOrigin, creator, implementer, lastModifier, project, ticket, function, application,
-                runQA, runUAT, runPROD, priority, group, status, shortDescription, description, howTo, active, fromSprint, fromRevision, toSprint,
-                toRevision, null, bugID, targetSprint, targetRevision, comment, userAgent, null, null, null, null);
+                runQA, runUAT, runPROD, priority, group, status, shortDescription, description, howTo, active, conditionOper, conditionVal1, conditionVal2, fromSprint, fromRevision, toSprint,
+                toRevision, null, bugID, targetSprint, targetRevision, comment, userAgent, screenSize, null, null, null, null);
     }
 
     private List<TestCaseCountry> getTestCaseCountryFromParameter(HttpServletRequest request, ApplicationContext appContext, String test, String testCase) {
@@ -470,16 +480,16 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
                 String type = getParameterIfExists(request, "properties_type_" + inc);
                 String value = getParameterIfExists(request, "properties_value1_" + inc);
                 String value2 = getParameterIfExists(request, "properties_value2_" + inc);
-                int length = Integer.valueOf(getParameterIfExists(request, "properties_length_" + inc).equals("") ? "0" : getParameterIfExists(request, "properties_length_" + inc));
-                int rowLimit = Integer.valueOf(getParameterIfExists(request, "properties_rowlimit_" + inc).equals("") ? "0" : getParameterIfExists(request, "properties_rowlimit_" + inc));
-                int retryNb = Integer.valueOf(getParameterIfExists(request, "properties_retrynb_" + inc).equals("") ? "0" : getParameterIfExists(request, "properties_retrynb_" + inc));
-                int retryPeriod = Integer.valueOf(getParameterIfExists(request, "properties_retryperiod_" + inc).equals("") ? "0" : getParameterIfExists(request, "properties_retryperiod_" + inc));
+                String length = ParameterParserUtil.parseStringParam(getParameterIfExists(request, "properties_length_" + inc), "0");
+                int rowLimit = getParameterIfExists(request, "properties_rowlimit_" + inc).equals("") ? 0 : Integer.parseInt(getParameterIfExists(request, "properties_rowlimit_" + inc));
+                int retryNb = getParameterIfExists(request, "properties_retrynb_" + inc).equals("") ? 0 : Integer.parseInt(getParameterIfExists(request, "properties_retrynb_" + inc));
+                int retryPeriod = getParameterIfExists(request, "properties_retryperiod_" + inc).equals("") ? 0 : Integer.parseInt(getParameterIfExists(request, "properties_retryperiod_" + inc));
                 String nature = getParameterIfExists(request, "properties_nature_" + inc);
                 String database = getParameterIfExists(request, "properties_dtb_" + inc);
                 if (countries != null) {
                     for (String country : countries) {
                         if (delete == null && property != null && !property.equals("")) {
-                            testCaseCountryProp.add(testCaseCountryPropertiesFactory.create(test, testCase, country, property, description, type, database, value, value2, length, rowLimit, nature, retryNb, retryPeriod));
+                            testCaseCountryProp.add(testCaseCountryPropertiesFactory.create(test, testCase, country, property, description, type, database, value, value2, length, rowLimit, nature, retryNb, retryPeriod, 0));
                         }
                     }
                 }
@@ -497,20 +507,25 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
             for (String inc : testcase_step_increment) {
                 String delete = getParameterIfExists(request, "step_delete_" + inc);
                 String stepInUse = getParameterIfExists(request, "step_InUseInOtherTestCase_" + inc);
-                int step = Integer.valueOf(getParameterIfExists(request, "step_technical_number_" + inc) == null ? "0" : getParameterIfExists(request, "step_technical_number_" + inc));
-                int sort = Integer.valueOf(getParameterIfExists(request, "step_number_" + inc) == null ? "0" : getParameterIfExists(request, "step_number_" + inc));
-                int initialStep = Integer.valueOf(getParameterIfExists(request, "initial_step_number_" + inc) == null ? "0" : getParameterIfExists(request, "initial_step_number_" + inc));
+                int step = getParameterIfExists(request, "step_technical_number_" + inc) == null ? 0 : Integer.parseInt(getParameterIfExists(request, "step_technical_number_" + inc));
+                int sort = getParameterIfExists(request, "step_number_" + inc) == null ? 0 : Integer.parseInt(getParameterIfExists(request, "step_number_" + inc));
+                int initialStep = getParameterIfExists(request, "initial_step_number_" + inc) == null ? 0 : Integer.parseInt(getParameterIfExists(request, "initial_step_number_" + inc));
+                String loop = getParameterIfExists(request, "step_loop_" + inc);
+                String conditionOper = getParameterIfExists(request, "step_conditionoper_" + inc);
+                String conditionVal1 = getParameterIfExists(request, "step_conditionval1_" + inc);
+                String conditionVal2 = getParameterIfExists(request, "step_conditionval2_" + inc);
+
                 String desc = getParameterIfExists(request, "step_description_" + inc);
                 String useStep = getParameterIfExists(request, "step_useStep_" + inc);
                 String useStepChanged = getParameterIfExists(request, "step_useStepChanged_" + inc);
                 String useStepTest = getParameterIfExists(request, "step_useStepTest_" + inc) == null ? "" : getParameterIfExists(request, "step_useStepTest_" + inc);
                 String useStepTestCase = getParameterIfExists(request, "step_useStepTestCase_" + inc) == null ? "" : getParameterIfExists(request, "step_useStepTestCase_" + inc);
                 String stepValue = getParameterIfExists(request, "step_useStepStep_" + inc);
-                int useStepStep = Integer.valueOf(stepValue == null || stepValue.equals("") ? "-1" : getParameterIfExists(request, "step_useStepStep_" + inc));
+                int useStepStep = stepValue == null || stepValue.equals("") ? -1 : Integer.parseInt(getParameterIfExists(request, "step_useStepStep_" + inc));
                 String inLibrary = getParameterIfExists(request, "step_inLibrary_" + inc);
                 /* If delete, don't add it to the list of steps */
                 if (delete == null) {
-                    TestCaseStep tcStep = testCaseStepFactory.create(test, testCase, step, sort, desc, useStep == null ? "N" : useStep, useStepTest, useStepTestCase, useStepStep, inLibrary == null ? "N" : inLibrary);
+                    TestCaseStep tcStep = testCaseStepFactory.create(test, testCase, step, sort, loop, conditionOper, conditionVal1, conditionVal2, desc, useStep == null ? "N" : useStep, useStepTest, useStepTestCase, useStepStep, inLibrary == null ? "N" : inLibrary);
                     /* Take action and control only if not use step*/
                     if (useStep == null || useStep.equals("N")) {
                         String isToCopySteps = getParameterIfExists(request, "isToCopySteps_" + inc);
@@ -639,18 +654,22 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
         if (stepAction_increment != null) {
             for (String inc : stepAction_increment) {
                 String delete = getParameterIfExists(request, "action_delete_" + stepInc + "_" + inc);
-                int sequence = Integer.valueOf(getParameterIfExists(request, "action_technical_sequence_" + stepInc + "_" + inc) == null ? "0" : getParameterIfExists(request, "action_technical_sequence_" + stepInc + "_" + inc));
-                int sort = Integer.valueOf(getParameterIfExists(request, "action_sequence_" + stepInc + "_" + inc) == null ? "0" : getParameterIfExists(request, "action_sequence_" + stepInc + "_" + inc));
+                int sequence = getParameterIfExists(request, "action_technical_sequence_" + stepInc + "_" + inc) == null ? 0 : Integer.parseInt(getParameterIfExists(request, "action_technical_sequence_" + stepInc + "_" + inc));
+                int sort = getParameterIfExists(request, "action_sequence_" + stepInc + "_" + inc) == null ? 0 : Integer.parseInt(getParameterIfExists(request, "action_sequence_" + stepInc + "_" + inc));
                 String conditionOper = getParameterIfExists(request, "action_conditionoper_" + stepInc + "_" + inc);
-                String conditionVal = getParameterIfExists(request, "action_conditionval_" + stepInc + "_" + inc);
+                String conditionVal1 = getParameterIfExists(request, "action_conditionval1_" + stepInc + "_" + inc);
+                String conditionVal2 = getParameterIfExists(request, "action_conditionval2_" + stepInc + "_" + inc);
                 String action = getParameterIfExists(request, "action_action_" + stepInc + "_" + inc);
-                String object = getParameterIfExists(request, "action_object_" + stepInc + "_" + inc).replaceAll("\"", "\\\"");
+                String object = getParameterIfExists(request, "action_object_" + stepInc + "_" + inc);
+                if(object != null){
+                	object = object.replaceAll("\"", "\\\"");
+                }
                 String property = getParameterIfExists(request, "action_property_" + stepInc + "_" + inc);
                 String forceExeStatus = getParameterIfExists(request, "action_forceexestatus_" + stepInc + "_" + inc);
                 String description = getParameterIfExists(request, "action_description_" + stepInc + "_" + inc);
                 String screenshot = getParameterIfExists(request, "action_screenshot_" + stepInc + "_" + inc);
                 if (delete == null) {
-                    TestCaseStepAction tcsa = testCaseStepActionFactory.create(test, testCase, -1, sequence, sort, conditionOper, conditionVal, action, object, property, forceExeStatus, description, screenshot);
+                    TestCaseStepAction tcsa = testCaseStepActionFactory.create(test, testCase, -1, sequence, sort, conditionOper, conditionVal1, conditionVal2, action, object, property, forceExeStatus, description, screenshot);
                     tcsa.setTestCaseStepActionControl(getTestCaseStepActionControlFromParameter(request, appContext, test, testCase, stepInc, inc));
                     testCaseStepAction.add(tcsa);
                 }
@@ -666,16 +685,23 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
         if (stepActionControl_increment != null) {
             for (String inc : stepActionControl_increment) {
                 String delete = getParameterIfExists(request, "control_delete_" + stepInc + "_" + actionInc + "_" + inc);
-                int controlsequence = Integer.valueOf(getParameterIfExists(request, "control_technical_control_" + stepInc + "_" + actionInc + "_" + inc) == null ? "0" : getParameterIfExists(request, "control_technical_control_" + stepInc + "_" + actionInc + "_" + inc));
-                int sort = Integer.valueOf(getParameterIfExists(request, "control_controlsequence_" + stepInc + "_" + actionInc + "_" + inc) == null ? "0" : getParameterIfExists(request, "control_controlsequence_" + stepInc + "_" + actionInc + "_" + inc));
+                int controlsequence = getParameterIfExists(request, "control_technical_control_" + stepInc + "_" + actionInc + "_" + inc) == null ? 0 : Integer.parseInt(getParameterIfExists(request, "control_technical_control_" + stepInc + "_" + actionInc + "_" + inc));
+                int sort = getParameterIfExists(request, "control_controlsequence_" + stepInc + "_" + actionInc + "_" + inc) == null ? 0 : Integer.parseInt(getParameterIfExists(request, "control_controlsequence_" + stepInc + "_" + actionInc + "_" + inc));
+                String conditionOper = getParameterIfExists(request, "control_conditionoper_" + stepInc + "_" + actionInc + "_" + inc);
+                String conditionVal1 = getParameterIfExists(request, "control_conditionval1_" + stepInc + "_" + actionInc + "_" + inc);
+                conditionVal1 = conditionVal1 != null ? conditionVal1.replaceAll("\"", "\\\"") : null;
+                String conditionVal2 = getParameterIfExists(request, "control_conditionval2_" + stepInc + "_" + actionInc + "_" + inc);
+                conditionVal2 = conditionVal2 != null ? conditionVal2.replaceAll("\"", "\\\"") : null;
                 String control = getParameterIfExists(request, "control_control_" + stepInc + "_" + actionInc + "_" + inc);
-                String value1 = getParameterIfExists(request, "control_value1_" + stepInc + "_" + actionInc + "_" + inc).replaceAll("\"", "\\\"");
-                String value2 = getParameterIfExists(request, "control_value2_" + stepInc + "_" + actionInc + "_" + inc).replaceAll("\"", "\\\"");
+                String value1 = getParameterIfExists(request, "control_value1_" + stepInc + "_" + actionInc + "_" + inc);
+                value1 = value1 != null ? value1.replaceAll("\"", "\\\"") : null;
+                String value2 = getParameterIfExists(request, "control_value2_" + stepInc + "_" + actionInc + "_" + inc);
+                value2 = value2 != null ? value2.replaceAll("\"", "\\\"") : null;
                 String fatal = getParameterIfExists(request, "control_fatal_" + stepInc + "_" + actionInc + "_" + inc);
                 String description = getParameterIfExists(request, "control_description_" + stepInc + "_" + actionInc + "_" + inc);
                 String screenshot = getParameterIfExists(request, "control_screenshot_" + stepInc + "_" + actionInc + "_" + inc);
                 if (delete == null) {
-                    testCaseStepActionControl.add(testCaseStepActionControlFactory.create(test, testCase, -1, -1, controlsequence, sort, control, value1, value2, fatal, description, screenshot));
+                    testCaseStepActionControl.add(testCaseStepActionControlFactory.create(test, testCase, -1, -1, controlsequence, sort, conditionOper, conditionVal1, conditionVal2, control, value1, value2, fatal, description, screenshot));
                 }
             }
         }
@@ -697,7 +723,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            java.util.logging.Logger.getLogger(UpdateTestCaseWithDependencies.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -715,7 +741,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            java.util.logging.Logger.getLogger(UpdateTestCaseWithDependencies.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

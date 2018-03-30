@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,9 +20,6 @@
 package org.cerberus.servlet.integration;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -33,10 +30,7 @@ import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.service.IBuildRevisionBatchService;
 import org.cerberus.crud.service.ICountryEnvParamService;
 import org.cerberus.crud.service.ILogEventService;
-import org.cerberus.crud.service.IParameterService;
 import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.service.email.IEmailGeneration;
-import org.cerberus.service.email.impl.sendMail;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.version.Infos;
 import org.json.JSONException;
@@ -45,6 +39,7 @@ import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
+import org.cerberus.service.email.IEmailService;
 
 /**
  * @author vertigo
@@ -55,6 +50,8 @@ public class NewChain extends HttpServlet {
     private final String OBJECT_NAME = "CountryEnvParam";
     private final String ITEM = "Environment";
     private final String OPERATION = "NewChain";
+
+    private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger("NewChain");
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -87,10 +84,8 @@ public class NewChain extends HttpServlet {
 
         // Init Answer with potencial error from Parsing parameter.
 //        AnswerItem answer = new AnswerItem(msg);
-        String eMailContent = "";
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
-        IEmailGeneration emailService = appContext.getBean(IEmailGeneration.class);
-        IParameterService parameterService = appContext.getBean(IParameterService.class);
+        IEmailService emailService = appContext.getBean(IEmailService.class);
         ICountryEnvParamService countryEnvParamService = appContext.getBean(ICountryEnvParamService.class);
         IBuildRevisionBatchService buildRevisionBatchService = appContext.getBean(IBuildRevisionBatchService.class);
         ILogEventService logEventService = appContext.getBean(ILogEventService.class);
@@ -123,7 +118,7 @@ public class NewChain extends HttpServlet {
 
             // Getting the contryEnvParam based on the parameters.
             answerItem = countryEnvParamService.readByKey(system, country, env);
-            if (!(answerItem.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && answerItem.getItem()!=null)) {
+            if (!(answerItem.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && answerItem.getItem() != null)) {
                 /**
                  * Object could not be found. We stop here and report the error.
                  */
@@ -146,30 +141,13 @@ public class NewChain extends HttpServlet {
                 /**
                  * Email notification.
                  */
-                // Email Calculation.
                 String OutputMessage = "";
-                eMailContent = emailService.EmailGenerationNewChain(system, country, env, chain);
-                String[] eMailContentTable = eMailContent.split("///");
-                String to = eMailContentTable[0];
-                String cc = eMailContentTable[1];
-                String subject = eMailContentTable[2];
-                String body = eMailContentTable[3];
+                MessageEvent me = emailService.generateAndSendNewChainEmail(system, country, env, chain);
 
-                // Search the From, the Host and the Port defined in the parameters
-                String from;
-                String host;
-                int port;
-                try {
-                    from = parameterService.findParameterByKey("integration_smtp_from", system).getValue();
-                    host = parameterService.findParameterByKey("integration_smtp_host", system).getValue();
-                    port = Integer.valueOf(parameterService.findParameterByKey("integration_smtp_port", system).getValue());
-
-                    //Sending the email
-                    sendMail.sendHtmlMail(host, port, body, subject, from, to, cc);
-                } catch (Exception e) {
-                    Logger.getLogger(NewChain.class.getName()).log(Level.SEVERE, Infos.getInstance().getProjectNameAndVersion() + " - Exception catched.", e);
-                    logEventService.createPrivateCalls("/NewChain", "NEWCHAIN", "Warning on registering new event on environment : ['" + system + "','" + country + "','" + env + "'] " + e.getMessage(), request);
-                    OutputMessage = e.getMessage();
+                if (!"OK".equals(me.getMessage().getCodeString())) {
+                    LOG.warn(Infos.getInstance().getProjectNameAndVersion() + " - Exception catched." + me.getMessage().getDescription());
+                    logEventService.createForPrivateCalls("/NewChain", "NEWCHAIN", "Warning on registering new event on environment : ['" + system + "','" + country + "','" + env + "'] " + me.getMessage().getDescription(), request);
+                    OutputMessage = me.getMessage().getDescription();
                 }
 
                 if (OutputMessage.equals("")) {
@@ -212,7 +190,7 @@ public class NewChain extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (JSONException ex) {
-            Logger.getLogger(NewChain.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -230,7 +208,7 @@ public class NewChain extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (JSONException ex) {
-            Logger.getLogger(NewChain.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

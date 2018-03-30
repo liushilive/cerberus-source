@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,13 +20,13 @@
 package org.cerberus.servlet.crud.buildrevisionchange;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.BuildRevisionInvariant;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
@@ -51,6 +53,8 @@ import org.owasp.html.Sanitizers;
 @WebServlet(name = "CreateBuildRevisionInvariant", urlPatterns = {"/CreateBuildRevisionInvariant"})
 public class CreateBuildRevisionInvariant extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(CreateBuildRevisionInvariant.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -141,7 +145,7 @@ public class CreateBuildRevisionInvariant extends HttpServlet {
                  * Object created. Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createPrivateCalls("/CreateBuildRevisionInvariant", "CREATE", "Create BuildRevisionInvariant : ['" + system + "'|'" + level + "'|'" + seq + "']", request);
+                logEventService.createForPrivateCalls("/CreateBuildRevisionInvariant", "CREATE", "Create BuildRevisionInvariant : ['" + system + "'|'" + level + "'|'" + seq + "']", request);
             }
         }
 
@@ -171,9 +175,9 @@ public class CreateBuildRevisionInvariant extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateBuildRevisionInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateBuildRevisionInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -191,9 +195,9 @@ public class CreateBuildRevisionInvariant extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateBuildRevisionInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateBuildRevisionInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

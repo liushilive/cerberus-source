@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,8 +22,8 @@ package org.cerberus.crud.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.dao.ICountryEnvParamDAO;
 import org.cerberus.crud.entity.CountryEnvParam;
 import org.cerberus.crud.entity.CountryEnvironmentParameters;
@@ -50,6 +50,8 @@ import org.cerberus.crud.factory.IFactoryCountryEnvironmentParameters;
 @Service
 public class CountryEnvParamService implements ICountryEnvParamService {
 
+    private static final Logger LOG = LogManager.getLogger(CountryEnvParamService.class);
+    
     @Autowired
     ICountryEnvParamDAO countryEnvParamDao;
     @Autowired
@@ -68,7 +70,7 @@ public class CountryEnvParamService implements ICountryEnvParamService {
     public List<JSONObject> findActiveEnvironmentBySystemCountryApplication(String system, String country, String application) throws CerberusException {
         List<JSONObject> result = new ArrayList();
         CountryEnvParam countryEnvParam = countryEnvParamFactory.create(system, country, true);
-        CountryEnvironmentParameters countryEnvironmentParameters = countryEnvironmentParametersFactory.create(system, country, null, application, null, null, null, null, null, null, null, null);
+        CountryEnvironmentParameters countryEnvironmentParameters = countryEnvironmentParametersFactory.create(system, country, null, application, null, null, null, null, null, null, null, null, CountryEnvironmentParameters.DEFAULT_POOLSIZE);
 
         List<CountryEnvironmentParameters> ceaList = countryEnvironmentParametersService.findCountryEnvironmentParametersByCriteria(countryEnvironmentParameters);
         List<CountryEnvParam> ceList = this.findCountryEnvParamByCriteria(countryEnvParam);
@@ -90,7 +92,7 @@ public class CountryEnvParamService implements ICountryEnvParamService {
                 }
             }
         } catch (JSONException ex) {
-            Logger.getLogger(CountryEnvParamService.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
         return result;
     }

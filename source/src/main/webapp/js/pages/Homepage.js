@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,8 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         displayPageLabel();
 
@@ -27,6 +26,10 @@ $.when($.getScript("js/pages/global/global.js")).then(function () {
         $('body').tooltip({
             selector: '[data-toggle="tooltip"]'
         });
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
 
         $("#tagSettingsModal").on('hidden.bs.modal', modalCloseHandler);
 
@@ -56,6 +59,11 @@ $.when($.getScript("js/pages/global/global.js")).then(function () {
             });
 
             localStorage.setItem("tagList", JSON.stringify(tagList));
+
+            var searchStringTag = $("#searchStringTag").val();
+            localStorage.setItem("tagSearchString", searchStringTag);
+
+
             $("#tagSettingsModal").modal('hide');
             $('#tagExecStatus').empty();
             loadTagExec();
@@ -65,6 +73,7 @@ $.when($.getScript("js/pages/global/global.js")).then(function () {
             stopPropagation(event);
             var tagListForm = $("#tagList");
             var tagList = JSON.parse(localStorage.getItem("tagList"));
+            var tagSearchString = localStorage.getItem("tagSearchString");
 
             if (tagList !== null) {
                 for (var index = 0; index < tagList.length; index++) {
@@ -74,8 +83,8 @@ $.when($.getScript("js/pages/global/global.js")).then(function () {
                                         </div>');
                 }
             }
-
             loadTagFilter();
+            $("#searchStringTag").val(tagSearchString);
 
             $(".removeTag").on('click', function () {
                 $(this).parent().remove();
@@ -94,7 +103,7 @@ $.when($.getScript("js/pages/global/global.js")).then(function () {
             configurations.tableWidth = "550px";
             configurations.showColvis = false;
             if ($('#homePageTable').hasClass('dataTable') === false) {
-                createDataTable(configurations);
+                createDataTableWithPermissions(configurations, undefined, "#applicationPanel");
                 showTitleWhenTextOverflow();
             } else {
                 var oTable = $("#homePageTable").dataTable();
@@ -111,7 +120,16 @@ $.when($.getScript("js/pages/global/global.js")).then(function () {
 
         loadBuildRevTable();
 
+        // Display Changelog;
+        $("#documentationFrame").attr("src", "./documentation/changelog_3.3_en.html");
+        var windowsHeight = $(window).height() + 'px';
+        $('#documentationFrame').css('height', '400px');
+        $("#changelogLabel").html("Changelog 3.3");
+
+        //close all sidebar menu
+        closeEveryNavbarMenu();
     });
+
 });
 
 function displayPageLabel() {
@@ -156,47 +174,13 @@ function readStatus() {
     return result;
 }
 
-function readLastTagExec() {
-    var tagList = [];
-
-    $.ajax({
-        type: "GET",
-        url: "ReadTag",
-        data: {tagNumber: "5"},
-        async: false,
-        dataType: 'json',
-        success: function (data) {
-            tagList = data.contentTable;
-        }
-    });
-    return tagList;
-}
-
 function modalCloseHandler() {
     $("#tagList").empty();
     $("#selectTag").empty();
 }
 
 function loadTagFilter() {
-    var jqxhr = $.get("ReadTag", "", "json");
-
-    $.when(jqxhr).then(function (data) {
-        var messageType = getAlertType(data.messageType);
-
-        if (messageType === "success") {
-            var index;
-            $('#selectTag').append($('<option></option>').attr("value", "")).attr("placeholder", "Select a Tag");
-            for (index = 0; index < data.contentTable.length; index++) {
-                //the character " needs a special encoding in order to avoid breaking the string that creates the html element   
-                var encodedString = data.contentTable[index].replace(/\"/g, "%22");
-                var option = $('<option></option>').attr("value", encodedString).text(data.contentTable[index]);
-                $('#selectTag').append(option);
-            }
-            $('#selectTag').select2();
-        } else {
-            showMessageMainPage(messageType, data.message);
-        }
-    }).fail(handleErrorAjaxAfterTimeout);
+    $("#selectTag").select2(getComboConfigTag());
 }
 
 function generateTagLink(tagName) {
@@ -223,15 +207,16 @@ function generateTooltip(data, statusOrder, tag) {
     return htmlRes;
 }
 
-function generateTagReport(data, tag) {
-    var reportArea = $("#tagExecStatus");
-    var statusOrder = ["OK", "KO", "FA", "NA", "NE", "PE", "CA"];
+function generateTagReport(data, tag, rowId) {
+    var divId = "#tagExecStatusRow" + rowId;
+    var reportArea = $(divId);
+    var statusOrder = ["OK", "KO", "FA", "NA", "NE", "PE", "QU", "CA"];
     var buildBar;
     var tooltip = generateTooltip(data, statusOrder, tag);
     var len = statusOrder.length;
 
-    buildBar = '<div>' + generateTagLink(tag) + '<div class="pull-right" style="display: inline;">Total executions : ' + data.total + '</div>\n\
-                                                        </div><div class="progress" data-toggle="tooltip" data-html="true" title="' + tooltip + '">';
+    buildBar = '<div>' + generateTagLink(tag) + '</div><div class="xs-only" style="display: inline;">Total executions : ' + data.total + '</div>\n\
+                                                        <div class="progress" data-toggle="tooltip" data-html="true" title="' + tooltip + '">';
     for (var index = 0; index < len; index++) {
         var status = statusOrder[index];
 
@@ -249,49 +234,96 @@ function generateTagReport(data, tag) {
 }
 
 function loadTagExec() {
-//Get the last tag to display
+
+    var reportArea = $("#tagExecStatus");
+    reportArea.empty();
+
+    //Get the last tag to display
     var tagList = JSON.parse(localStorage.getItem("tagList"));
+    var searchTag = localStorage.getItem("tagSearchString");
 
     if (tagList === null || tagList.length === 0) {
-        tagList = readLastTagExec();
+        tagList = readLastTagExec(searchTag);
     }
 
     for (var index = 0; index < tagList.length; index++) {
-        var tagName = tagList[index];
-        $.ajax({
-            type: "GET",
-            url: "GetReportData",
-            data: {split: true, Tag: tagName},
-            tag: tagName,
-            async: true,
-            dataType: 'json',
-            success: function (data) {
-                generateTagReport(data.contentTable.total, this.tag);
-            },
-            error: showUnexpectedError
+        var idDiv = '<div id="tagExecStatusRow' + index + '"></div>';
+        reportArea.append(idDiv);
+    }
+
+    for (var index = 0; index < tagList.length; index++) {
+        let : tagName = tagList[index];
+        //TODO find a way to remove the use for resendTag
+        var requestToServlet = "ReadTestCaseExecutionByTag?Tag=" + tagName + "&" + "outputReport=totalStatsCharts" + "&" + "outputReport=resendTag" + "&" + "sEcho=" + index;
+        var jqxhr = $.get(requestToServlet, null, "json");
+
+        $.when(jqxhr).then(function (data) {
+            generateTagReport(data.statsChart.contentTable.total, data.tag, data.sEcho);
         });
     }
+
 }
+
+function readLastTagExec(searchString) {
+    var tagList = [];
+
+    var nbExe = getParameter("cerberus_homepage_nbdisplayedtag", getUser().defaultSystem, true);
+    var paramExe = nbExe.value;
+
+    if (!((paramExe >= 0) && (paramExe <= 20))) {
+        paramExe = 5;
+    }
+
+    var myUrl = "ReadTag?iSortCol_0=0&sSortDir_0=desc&sColumns=id,tag,campaign,description&iDisplayLength=" + paramExe;
+    if (!isEmpty(searchString)) {
+        myUrl = myUrl + "&sSearch=" + searchString;
+    }
+
+    $.ajax({
+        type: "GET",
+        url: myUrl,
+//        data: {tagNumber: nbExe.value},
+        async: false,
+        dataType: 'json',
+        success: function (data) {
+            for (var s = 0; s < data.contentTable.length; s++) {
+                tagList.push(data.contentTable[s].tag);
+            }
+//            tagList = data.contentTable;
+        }
+    });
+    return tagList;
+}
+
+function getCountryFilter() {
+    return $.ajax({url: "FindInvariantByID",
+        data: {idName: "COUNTRY"},
+        async: false,
+        dataType: 'json',
+    });
+}
+
 
 function aoColumnsFunc() {
     var doc = getDoc();
     var status = readStatus();
     var statusLen = status.length;
     var aoColumns = [
-        {"data": "Application", "bSortable": true, "sName": "Application", "title": displayDocLink(doc.application.Application),
+        {"data": "Application", "bSortable": true, "sName": "Application", "title": displayDocLink(doc.application.Application), "sWidth": "50px",
             "mRender": function (data, type, oObj) {
                 var href = "TestCaseList.jsp?application=" + data;
 
                 return "<a href='" + href + "'>" + data + "</a>";
             }
         },
-        {"data": "Total", "bSortable": true, "sName": "Total", "title": "Total"}
+        {"data": "Total", "bSortable": true, "sName": "Total", "title": "Total", "sWidth": "10px"}
     ];
 
     for (var s = 0; s < statusLen; s++) {
         var obj = {
             "data": status[s].value,
             "bSortable": true,
+            "sWidth": "10px",
             "sName": status[s].value,
             "title": status[s].value
         };
@@ -306,9 +338,14 @@ function loadBuildRevTable() {
     selectSystem = "VC";
     var jqxhr = $.getJSON("GetEnvironmentsPerBuildRevision", "system=" + getUser().defaultSystem);
     $.when(jqxhr).then(function (result) {
-        $.each(result["contentTable"], function (idx, obj) {
-            appendBuildRevRow(obj);
-        });
+        if (result["contentTable"].length > 0) {
+            $.each(result["contentTable"], function (idx, obj) {
+                appendBuildRevRow(obj);
+            });
+
+        } else {
+            $("#ReportByStatusPanel").hide();
+        }
     }).fail(handleErrorAjaxAfterTimeout);
 }
 

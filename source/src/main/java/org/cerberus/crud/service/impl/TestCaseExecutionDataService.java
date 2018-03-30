@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,14 +19,19 @@
  */
 package org.cerberus.crud.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import org.cerberus.crud.dao.ITestCaseExecutionDataDAO;
 import org.cerberus.engine.entity.MessageGeneral;
 import org.cerberus.crud.entity.TestCaseExecutionData;
+import org.cerberus.crud.entity.TestCaseExecutionFile;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.crud.service.ITestCaseExecutionDataService;
+import org.cerberus.crud.service.ITestCaseExecutionFileService;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.enums.MessageGeneralEnum;
 import org.cerberus.util.answer.Answer;
@@ -44,6 +49,10 @@ public class TestCaseExecutionDataService implements ITestCaseExecutionDataServi
 
     @Autowired
     ITestCaseExecutionDataDAO testCaseExecutionDataDao;
+    @Autowired
+    ITestCaseExecutionFileService testCaseExecutionFileService;
+
+    private static final Logger LOG = LogManager.getLogger(TestCaseStepActionControlExecutionService.class);
 
     @Override
     public AnswerItem readByKey(long id, String property, int index) {
@@ -56,8 +65,32 @@ public class TestCaseExecutionDataService implements ITestCaseExecutionDataServi
     }
 
     @Override
+    public AnswerItem<TestCaseExecutionData> readLastCacheEntry(String system, String environment, String country, String property, int cacheExpire) {
+        return testCaseExecutionDataDao.readLastCacheEntry(system, environment, country, property, cacheExpire);
+    }
+
+    @Override
     public AnswerList<TestCaseExecutionData> readById(long id) {
         return testCaseExecutionDataDao.readByIdByCriteria(id, 0, 0, "exd.id", "asc", null, null);
+    }
+
+    @Override
+    public AnswerList<TestCaseExecutionData> readByIdWithDependency(long id) {
+        AnswerList data = this.readByIdByCriteria(id, 0, 0, "exd.property", "asc", null, null);
+        AnswerList response = null;
+        List<TestCaseExecutionData> tcsaceList = new ArrayList();
+        for (Object mydata : data.getDataList()) {
+
+            TestCaseExecutionData tcsace = (TestCaseExecutionData) mydata;
+
+            AnswerList files = testCaseExecutionFileService.readByVarious(id, tcsace.getProperty() + "-" + tcsace.getIndex());
+            tcsace.setFileList((List<TestCaseExecutionFile>) files.getDataList());
+
+            tcsaceList.add(tcsace);
+        }
+        response = new AnswerList(tcsaceList, data.getTotalRows());
+        return response;
+
     }
 
     @Override

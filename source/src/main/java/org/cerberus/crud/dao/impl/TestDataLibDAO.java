@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,19 +20,25 @@
 package org.cerberus.crud.dao.impl;
 
 import com.google.common.base.Strings;
+
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.ITestDataLibDAO;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
+import org.cerberus.crud.entity.Parameter;
 import org.cerberus.crud.entity.TestDataLib;
 import org.cerberus.crud.factory.IFactoryTestDataLib;
 import org.cerberus.util.ParameterParserUtil;
@@ -41,6 +49,7 @@ import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+import org.cerberus.crud.service.IParameterService;
 
 /**
  *
@@ -54,8 +63,10 @@ public class TestDataLibDAO implements ITestDataLibDAO {
     private DatabaseSpring databaseSpring;
     @Autowired
     private IFactoryTestDataLib factoryTestDataLib;
+    @Autowired
+    private IParameterService parameterService;
 
-    private static final Logger LOG = Logger.getLogger(TestDataLibDAO.class);
+    private static final Logger LOG = LogManager.getLogger(TestDataLibDAO.class);
 
     private final String OBJECT_NAME = "Test Data Library";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -211,18 +222,79 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         return answer;
     }
 
+    private static void deleteFolder(File folder, boolean deleteit) {
+        File[] files = folder.listFiles();
+        if (files != null) { //some JVMs return null for empty dirs
+            for (File f : files) {
+                if (f.isDirectory()) {
+                    deleteFolder(f, true);
+                } else {
+                    f.delete();
+                }
+            }
+        }
+        if (deleteit) {
+            folder.delete();
+        }
+    }
+
     @Override
-    public AnswerList readNameListByName(String testDataLibName, int limit) {
+    public Answer uploadFile(int id, FileItem file) {
+        MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
+                "cerberus_testdatalibcsv_path Parameter not found");
+        AnswerItem a = parameterService.readByKey("", "cerberus_testdatalibcsv_path");
+        if (a.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+            Parameter p = (Parameter) a.getItem();
+            String uploadPath = p.getValue();
+            File appDir = new File(uploadPath + File.separator + id);
+            if (!appDir.exists()) {
+                try {
+                    appDir.mkdirs();
+                } catch (SecurityException se) {
+                    LOG.warn("Unable to create testdatalib csv dir: " + se.getMessage());
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
+                            se.toString());
+                    a.setResultMessage(msg);
+                }
+            }
+            if (a.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+                deleteFolder(appDir, false);
+                File picture = new File(uploadPath + File.separator + id + File.separator + file.getName());
+                try {
+                    file.write(picture);
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK).resolveDescription("DESCRIPTION",
+                            "TestDataLib CSV file uploaded");
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", "testDatalib CSV").replace("%OPERATION%", "Upload"));
+                } catch (Exception e) {
+                    LOG.warn("Unable to upload testdatalib csv file: " + e.getMessage());
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
+                            e.toString());
+                }
+            }
+        } else {
+            LOG.warn("cerberus_testdatalibCSV_path Parameter not found");
+        }
+        a.setResultMessage(msg);
+        return a;
+    }
+
+    @Override
+    public AnswerList readNameListByName(String testDataLibName, int limit, boolean like) {
         AnswerList answer = new AnswerList();
         MessageEvent msg;
-        List<String> namesList = new ArrayList<String>();
+        List<TestDataLib> list = new ArrayList<TestDataLib>();
 
         StringBuilder query = new StringBuilder();
-        query.append("SELECT distinct(`name`) ")
-                .append("FROM testdatalib tdl ")
-                .append(" WHERE `name` like ? ")
-                .append(" order by `name`  ")
-                .append(" limit ? ");
+
+        query.append("SELECT * ")
+                .append("FROM testdatalib tdl ");
+        if (like) {
+            query.append(" WHERE `name` like  ? ");
+
+        } else {
+            query.append(" WHERE `name` =  ? ");
+        }
+        query.append(" limit ? ");
 
         if ((limit <= 0) || (limit >= MAX_ROW_SELECTED)) {
             limit = MAX_ROW_SELECTED;
@@ -236,18 +308,22 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         Connection connection = this.databaseSpring.connect();
         try {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
-            preStat.setString(1, "%" + testDataLibName + "%");
+            if (like) {
+                preStat.setString(1, "%" + testDataLibName + "%");
+            } else {
+                preStat.setString(1, testDataLibName);
+            }
+
             preStat.setInt(2, limit);
             try {
                 ResultSet resultSet = preStat.executeQuery();
                 try {
 
                     while (resultSet.next()) {
-                        String name = resultSet.getString("tdl.Name");
-                        namesList.add(name);
+                        list.add(this.loadFromResultSet(resultSet));
                     }
 
-                    if (namesList.isEmpty()) {
+                    if (list.isEmpty()) {
                         msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
                     } else {
                         msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -258,7 +334,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
                     LOG.error("Unable to execute query : " + exception.toString());
                     msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
                     msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-                    namesList.clear();
+                    list.clear();
                 } finally {
                     if (resultSet != null) {
                         resultSet.close();
@@ -291,8 +367,8 @@ public class TestDataLibDAO implements ITestDataLibDAO {
             }
         }
 
-        answer.setDataList(namesList);
-        answer.setTotalRows(namesList.size());
+        answer.setDataList(list);
+        answer.setTotalRows(list.size());
         answer.setResultMessage(msg);
         return answer;
     }
@@ -394,6 +470,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
             searchSQL.append(" or tdl.`database` like ?");
             searchSQL.append(" or tdl.`databaseUrl` like ?");
             searchSQL.append(" or tdl.`script` like ?");
+            searchSQL.append(" or tdl.`service` like ?");
             searchSQL.append(" or tdl.`servicepath` like ?");
             searchSQL.append(" or tdl.`method` like ?");
             searchSQL.append(" or tdl.`envelope` like ?");
@@ -457,6 +534,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
             try {
                 int i = 1;
                 if (!StringUtil.isNullOrEmpty(searchTerm)) {
+                    preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
@@ -629,14 +707,19 @@ public class TestDataLibDAO implements ITestDataLibDAO {
     }
 
     @Override
-    public Answer create(TestDataLib testDataLib) {
+    public AnswerItem create(TestDataLib testDataLib) {
         MessageEvent msg;
-        Answer answer = new AnswerItem();
+        AnswerItem answer = new AnswerItem();
         StringBuilder query = new StringBuilder();
         TestDataLib createdTestDataLib;
-        query.append("INSERT INTO testdatalib (`name`, `system`, `environment`, `country`, `group`, `type`, `database`, "
-                + "`script`, `databaseUrl`, `servicePath`, `method`, `envelope`, `databaseCsv`, `csvUrl`,`separator`, `description`, `creator`) ");
-        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        query.append("INSERT INTO testdatalib (`name`, `system`, `environment`, `country`, `group`, `type`, `database`, `script`, `databaseUrl`, ");
+        query.append("`service`, `servicePath`, `method`, `envelope`, `databaseCsv`, `csvUrl`,`separator`, `description`, `creator`) ");
+        if ((testDataLib.getService() != null) && (!testDataLib.getService().equals(""))) {
+            query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        } else {
+            query.append("VALUES (?,?,?,?,?,?,?,?,?,null,?,?,?,?,?,?,?,?)");
+
+        }
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -648,23 +731,27 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         try {
             PreparedStatement preStat = connection.prepareStatement(query.toString(), PreparedStatement.RETURN_GENERATED_KEYS);
             try {
-                preStat.setString(1, testDataLib.getName());
-                preStat.setString(2, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getSystem()));
-                preStat.setString(3, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getEnvironment()));
-                preStat.setString(4, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getCountry()));
-                preStat.setString(5, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getGroup()));
-                preStat.setString(6, testDataLib.getType());
-                preStat.setString(7, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDatabase()));
-                preStat.setString(8, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getScript()));
-                preStat.setString(9, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDatabaseUrl()));
-                preStat.setString(10, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getServicePath()));
-                preStat.setString(11, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getMethod()));
-                preStat.setString(12, testDataLib.getEnvelope()); //is the one that allows null values
-                preStat.setString(13, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDatabaseCsv()));
-                preStat.setString(14, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getCsvUrl()));
-                preStat.setString(15, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getSeparator()));
-                preStat.setString(16, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDescription()));
-                preStat.setString(17, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getCreator()));
+                int i = 1;
+                preStat.setString(i++, testDataLib.getName());
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getSystem()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getEnvironment()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getCountry()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getGroup()));
+                preStat.setString(i++, testDataLib.getType());
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDatabase()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getScript()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDatabaseUrl()));
+                if ((testDataLib.getService() != null) && (!testDataLib.getService().equals(""))) {
+                    preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getService()));
+                }
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getServicePath()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getMethod()));
+                preStat.setString(i++, testDataLib.getEnvelope()); //is the one that allows null values
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDatabaseCsv()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getCsvUrl()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getSeparator()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDescription()));
+                preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getCreator()));
 
                 preStat.executeUpdate();
 
@@ -676,6 +763,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
                         if (LOG.isDebugEnabled()) {
                             LOG.debug("SQL.result.TestDataLibID : " + testDataLib.getTestDataLibID());
                         }
+                        answer.setItem(testDataLib);
                     }
                     msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
                     msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "INSERT"));
@@ -779,37 +867,48 @@ public class TestDataLibDAO implements ITestDataLibDAO {
     public Answer update(TestDataLib testDataLib) {
         Answer answer = new Answer();
         MessageEvent msg;
-        String query = "UPDATE testdatalib SET `type`=?, `group`= ?, `system`=?, `environment`=?, `country`=?, `database`= ? , `script`= ? , "
-                + "`databaseUrl`= ? , `servicepath`= ? , `method`= ? , `envelope`= ? , `DatabaseCsv` = ? , `csvUrl` = ? ,`separator`= ?,  `description`= ? , `LastModifier`= ?, `LastModified` = NOW() WHERE "
-                + "`TestDataLibID`= ?";
+        String query = "UPDATE testdatalib SET `name`=?, `type`=?, `group`= ?, `system`=?, `environment`=?, `country`=?, `database`= ? , `script`= ? , "
+                + "`databaseUrl`= ? , `servicepath`= ? , `method`= ? , `envelope`= ? , `DatabaseCsv` = ? , `csvUrl` = ? ,`separator`= ?,  `description`= ? , `LastModifier`= ?, `LastModified` = NOW() ";
+        if ((testDataLib.getService() != null) && (!testDataLib.getService().equals(""))) {
+            query += " ,`service` = ? ";
+        } else {
+            query += " ,`service` = null ";
+        }
+        query += "WHERE `TestDataLibID`= ?";
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query);
+            LOG.debug("SQL.param.service : " + testDataLib.getService());
+            LOG.debug("SQL.param.servicePath : " + testDataLib.getServicePath());
         }
 
         Connection connection = this.databaseSpring.connect();
         try {
             PreparedStatement preStat = connection.prepareStatement(query);
             try {
-                //name is not editable
-                preStat.setString(1, testDataLib.getType());
-                preStat.setString(2, testDataLib.getGroup());
-                preStat.setString(3, testDataLib.getSystem());
-                preStat.setString(4, testDataLib.getEnvironment());
-                preStat.setString(5, testDataLib.getCountry());
-                preStat.setString(6, testDataLib.getDatabase());
-                preStat.setString(7, testDataLib.getScript());
-                preStat.setString(8, testDataLib.getDatabaseUrl());
-                preStat.setString(9, testDataLib.getServicePath());
-                preStat.setString(10, testDataLib.getMethod());
-                preStat.setString(11, testDataLib.getEnvelope());
-                preStat.setString(12, testDataLib.getDatabaseCsv());
-                preStat.setString(13, testDataLib.getCsvUrl());
-                preStat.setString(14, testDataLib.getSeparator());
-                preStat.setString(15, testDataLib.getDescription());
-                preStat.setString(16, testDataLib.getLastModifier());
-                preStat.setInt(17, testDataLib.getTestDataLibID());
+                int i = 1;
+                preStat.setString(i++, testDataLib.getName());
+                preStat.setString(i++, testDataLib.getType());
+                preStat.setString(i++, testDataLib.getGroup());
+                preStat.setString(i++, testDataLib.getSystem());
+                preStat.setString(i++, testDataLib.getEnvironment());
+                preStat.setString(i++, testDataLib.getCountry());
+                preStat.setString(i++, testDataLib.getDatabase());
+                preStat.setString(i++, testDataLib.getScript());
+                preStat.setString(i++, testDataLib.getDatabaseUrl());
+                preStat.setString(i++, testDataLib.getServicePath());
+                preStat.setString(i++, testDataLib.getMethod());
+                preStat.setString(i++, testDataLib.getEnvelope());
+                preStat.setString(i++, testDataLib.getDatabaseCsv());
+                preStat.setString(i++, testDataLib.getCsvUrl());
+                preStat.setString(i++, testDataLib.getSeparator());
+                preStat.setString(i++, testDataLib.getDescription());
+                preStat.setString(i++, testDataLib.getLastModifier());
+                if ((testDataLib.getService() != null) && (!testDataLib.getService().equals(""))) {
+                    preStat.setString(i++, testDataLib.getService());
+                }
+                preStat.setInt(i++, testDataLib.getTestDataLibID());
 
                 int rowsUpdated = preStat.executeUpdate();
 
@@ -863,6 +962,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         String database = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.database"));
         String script = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.script"));
         String databaseUrl = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.databaseUrl"));
+        String service = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.service"));
         String servicePath = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.servicePath"));
         String method = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.method"));
         String envelope = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.envelope"));
@@ -887,7 +987,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
             LOG.warn(ex.toString());
         }
 
-        return factoryTestDataLib.create(testDataLibID, name, system, environment, country, group, type, database, script, databaseUrl, servicePath,
+        return factoryTestDataLib.create(testDataLibID, name, system, environment, country, group, type, database, script, databaseUrl, service, servicePath,
                 method, envelope, databaseCsv, csvUrl, separator, description, creator, created, lastModifier, lastModified, subDataValue, subDataColumn, subDataParsingAnswer, subDataColumnPosition);
     }
 
@@ -943,7 +1043,8 @@ public class TestDataLibDAO implements ITestDataLibDAO {
             LOG.debug("SQL : " + query.toString());
         }
         try (Connection connection = databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+                PreparedStatement preStat = connection.prepareStatement(query.toString());
+        		Statement stm = connection.createStatement();) {
 
             int i = 1;
             if (!Strings.isNullOrEmpty(searchTerm)) {
@@ -967,33 +1068,38 @@ public class TestDataLibDAO implements ITestDataLibDAO {
                 preStat.setString(i++, individualColumnSearchValue);
             }
 
-            ResultSet resultSet = preStat.executeQuery();
+            try(ResultSet resultSet = preStat.executeQuery();
+            		ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");){
+            	//gets the data
+                while (resultSet.next()) {
+                    distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
+                }
 
-            //gets the data
-            while (resultSet.next()) {
-                distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
-            }
+                //get the total number of rows
+                
+                int nrTotalRows = 0;
 
-            //get the total number of rows
-            resultSet = preStat.executeQuery("SELECT FOUND_ROWS()");
-            int nrTotalRows = 0;
+                if (rowSet != null && rowSet.next()) {
+                    nrTotalRows = rowSet.getInt(1);
+                }
 
-            if (resultSet != null && resultSet.next()) {
-                nrTotalRows = resultSet.getInt(1);
-            }
-
-            if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
-                LOG.error("Partial Result in the query.");
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else if (distinctValues.size() <= 0) {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                answer = new AnswerList(distinctValues, nrTotalRows);
+                if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
+                    LOG.error("Partial Result in the query.");
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else if (distinctValues.size() <= 0) {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                }
+            }catch (SQLException e) {
+                LOG.warn("Unable to execute query : " + e.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
+                        e.toString());
             }
         } catch (Exception e) {
             LOG.warn("Unable to execute query : " + e.toString());

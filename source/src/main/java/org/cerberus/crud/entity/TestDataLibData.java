@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -110,6 +112,9 @@ public class TestDataLibData {
         }
         if ((this.subData == null) ? (other.subData != null) : !this.subData.equals(other.subData)) {
             return false;
+        }
+        if((this.testDataLibDataID == null ) ? (other.testDataLibDataID != null) : !this.testDataLibDataID.equals(other.testDataLibDataID)) {
+        	return false;
         }
         return true;
     }

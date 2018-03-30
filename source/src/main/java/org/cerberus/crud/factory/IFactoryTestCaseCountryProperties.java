@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,7 +27,26 @@ import org.cerberus.crud.entity.TestCaseCountryProperties;
  */
 public interface IFactoryTestCaseCountryProperties {
 
+    /**
+     *
+     * @param test
+     * @param testCase
+     * @param country
+     * @param property
+     * @param description
+     * @param type
+     * @param database
+     * @param value1
+     * @param value2
+     * @param length
+     * @param rowLimit
+     * @param nature
+     * @param retryNb
+     * @param retryPeriod
+     * @param cacheExpire
+     * @return
+     */
     TestCaseCountryProperties create(String test, String testCase, String country, String property, String description,
-            String type, String database, String value1, String value2, int length, int rowLimit, String nature, int retryNb, int retryPeriod);
+            String type, String database, String value1, String value2, String length, int rowLimit, String nature, int retryNb, int retryPeriod, int cacheExpire);
 
 }

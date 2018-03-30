@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -37,7 +40,6 @@ function displayPageLabel() {
 
     displayFooter(doc);
 }
-
 
 function feedContent() {
 
@@ -64,6 +66,27 @@ function feedContent() {
         var cel1 = $("<td></td>").append(data.javaVersion);
         row.append(cel1);
         table.append(row);
+
+        var table = $("#appjvmTableBody");
+        table.empty();
+        var row = $("<tr></tr>");
+        var cel1 = $("<td></td>").append(data.applicationServerInfo);
+        row.append(cel1);
+        table.append(row);
+
+        var table = $("#jvmMemTableBody");
+        table.empty();
+        var row = $("<tr></tr>");
+        var cel1 = $("<td></td>").append(data.javaTotalMemory);
+        var cel2 = $("<td></td>").append(data.javaUsedMemory);
+        var cel3 = $("<td></td>").append(data.javaFreeMemory);
+        var cel4 = $("<td></td>").append(data.javaMaxMemory);
+        row.append(cel1);
+        row.append(cel2);
+        row.append(cel3);
+        row.append(cel4);
+        table.append(row);
+
 
         var table = $("#sessionNbTableBody");
         table.empty();
@@ -102,7 +125,7 @@ function feedContent() {
             row.append(cel1);
             var cel1 = $("<td></td>").append(obj.test);
             row.append(cel1);
-            var cel1 = $("<td></td>").append("<a href='TestCase.jsp?Test=" + obj.test + "&TestCase=" + obj.testcase + "'>" + obj.testcase + "</a>");
+            var cel1 = $("<td></td>").append("<a href='TestCaseScript.jsp?test=" + obj.test + "&testcase=" + obj.testcase + "'>" + obj.testcase + "</a>");
             row.append(cel1);
             var cel1 = $("<td></td>").append(obj.environment);
             row.append(cel1);
@@ -114,15 +137,6 @@ function feedContent() {
             row.append(cel1);
             table.append(row);
         });
-
-        var table = $("#threadTableBody");
-        table.empty();
-        var row = $("<tr></tr>");
-        var cel1 = $("<td></td>").append(data.queue_in_execution + " / " + data.size_queue);
-        var cel2 = $("<td></td>").append(data.number_of_thread);
-        row.append(cel1);
-        row.append(cel2);
-        table.append(row);
 
         var table = $("#databaseTableBody");
         table.empty();
@@ -162,12 +176,11 @@ function feedContent() {
 
 }
 
-
 function FormatedExeId(id) {
     if (id === 0) {
         return id
     } else {
-        return "<a href='ExecutionDetail.jsp?id_tc=" + id + "'>" + id + "</a>";
+        return "<a href='TestCaseExecution.jsp?executionId=" + id + "'>" + id + "</a>";
     }
 }
 
@@ -177,10 +190,4 @@ function FormatedTag(tag) {
     } else {
         return "<a href='ReportingExecutionByTag.jsp?Tag=" + tag + "'>" + tag + "</a>";
     }
-}
-
-function resetThreadPool() {
-    $.get('ExecutionThreadReset', function (data) {
-        alert('Thread Pool Cleaned');
-    });
 }

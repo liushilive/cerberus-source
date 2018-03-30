@@ -1,4 +1,5 @@
-/*
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -16,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.cerberus.servlet.crud.test;
 
 import java.io.IOException;
@@ -83,7 +83,7 @@ public class ExportListTestCase extends HttpServlet {
         String creator = this.getValue(req, "ScCreator");
         String application = this.getValue(req, "ScApplication");
         int priority = -1;
-        if (req.getParameter("ScPriority") != null && !req.getParameter("ScPriority").equalsIgnoreCase("All") && StringUtil.isNumeric(req.getParameter("ScPriority"))) {
+        if (req.getParameter("ScPriority") != null && !req.getParameter("ScPriority").equalsIgnoreCase("All") && StringUtil.isInteger(req.getParameter("ScPriority"))) {
             priority = Integer.parseInt(req.getParameter("ScPriority"));
         }
         String status = this.getValue(req, "ScStatus");
@@ -92,6 +92,9 @@ public class ExportListTestCase extends HttpServlet {
         String qa = this.getValue(req, "ScQA");
         String uat = this.getValue(req, "ScUAT");
         String active = this.getValue(req, "ScActive");
+        String conditionOper = this.getValue(req, "ScConditionOper");
+        String conditionVal1 = this.getValue(req, "ScConditionVal1");
+        String conditionVal2 = this.getValue(req, "ScConditionVal2");
         String fBuild = this.getValue(req, "ScFBuild");
         String fRev = this.getValue(req, "ScFRev");
         String tBuild = this.getValue(req, "ScTBuild");
@@ -102,7 +105,7 @@ public class ExportListTestCase extends HttpServlet {
 
         IFactoryTestCase factoryTCase = new FactoryTestCase();
         return factoryTCase.create(test, testCase, origine, null, creator, null, null, project, ticket,function, application, qa, uat, prod, priority, group,
-                status, null, null, null, active, fBuild, fRev, tBuild, tRev, null, bug, targetBuild, targetRev, null, "", null, null, null, null);
+                status, null, null, null, active, conditionOper, conditionVal1, conditionVal2, fBuild, fRev, tBuild, tRev, null, bug, targetBuild, targetRev, null, "", "", null, null, null, null);
     }
 
     private String getValue(HttpServletRequest req, String valueName) {

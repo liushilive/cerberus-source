@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,10 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -29,10 +33,12 @@ function initPage() {
 
     // handle the click for specific action buttons
     $("#editUserButton").click(editEntryModalSaveHandler);
+    $("#editUserPasswordButton").click(editEntryPassModalSaveHandler);
     $("#addUserButton").click(addEntryModalSaveHandler);
 
     //clear the modals fields when closed
     $('#editUserModal').on('hidden.bs.modal', editEntryModalCloseHandler);
+    $('#editUserPasswordModal').on('hidden.bs.modal', editEntryPassModalCloseHandler);
     $('#addUserModal').on('hidden.bs.modal', addEntryModalCloseHandler);
 
     $('#addcheckall').click(function (e) {
@@ -50,7 +56,7 @@ function initPage() {
 
     //configure and create the dataTable
     var configurations = new TableConfigurationsServerSide("usersTable", "ReadUser?systems=true&groups=true", "contentTable", aoColumnsFunc(), [1, 'asc']);
-    createDataTableWithPermissions(configurations, renderOptionsForUser, "#userList");
+    createDataTableWithPermissions(configurations, renderOptionsForUser, "#userList", undefined, true);
 }
 
 function displayPageLabel() {
@@ -114,10 +120,9 @@ function editEntryClick(param) {
         displayInvariantList("team", "TEAM", false, "", "", false);
         displayInvariantList("groups", "USERGROUP", false, undefined, undefined, false);
 
-        formEdit.find("#defaultSystem option[value='" + obj["defaultSystem"] + "']").attr('selected', true);
-        formEdit.find("#request option").attr('selected', false);
-        formEdit.find("#request option[value='" + obj["request"] + "']").attr('selected', true);
         formEdit.find("#team option[value='" + obj["team"] + "']").attr('selected', true);
+        formEdit.find("#defaultSystem option[value='" + obj["defaultSystem"] + "']").attr('selected', true);
+        formEdit.find("#request").val(obj["request"]);
 
         if (!(data["hasPermissions"])) { // If readonly, we only readonly all fields
             formEdit.find("#login").prop("readonly", "readonly");
@@ -173,14 +178,6 @@ function editEntryClick(param) {
             clickGroup($(this).val(), $(this).prop('selected'), formEdit);
         });
 
-        formEdit.find("#defaultSystem").select2();
-        formEdit.find("#team").select2({
-            allowClear: true,
-            placeholder: "Select a Team (Optionnal)"
-        });
-        formEdit.find("#request").select2({
-            minimumResultsForSearch: -1
-        });
     });
 
     formEdit.modal('show');
@@ -199,9 +196,16 @@ function clickGroup(groupClicked, selected, formEdit) {
                     }
                 });
                 break;
-            case "TestAdmin":
+            case "TestStepLibrary":
                 formEdit.find("#groups option").each(function (i, e) {
                     if (("TestRO" === $(e).val()) || ("Test" === $(e).val())) {
+                        $(e).prop('selected', 'selected');
+                    }
+                });
+                break;
+            case "TestAdmin":
+                formEdit.find("#groups option").each(function (i, e) {
+                    if (("TestRO" === $(e).val()) || ("Test" === $(e).val()) || ("TestStepLibrary" === $(e).val())) {
                         $(e).prop('selected', 'selected');
                     }
                 });
@@ -217,14 +221,14 @@ function clickGroup(groupClicked, selected, formEdit) {
                 break;
             case "IntegratorNewChain":
                 formEdit.find("#groups option").each(function (i, e) {
-                    if (("IntegratorRO" === $(e).val()) || ("Integrator" === $(e).val())) {
+                    if (("IntegratorRO" === $(e).val())) {
                         $(e).prop('selected', 'selected');
                     }
                 });
                 break;
             case "IntegratorDeploy":
                 formEdit.find("#groups option").each(function (i, e) {
-                    if (("IntegratorRO" === $(e).val()) || ("Integrator" === $(e).val())) {
+                    if (("IntegratorRO" === $(e).val())) {
                         $(e).prop('selected', 'selected');
                     }
                 });
@@ -234,12 +238,19 @@ function clickGroup(groupClicked, selected, formEdit) {
         switch (groupClicked) {
             case "TestRO":
                 formEdit.find("#groups option").each(function (i, e) {
-                    if (("Test" === $(e).val()) || ("TestAdmin" === $(e).val())) {
+                    if (("Test" === $(e).val()) || ("TestAdmin" === $(e).val()) || ("TestStepLibrary" === $(e).val())) {
                         $(e).prop('selected', '');
                     }
                 });
                 break;
             case "Test":
+                formEdit.find("#groups option").each(function (i, e) {
+                    if (("TestAdmin" === $(e).val()) || ("TestStepLibrary" === $(e).val())) {
+                        $(e).prop('selected', '');
+                    }
+                });
+                break;
+            case "TestStepLibrary":
                 formEdit.find("#groups option").each(function (i, e) {
                     if ("TestAdmin" === $(e).val()) {
                         $(e).prop('selected', '');
@@ -256,11 +267,6 @@ function clickGroup(groupClicked, selected, formEdit) {
                 });
                 break;
             case "Integrator":
-                formEdit.find("#groups option").each(function (i, e) {
-                    if (("IntegratorNewChain" === $(e).val()) || ("IntegratorDeploy" === $(e).val())) {
-                        $(e).prop('selected', '');
-                    }
-                });
                 break;
             case "IntegratorNewChain":
                 break;
@@ -275,7 +281,7 @@ function editEntryModalSaveHandler() {
     var formEdit = $('#editUserModal #editUserModalForm');
 
     var sa = formEdit.serializeArray();
-    var data = {}
+    var data = {};
     for (var i in sa) {
         data[sa[i].name] = sa[i].value;
     }
@@ -302,13 +308,14 @@ function editEntryModalSaveHandler() {
 
     showLoaderInModal('#editUserModal');
     $.ajax({
-        url: "UpdateUser2",
+        url: "UpdateUser",
         async: true,
         method: "POST",
         data: data,
         success: function (data) {
+
             data = JSON.parse(data);
-            hideLoaderInModal('#editUserModal');
+            console.log(data.messageType);
             if (getAlertType(data.messageType) === 'success') {
                 $('#editUserModal').modal('hide');
                 var oTable = $("#usersTable").dataTable();
@@ -317,6 +324,8 @@ function editEntryModalSaveHandler() {
             } else {
                 showMessage(data, $('#editUserModal'));
             }
+
+            hideLoaderInModal('#editUserModal');
         },
         error: showUnexpectedError
     });
@@ -330,6 +339,63 @@ function editEntryModalCloseHandler() {
     $(this).find('div.has-error').removeClass("has-error");
     // clear the response messages of the modal
     clearResponseMessage($('#editUserModal'));
+}
+
+function editEntryPassModalSaveHandler() {
+    clearResponseMessage($('#editUserPasswordModal'));
+    var formEdit = $('#editUserPasswordModal #editUserPasswordModalForm');
+
+    var sa = formEdit.serializeArray();
+    var data = {};
+    for (var i in sa) {
+        data[sa[i].name] = sa[i].value;
+    }
+    // Get the header data from the form.
+    //var data = convertSerialToJSONObject(formEdit.serialize());
+
+    showLoaderInModal('#editUserPasswordModal');
+    $.ajax({
+        url: "ChangeUserPasswordAdmin",
+        async: true,
+        method: "POST",
+        data: data,
+        success: function (data) {
+
+//            data = JSON.parse(data);
+            console.log(data.messageType);
+            if (getAlertType(data.messageType) === 'success') {
+                $('#editUserPasswordModal').modal('hide');
+                showMessage(data);
+            } else {
+                showMessage(data, $('#editUserPasswordModal'));
+            }
+
+            hideLoaderInModal('#editUserPasswordModal');
+        },
+        error: showUnexpectedError
+    });
+
+}
+
+
+function editEntryPassClick(param) {
+    clearResponseMessageMainPage();
+
+    $("#editUserPasswordModal #id").val(param);
+
+    var formEdit = $('#editUserPasswordModal');
+    formEdit.find("#login").prop("value", param);
+
+    formEdit.modal('show');
+}
+
+function editEntryPassModalCloseHandler() {
+    // reset form values
+    $('#editUserPasswordModal #editUserPasswordModalForm')[0].reset();
+    // remove all errors on the form fields
+    $(this).find('div.has-error').removeClass("has-error");
+    // clear the response messages of the modal
+    clearResponseMessage($('#editUserPasswordModal'));
 }
 
 function addEntryClick() {
@@ -369,15 +435,6 @@ function addEntryClick() {
         return false;
     });
 
-    $("#addUserModal").find("#defaultSystem").select2();
-    $("#addUserModal").find("#team").select2({
-        allowClear: true,
-        placeholder: "Select a Team (Optionnal)"
-    });
-    $("#addUserModal").find("#request").select2({
-        minimumResultsForSearch: -1
-    });
-
     $('#addUserModal').modal('show');
 }
 
@@ -411,7 +468,7 @@ function addEntryModalSaveHandler() {
 
     showLoaderInModal('#addUserModal');
     $.ajax({
-        url: "CreateUser2",
+        url: "CreateUser",
         async: true,
         method: "POST",
         data: data,
@@ -446,7 +503,7 @@ function removeEntryClick(key) {
     showModalConfirmation(function (ev) {
         var id = $('#confirmationModal #hiddenField1').prop("value");
         $.ajax({
-            url: "DeleteUser2?login=" + key,
+            url: "DeleteUser?login=" + key,
             async: true,
             method: "GET",
             success: function (data) {
@@ -460,7 +517,7 @@ function removeEntryClick(key) {
         });
 
         $('#confirmationModal').modal('hide');
-    }, doc.getDocLabel("page_user", "title_remove"), doc.getDocLabel("page_user", "message_remove"), id, undefined, undefined, undefined);
+    }, undefined, doc.getDocLabel("page_user", "title_remove"), doc.getDocLabel("page_user", "message_remove"), id, undefined, undefined, undefined);
 }
 
 function aoColumnsFunc(tableId) {
@@ -470,6 +527,7 @@ function aoColumnsFunc(tableId) {
             "data": null,
             "bSortable": false,
             "bSearchable": false,
+            "sWidth": "80px",
             "title": doc.getDocLabel("page_user", "button_col"),
             "mRender": function (data, type, obj) {
                 var hasPermissions = $("#" + tableId).attr("hasPermissions");
@@ -482,18 +540,34 @@ function aoColumnsFunc(tableId) {
                                         class="removeUser btn btn-default btn-xs margin-right5" \n\
                                         name="removeUser" title="' + doc.getDocLabel("page_user", "button_remove") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-trash"></span></button>';
+                var passwordUser = '<button id="editPassUser" onclick="editEntryPassClick(\'' + obj["login"] + '\');"\n\
+                                        class="editUserPass btn btn-default btn-xs margin-right5" \n\
+                                        name="editUserPass" title="' + doc.getDocLabel("page_user", "button_edit") + '" type="button">\n\
+                                        <span class="glyphicon glyphicon-lock"></span></button>';
 
-                return '<div class="center btn-group width150">' + editUser + removeUser + '</div>';
+                return '<div class="center btn-group width150">' + editUser + removeUser + passwordUser + '</div>';
 
             },
             "width": "100px"
         },
-        {"data": "login", "sName": "login", "title": doc.getDocLabel("page_user", "login_col")},
-        {"data": "name", "sName": "name", "title": doc.getDocLabel("page_user", "name_col")},
+        {
+            "data": "login", 
+            "sName": "login", 
+            "sWidth": "50px",
+            "title": doc.getDocLabel("page_user", "login_col")
+        },
+        {
+            "data": "name",
+            "like":true,
+            "sName": "name", 
+            "sWidth": "80px",
+            "title": doc.getDocLabel("page_user", "name_col")
+        },
         {
             "data": null,
             "bSortable": false,
             "bSearchable": false,
+            "sWidth": "100px",
             "title": doc.getDocLabel("page_user", "groups_col"),
             "mRender": function (data, type, obj) {
                 var systems = "";
@@ -512,6 +586,7 @@ function aoColumnsFunc(tableId) {
             "data": null,
             "bSortable": false,
             "bSearchable": false,
+            "sWidth": "100px",
             "title": doc.getDocLabel("page_user", "systems_col"),
             "mRender": function (data, type, obj) {
                 var systems = "";
@@ -526,10 +601,31 @@ function aoColumnsFunc(tableId) {
 
             }
         },
-        {"data": "team", "sName": "team", "title": doc.getDocLabel("page_user", "team_col")},
-        {"data": "defaultSystem", "sName": "defaultSystem", "title": doc.getDocLabel("page_user", "defaultsystem_col")},
-        {"data": "request", "sName": "reqest", "title": doc.getDocLabel("page_user", "request_col")},
-        {"data": "email", "sName": "email", "title": doc.getDocLabel("page_user", "email_col")}
+        {
+            "data": "team", 
+            "sName": "team", 
+            "sWidth": "50px",
+            "title": doc.getDocLabel("page_user", "team_col")
+        },
+        {
+            "data": "defaultSystem", 
+            "sName": "defaultSystem", 
+            "sWidth": "50px",
+            "title": doc.getDocLabel("page_user", "defaultsystem_col")
+        },
+        {
+            "data": "request", 
+            "sName": "reqest", 
+            "sWidth": "50px",
+            "title": doc.getDocLabel("page_user", "request_col")
+        },
+        {
+            "data": "email",
+            "like":true,
+            "sName": "email", 
+            "sWidth": "80px",
+            "title": doc.getDocLabel("page_user", "email_col")
+        }
     ];
     return aoColumns;
 }

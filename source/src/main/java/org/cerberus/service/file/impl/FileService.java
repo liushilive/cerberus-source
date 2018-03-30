@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,15 +20,20 @@
 package org.cerberus.service.file.impl;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.log4j.Logger;
+import java.util.Map;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.service.file.IFileService;
+import org.cerberus.util.StringUtil;
 import org.cerberus.util.answer.AnswerList;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +44,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class FileService implements IFileService {
 
-    private static final Logger LOG = Logger.getLogger(FileService.class);
+    private static final Logger LOG = LogManager.getLogger(FileService.class);
 
     @Override
     public AnswerList<List<HashMap<String, String>>> parseCSVFile(String urlToCSVFile, String separator, HashMap<String, String> columnsToGet) {
@@ -51,13 +56,20 @@ public class FileService implements IFileService {
          */
         result.setResultMessage(new MessageEvent(MessageEventEnum.PROPERTY_FAILED_GETFROMDATALIB_CSV_GENERIC)
                 .resolveDescription("URL", urlToCSVFile));
+        
+        BufferedReader br = null;
 
         try {
             /**
              * Get CSV File and parse it line by line
              */
-            URL urlToCall = new URL(urlToCSVFile);
-            BufferedReader br = new BufferedReader(new InputStreamReader(urlToCall.openStream()));
+            if (StringUtil.isURL(urlToCSVFile)) {
+                URL urlToCall = new URL(urlToCSVFile);
+                br = new BufferedReader(new InputStreamReader(urlToCall.openStream()));
+            } else {
+                br = new BufferedReader(new FileReader(urlToCSVFile));
+                br.readLine();
+            }
 
             if ("".equals(separator)) {
                 separator = ",";
@@ -71,10 +83,17 @@ public class FileService implements IFileService {
                  * result object if it has been defined in subdata
                  */
                 for (String element : str.split(separator)) {
-                    if (columnsToGet.containsKey(String.valueOf(columnPosition))) {
-                        line.put(columnsToGet.get(String.valueOf(columnPosition)), element);
-                        noDataMapped = false;
+
+                    // Looping against all subdata to get any column that match the current element position.
+                    for (Map.Entry<String, String> entry : columnsToGet.entrySet()) {
+                        String columnPos = entry.getValue();
+                        String subDataName = entry.getKey();
+                        if (columnPos.equals(String.valueOf(columnPosition))) { // If columns defined from subdata match the column number, we add the value here.
+                            line.put(subDataName, element);
+                            noDataMapped = false;
+                        }
                     }
+
                     columnPosition++;
                 }
                 csv.add(line);
@@ -95,6 +114,14 @@ public class FileService implements IFileService {
             LOG.warn("Error Getting CSV File " + exception);
             result.setResultMessage(new MessageEvent(MessageEventEnum.PROPERTY_FAILED_GETFROMDATALIB_CSV_FILENOTFOUND)
                     .resolveDescription("URL", urlToCSVFile).resolveDescription("EX", exception.toString()));
+        }finally {
+        	if(br != null) {
+        		try {
+    				br.close();
+    			} catch (IOException e) {
+    				LOG.warn(e.toString());
+    			}
+        	}
         }
         return result;
     }

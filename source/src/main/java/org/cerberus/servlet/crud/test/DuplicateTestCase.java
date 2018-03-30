@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -24,13 +24,13 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Invariant;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.TestCase;
@@ -73,6 +73,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "DuplicateTestCase", urlPatterns = {"/DuplicateTestCase"})
 public class DuplicateTestCase extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(DuplicateTestCase.class);
     private static final long serialVersionUID = 1L;
     private ApplicationContext appContext;
 
@@ -90,9 +91,9 @@ public class DuplicateTestCase extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (JSONException ex) {
-            Logger.getLogger(DuplicateTestCase.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (CerberusException ex) {
-            Logger.getLogger(DuplicateTestCase.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -110,9 +111,9 @@ public class DuplicateTestCase extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (JSONException ex) {
-            Logger.getLogger(DuplicateTestCase.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (CerberusException ex) {
-            Logger.getLogger(DuplicateTestCase.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -268,10 +269,10 @@ public class DuplicateTestCase extends HttpServlet {
                             .replace("%OPERATION%", "Duplicate"));
                     ans.setResultMessage(msg);
                     /**
-                     * Update was succesfull. Adding Log entry.
+                     * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/DuplicateTestCase", "CREATE", "Create testcase : ['" + test + "'|'" + testCase + "']", request);
+                    logEventService.createForPrivateCalls("/DuplicateTestCase", "CREATE", "Create testcase : ['" + test + "'|'" + testCase + "']", request);
                 }
 
             }

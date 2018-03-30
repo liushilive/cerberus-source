@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,14 +27,16 @@ import org.cerberus.exception.CerberusEventException;
  * @author bcivel
  */
 public interface IIdentifierService {
-    
-     public Identifier convertStringToIdentifier(String input);
-     
-     public Identifier convertStringToSelectIdentifier(String input);
-     
-     public void checkSelectOptionsIdentifier(String identifier) throws CerberusEventException;
 
-     public void checkWebElementIdentifier(String identifier) throws CerberusEventException;
+    Identifier convertStringToIdentifier(String input);
 
-    public void checkSQLIdentifier(String identifier) throws CerberusEventException;
-     }
+    Identifier convertStringToSelectIdentifier(String input);
+
+    void checkSelectOptionsIdentifier(String identifier) throws CerberusEventException;
+
+    void checkWebElementIdentifier(String identifier) throws CerberusEventException;
+
+    void checkSQLIdentifier(String identifier) throws CerberusEventException;
+
+    void checkSikuliIdentifier(String identifier) throws CerberusEventException;
+}

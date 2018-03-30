@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -33,6 +33,8 @@ public interface ITestCaseCountryPropertiesService {
     List<TestCaseCountryProperties> findListOfPropertyPerTestTestCaseCountry(String test, String testCase, String country);
 
     List<TestCaseCountryProperties> findListOfPropertyPerTestTestCase(String test, String testcase);
+    
+    List<TestCaseCountryProperties> findOnePropertyPerTestTestCase(String test, String testcase, String oneproperty);
 
     List<TestCaseCountryProperties> findDistinctPropertiesOfTestCase(String test, String testcase);
 

@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,13 +20,13 @@
 package org.cerberus.servlet.crud.countryenvironment;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Application;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
@@ -51,6 +53,8 @@ import org.owasp.html.Sanitizers;
 @WebServlet(name = "CreateApplication", urlPatterns = {"/CreateApplication"})
 public class CreateApplication extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(CreateApplication.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -112,6 +116,12 @@ public class CreateApplication extends HttpServlet {
                     .replace("%OPERATION%", "Create")
                     .replace("%REASON%", "Application name is missing!"));
             ans.setResultMessage(msg);
+        } else if (StringUtil.isNullOrEmpty(system)) {
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
+            msg.setDescription(msg.getDescription().replace("%ITEM%", "Application")
+                    .replace("%OPERATION%", "Create")
+                    .replace("%REASON%", "System is missing!"));
+            ans.setResultMessage(msg);
         } else if (sort_error) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Application")
@@ -126,7 +136,8 @@ public class CreateApplication extends HttpServlet {
             IApplicationService applicationService = appContext.getBean(IApplicationService.class);
             IFactoryApplication factoryApplication = appContext.getBean(IFactoryApplication.class);
 
-            Application applicationData = factoryApplication.create(application, description, sort, type, system, subSystem, svnURL, deployType, mavenGpID, bugTrackerURL, newBugURL);
+            Application applicationData = factoryApplication.create(application, description, sort, type, system, 
+                    subSystem, svnURL, deployType, mavenGpID, bugTrackerURL, newBugURL, request.getRemoteUser(), null, null, null);
             ans = applicationService.create(applicationData);
 
             if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
@@ -134,7 +145,7 @@ public class CreateApplication extends HttpServlet {
                  * Object created. Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createPrivateCalls("/CreateApplication", "CREATE", "Create Application : ['" + application + "']", request);
+                logEventService.createForPrivateCalls("/CreateApplication", "CREATE", "Create Application : ['" + application + "']", request);
             }
         }
 
@@ -164,9 +175,9 @@ public class CreateApplication extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateApplication.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateApplication.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -184,9 +195,9 @@ public class CreateApplication extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateApplication.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateApplication.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

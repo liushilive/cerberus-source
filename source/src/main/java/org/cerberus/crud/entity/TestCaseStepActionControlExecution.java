@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -17,10 +19,12 @@
  */
 package org.cerberus.crud.entity;
 
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageGeneral;
 import org.cerberus.engine.entity.MessageEvent;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -33,9 +37,15 @@ public class TestCaseStepActionControlExecution {
     private String test;
     private String testCase;
     private int step;
+    private int index;
     private int sequence;
     private int controlSequence;
     private int sort;
+    private String conditionOper;
+    private String conditionVal1Init;
+    private String conditionVal2Init;
+    private String conditionVal1;
+    private String conditionVal2;
     private String control;
     private String value1Init;
     private String value2Init;
@@ -53,9 +63,30 @@ public class TestCaseStepActionControlExecution {
      *
      */
     private TestCaseStepActionExecution testCaseStepActionExecution;
+    private List<TestCaseExecutionFile> fileList; // Host the list of the files stored at control level
     private MessageEvent controlResultMessage;
     private MessageGeneral executionResultMessage;
     private boolean stopExecution;
+
+    public List<TestCaseExecutionFile> getFileList() {
+        return fileList;
+    }
+
+    public void setFileList(List<TestCaseExecutionFile> fileList) {
+        this.fileList = fileList;
+    }
+
+    public void addFileList(TestCaseExecutionFile file) {
+        this.fileList.add(file);
+    }
+
+    public void addFileList(List<TestCaseExecutionFile> fileList) {
+        if (fileList != null) {
+            for (TestCaseExecutionFile testCaseExecutionFile : fileList) {
+                this.fileList.add(testCaseExecutionFile);
+            }
+        }
+    }
 
     public MessageEvent getControlResultMessage() {
         return controlResultMessage;
@@ -107,6 +138,46 @@ public class TestCaseStepActionControlExecution {
 
     public void setSort(int sort) {
         this.sort = sort;
+    }
+
+    public String getConditionOper() {
+        return conditionOper;
+    }
+
+    public void setConditionOper(String conditionOper) {
+        this.conditionOper = conditionOper;
+    }
+
+    public String getConditionVal1() {
+        return conditionVal1;
+    }
+
+    public String getConditionVal1Init() {
+        return conditionVal1Init;
+    }
+
+    public void setConditionVal1Init(String conditionVal1Init) {
+        this.conditionVal1Init = conditionVal1Init;
+    }
+
+    public String getConditionVal2Init() {
+        return conditionVal2Init;
+    }
+
+    public void setConditionVal2Init(String conditionVal2Init) {
+        this.conditionVal2Init = conditionVal2Init;
+    }
+
+    public void setConditionVal1(String conditionVal1) {
+        this.conditionVal1 = conditionVal1;
+    }
+
+    public String getConditionVal2() {
+        return conditionVal2;
+    }
+
+    public void setConditionVal2(String conditionVal2) {
+        this.conditionVal2 = conditionVal2;
     }
 
     public String getValue1() {
@@ -217,6 +288,14 @@ public class TestCaseStepActionControlExecution {
         return test;
     }
 
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
     public void setTest(String test) {
         this.test = test;
     }
@@ -253,29 +332,67 @@ public class TestCaseStepActionControlExecution {
         this.value2Init = value2Init;
     }
 
-    public JSONObject toJson() {
+    /**
+     * Convert the current TestCaseStepActionControlExecution into JSON format
+     * Note that if withChilds and withParents are both set to true, only the
+     * child will be included to avoid loop.
+     *
+     * @param withChilds boolean that define if childs should be included
+     * @param withParents boolean that define if parents should be included
+     * @return TestCaseStepActionControlExecution in JSONObject format
+     */
+    public JSONObject toJson(boolean withChilds, boolean withParents) {
         JSONObject result = new JSONObject();
+        // Check if both parameter are not set to true
+        if (withChilds == true && withParents == true) {
+            withParents = false;
+        }
         try {
+            result.put("type", "testCaseStepActionControlExecution");
             result.put("id", this.getId());
             result.put("test", this.getTest());
             result.put("testcase", this.getTestCase());
             result.put("step", this.getStep());
+            result.put("index", this.getIndex());
             result.put("sequence", this.getSequence());
             result.put("control", this.getControlSequence());
             result.put("sort", this.getSort());
+            result.put("conditionOper", this.getConditionOper());
+            result.put("conditionVal1Init", this.getConditionVal1Init());
+            result.put("conditionVal2Init", this.getConditionVal2Init());
+            result.put("conditionVal1", this.getConditionVal1());
+            result.put("conditionVal2", this.getConditionVal2());
             result.put("controlType", this.getControl());
             result.put("controlProperty", this.getValue1());
+            result.put("controlPropertyInit", this.getValue1Init());
             result.put("controlValue", this.getValue2());
+            result.put("controlValueInit", this.getValue2Init());
             result.put("fatal", this.getFatal());
             result.put("start", this.getStart());
-            result.put("end", this.getEndLong());
+            result.put("end", this.getEnd());
             result.put("startlong", this.getStartLong());
-            result.put("endlong", this.getEnd());
+            result.put("endlong", this.getEndLong());
             result.put("description", this.getDescription());
             result.put("returnCode", this.getReturnCode());
             result.put("returnMessage", this.getReturnMessage());
+
+            if (withChilds) {
+                JSONArray array = new JSONArray();
+                if (this.getFileList() != null) {
+                    for (Object actionFileList : this.getFileList()) {
+                        array.put(((TestCaseExecutionFile) actionFileList).toJson());
+                    }
+                }
+                result.put("fileList", array);
+            }
+
+            if (withParents) {
+                result.put("testCaseStepActionExecution", this.getTestCaseStepActionExecution().toJson(false, true));
+            }
+
         } catch (JSONException ex) {
-            Logger.getLogger(TestCaseStepExecution.class.getName()).log(Level.SEVERE, null, ex);
+            Logger LOG = LogManager.getLogger(TestCaseStepActionControlExecution.class);
+            LOG.warn(ex);
         }
         return result;
     }

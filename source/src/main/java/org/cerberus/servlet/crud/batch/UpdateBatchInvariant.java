@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,13 +20,13 @@
 package org.cerberus.servlet.crud.batch;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.BatchInvariant;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.service.IBatchInvariantService;
@@ -53,6 +53,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "UpdateBatchInvariant", urlPatterns = {"/UpdateBatchInvariant"})
 public class UpdateBatchInvariant extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(UpdateBatchInvariant.class);
     private final String OBJECT_NAME = "BatchInvariant";
     
     /**
@@ -130,14 +131,14 @@ public class UpdateBatchInvariant extends HttpServlet {
                 BatchInvariant batchInvariantData = (BatchInvariant) resp.getItem();
                 batchInvariantData.setSystem(system);
                 batchInvariantData.setDescription(description);
-                ans = batchInvariantService.update(batchInvariantData);
+                ans = batchInvariantService.update(batchInvariantData.getBatch(), batchInvariantData);
 
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     /**
-                     * Update was succesfull. Adding Log entry.
+                     * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/UpdateBatchInvariant", "UPDATE", "Updated BatchInvariant : ['" + batch + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateBatchInvariant", "UPDATE", "Updated BatchInvariant : ['" + batch + "']", request);
                 }
             }
         }
@@ -168,10 +169,9 @@ public class UpdateBatchInvariant extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateBatchInvariant.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateBatchInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -190,10 +190,9 @@ public class UpdateBatchInvariant extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateBatchInvariant.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateBatchInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

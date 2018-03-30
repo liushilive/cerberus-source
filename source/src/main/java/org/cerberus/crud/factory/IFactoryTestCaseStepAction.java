@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -26,7 +26,7 @@ import org.cerberus.crud.entity.TestCaseStepAction;
  */
 public interface IFactoryTestCaseStepAction {
 
-    TestCaseStepAction create(String test, String testCase, int step, int sequence, int sort, String conditionOper, String conditionVal1,
+    TestCaseStepAction create(String test, String testCase, int step, int sequence, int sort, String conditionOper, String conditionVal1, String conditionVal2,
             String action, String value1, String value2, String forceExeStatus, String description, String screenshotFilename);
 
 }

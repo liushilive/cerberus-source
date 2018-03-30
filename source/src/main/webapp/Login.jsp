@@ -1,21 +1,23 @@
 <%--
-  ~ Cerberus  Copyright (C) 2013  vertigo17
-  ~ DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-  ~
-  ~ This file is part of Cerberus.
-  ~
-  ~ Cerberus is free software: you can redistribute it and/or modify
-  ~ it under the terms of the GNU General Public License as published by
-  ~ the Free Software Foundation, either version 3 of the License, or
-  ~ (at your option) any later version.
-  ~
-  ~ Cerberus is distributed in the hope that it will be useful,
-  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
-  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  ~ GNU General Public License for more details.
-  ~
-  ~ You should have received a copy of the GNU General Public License
-  ~ along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
+
+    Cerberus Copyright (C) 2013 - 2017 cerberustesting
+    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+
+    This file is part of Cerberus.
+
+    Cerberus is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Cerberus is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
+
 --%>
 <%@page import="org.cerberus.database.IDatabaseVersioningService"%>
 <%@page import="org.cerberus.crud.factory.impl.FactoryLogEvent"%>
@@ -23,9 +25,7 @@
 <%@page import="org.cerberus.crud.service.impl.LogEventService"%>
 <%@page import="org.cerberus.crud.service.ILogEventService"%>
 <%@page import="org.cerberus.version.Infos"%>
-<%@page import="org.cerberus.log.MyLogger"%>
 <%@page import="org.cerberus.crud.service.IParameterService"%>
-<%@page import="org.apache.log4j.Level"%>
 <%@page import="org.springframework.web.context.support.WebApplicationContextUtils"%>
 <%@page import="org.springframework.context.ApplicationContext"%>
 
@@ -34,21 +34,24 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <%@ include file="include/dependenciesInclusions.html" %>
+        <%@ include file="include/global/dependenciesInclusions.html" %>
         <script type='text/javascript' src='js/pages/Login.js'></script>
-        <script type="text/javascript">
-            EnvTuning("<%=System.getProperty("org.cerberus.environment")%>");
-        </script>
+        <script type='text/javascript' src='js/global/global.js'></script>
         <title>Login</title>
     </head>
-    <body>
+    <body style="background-color: #fff">
+        <script type="text/javascript">
+            envTuning("<%=System.getProperty("org.cerberus.environment")%>");
+        </script>
 
         <%
             ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
             IParameterService myParameterService = appContext.getBean(IParameterService.class);
             IDatabaseVersioningService databaseVersionService = appContext.getBean(IDatabaseVersioningService.class);
             try {
-                String CerberusSupportEmail = myParameterService.findParameterByKey("cerberus_support_email", "").getValue();
+                String cerberusSupportEmail = myParameterService.getParameterStringByKey("cerberus_support_email", "", "");
+                String cerberusWelcomeMessage = myParameterService.getParameterStringByKey("cerberus_loginpage_welcomemessagehtml", "", "");
+                cerberusWelcomeMessage = cerberusWelcomeMessage.replace("%SUPPORTEMAIL%", cerberusSupportEmail);
                 String errorMessage = "";
                 String display = "";
                 String cerberusVersion = Infos.getInstance().getProjectVersion() + "-" + databaseVersionService.getSQLScript().size();
@@ -65,60 +68,92 @@
                 }
         %>
 
-        <%@ include file="include/messagesArea.html"%>
-        <div id="error"><%=display%></div>
-        <div style="padding-top: 7%; padding-left: 30%">
-            <div id="login-box" class="login-box" >
-                <H2>Cerberus Login</H2><br>V<%=cerberusVersion%><br><br>
-                Please login in order to change TestCases and run Tests.<br>
-                If you don't have login, please contact <%= CerberusSupportEmail%>
-                <br>
-                <br>
-                <form method="post" action="j_security_check">
-                    <div class="row">
-                        <div class="form-group col-xs-3" style="margin-top:10px;">
-                            Username:
-                        </div>
-                        <div class="form-group col-xs-9">
-                            <input name="j_username" class="form-login" title="Username" value="" size="30" maxlength="10">
-                        </div>
+
+
+        <div class="body-login">
+            <div class="col-md-2"></div>
+
+
+            <div class="col-md-8 panel panel-default panel-login" >
+
+                <div class="col-md-12">
+                    <%@ include file="include/global/messagesArea.html"%>
+                    <div id="error" style="display:none"><%=display%></div>
+                </div>
+
+                <div class="col-md-12 login-box-form">
+                    <div class="col-md-6">
+                        <img src="images/Logo-cerberus_login.png" class="img-responsive center-block logo-login"></img>
                     </div>
-                    <div class="row">
-                        <div class="form-group col-xs-3" style="margin-top:10px;">
-                            Password:
+                    <div class="col-md-6">
+
+                        <form method="post" action="j_security_check" id="login-box">
+                            <H2>Cerberus Login</H2>
+                            <em>V<%=cerberusVersion%></em><br>
+                            <span class="text-info">
+                                <%= cerberusWelcomeMessage%>
+                            </span>
+                            <br><br>
+
+                            <div class="form-group">
+                                <label>
+                                    Username:
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-addon " id="user-icon">	
+                                        <span class="glyphicon glyphicon-user"></span>
+                                    </span>
+                                    <input id="username" name="j_username" class="form-control" title="Username" placeholder="Username" value="" size="50" maxlength="50" aria-describedby="user-icon" autofocus>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    Password:
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-addon " id="user-icon">	
+                                        <span class="glyphicon glyphicon-lock"></span>
+                                    </span>
+                                    <input name="j_password" autocomplete class="form-control" type="password" placeholder="Password" title="Password" value="" size="30" maxlength="20">
+                                </div>
+                            </div>
+                            <button id="forgot-password" type="button" name="forgotPassword" class="btn btn-default" onclick="showForgotPasswordFormulary()">Forgot password</button>
+                            <button id="Login" name="Login" class="btn btn-primary" value="Submit" alt="Submit" onclick="sessionStorage.clear()">Login</button>
+                        </form>
+
+                        <div id="forgot-password-box" style="display:none">
+                            <form action="#" id="forgotpassword-box">
+                                <H2>Forgot password</H2>
+                                <em>V<%=cerberusVersion%></em><br>
+                                <span class="text-info">
+                                    Please enter your username. An email will be sent to your associated email address with a link to reset your password. <br />
+                                    <%= cerberusWelcomeMessage%>
+                                </span>
+                                <br><br>
+                                <div class="form-group">
+                                    <label>
+                                        Username:
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-addon " id="user-icon2">
+                                            <span class="glyphicon glyphicon-user"></span>
+                                        </span>
+                                        <input name="login" class="form-control" id="loginForgotPassword" title="Username" placeholder="Username" value="" size="30" maxlength="10" aria-describedby="user-icon2" autofocus>
+                                    </div>
+                                </div>
+
+                                <br><br>
+
+
+                                <button id="cancel-forgot-password" type="button" name="cancelForgotPassword" class="btn btn-default" onclick="showLoginBoxFormulary()">Cancel</button>
+                                <button id="RecoverPassword" name="RecoverPassword" value="Submit" class="btn btn-primary" onclick="forgotPassword()">Send me an email</button>
+                            </form>
                         </div>
-                        <div class="form-group col-xs-9">
-                            <input name="j_password" class="form-login" type="password" title="Password" value="" size="30" maxlength="20">
-                        </div>
+
                     </div>
-                    <button id="Login" name="Login" class="btn btn-primary col-xs-12" value="Submit" alt="Submit" onclick="sessionStorage.clear()";>Login</button>
-                </form>
-                <br><br>
-                <div class="col-xs-12">
-                    <a onclick="showForgotPasswordFormulary()">forgot password</a>
                 </div>
             </div>
-            <div id="forgot-password-box" style="display: none" class="login-box">
-                <H2>Cerberus Login</H2><br>V<%=cerberusVersion%><br><br>
-                Please feed the field with your login. An email will be sent with the recovery information.<br>
-                If you don't have login, please contact <%= CerberusSupportEmail%>
-                <br>
-                <br>
-                <div class="row">
-                    <div class="form-group col-xs-3" style="margin-top:10px;">
-                        Username:
-                    </div>
-                    <div class="form-group col-xs-9">
-                        <input name="login" id="loginForgotPassword" class="form-login" title="Username" value="" size="30" maxlength="10">
-                    </div>
-                </div>
-                <br><br>
-                <button id="RecoverPassword" name="RecoverPassword" class="btn btn-primary col-xs-12" onclick="forgotPassword()">Reset Password</button>
-                <br><br>
-                <div class="col-xs-12">
-                    <a href="./">homepage</a>
-                </div>
-            </div>
+
         </div>
     </body>
 </html>

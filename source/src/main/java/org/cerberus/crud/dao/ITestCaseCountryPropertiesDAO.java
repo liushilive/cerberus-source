@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -34,6 +36,8 @@ import org.cerberus.util.answer.AnswerList;
 public interface ITestCaseCountryPropertiesDAO {
 
     List<TestCaseCountryProperties> findListOfPropertyPerTestTestCase(String test, String testcase);
+    
+    List<TestCaseCountryProperties> findOnePropertyPerTestTestCase(String test, String testcase, String oneproperty);
 
     List<TestCaseCountryProperties> findDistinctPropertiesOfTestCase(String test, String testcase);
 

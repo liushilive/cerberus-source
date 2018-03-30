@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -28,5 +28,5 @@ import org.cerberus.crud.entity.CountryEnvironmentParameters;
 public interface IFactoryCountryEnvironmentParameters {
 
     CountryEnvironmentParameters create(String system, String country, String environment, String application, String ip,
-            String Domain, String url, String urlLogin, String var1, String var2, String var3, String var4);
+            String Domain, String url, String urlLogin, String var1, String var2, String var3, String var4, int poolSize);
 }

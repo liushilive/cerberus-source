@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,8 +21,6 @@ package org.cerberus.servlet.crud.usermanagement;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -34,8 +32,7 @@ import org.cerberus.crud.service.IUserService;
 import org.cerberus.crud.service.impl.ParameterService;
 import org.cerberus.crud.service.impl.UserService;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.service.email.IEmailGeneration;
-import org.cerberus.service.email.impl.EmailGeneration;
+import org.cerberus.service.email.IEmailService;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
@@ -50,6 +47,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
  * @author bcivel
  */
 public class ForgotPassword extends HttpServlet {
+
+    private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger(ForgotPassword.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -66,7 +65,7 @@ public class ForgotPassword extends HttpServlet {
         try (PrintWriter out = response.getWriter()) {
             ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
             IUserService userService = appContext.getBean(UserService.class);
-            IEmailGeneration generateEmailService = appContext.getBean(EmailGeneration.class);
+            IEmailService emailService = appContext.getBean(IEmailService.class);
             IParameterService parameterService = appContext.getBean(ParameterService.class);
             String system = "";
             JSONObject jsonResponse = new JSONObject();
@@ -109,7 +108,7 @@ public class ForgotPassword extends HttpServlet {
             /**
              * Send an email with the hash as a parameter
              */
-            Answer mailSent = generateEmailService.SendForgotPasswordNotification(user);
+            Answer mailSent = new Answer(emailService.generateAndSendForgotPasswordEmail(user));
 
             if (!mailSent.isCodeStringEquals("OK")) {
                 jsonResponse.put("messageType", "Error");
@@ -123,19 +122,19 @@ public class ForgotPassword extends HttpServlet {
              * Adding Log entry.
              */
             ILogEventService logEventService = appContext.getBean(ILogEventService.class);
-            logEventService.createPrivateCalls("/ForgotPassword", "CREATE", "User : " + login + " asked for password recovery", request);
+            logEventService.createForPrivateCalls("/ForgotPassword", "CREATE", "User : " + login + " asked for password recovery", request);
 
             /**
              * Build Response Message
              */
-            jsonResponse.put("messageType", "Success");
+            jsonResponse.put("messageType", "OK");
             jsonResponse.put("message", "An e-mail has been sent to the mailbox " + user.getEmail() + ".");
             response.getWriter().print(jsonResponse);
             response.getWriter().flush();
         } catch (CerberusException myexception) {
             response.getWriter().print(myexception.getMessageError().getDescription());
         } catch (JSONException ex) {
-            Logger.getLogger(ForgotPassword.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
             response.setContentType("application/json");
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }

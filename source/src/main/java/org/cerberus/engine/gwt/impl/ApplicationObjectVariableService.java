@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,42 +19,24 @@
  */
 package org.cerberus.engine.gwt.impl;
 
-import org.apache.log4j.Level;
-import org.cerberus.crud.entity.*;
-import org.cerberus.crud.factory.IFactoryTestCaseExecutionData;
-import org.cerberus.crud.service.*;
-import org.cerberus.engine.entity.Identifier;
-import org.cerberus.engine.entity.MessageEvent;
-import org.cerberus.engine.entity.MessageGeneral;
-import org.cerberus.engine.entity.SOAPExecution;
-import org.cerberus.engine.execution.IIdentifierService;
-import org.cerberus.engine.execution.IRecorderService;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.cerberus.crud.entity.ApplicationObject;
+import org.cerberus.crud.entity.TestCaseExecution;
+import org.cerberus.crud.service.IApplicationObjectService;
+import org.cerberus.crud.service.IParameterService;
 import org.cerberus.engine.gwt.IApplicationObjectVariableService;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.exception.CerberusEventException;
-import org.cerberus.exception.CerberusException;
-import org.cerberus.log.MyLogger;
-import org.cerberus.service.datalib.IDataLibService;
-import org.cerberus.service.groovy.IGroovyService;
-import org.cerberus.service.json.IJsonService;
-import org.cerberus.service.soap.ISoapService;
-import org.cerberus.service.sql.ISQLService;
-import org.cerberus.service.webdriver.IWebDriverService;
-import org.cerberus.service.xmlunit.IXmlUnitService;
-import org.cerberus.util.DateUtil;
-import org.cerberus.util.ParameterParserUtil;
-import org.cerberus.util.SoapUtil;
-import org.cerberus.util.StringUtil;
 import org.cerberus.util.answer.AnswerItem;
-import org.cerberus.util.answer.AnswerList;
-import org.openqa.selenium.NoSuchElementException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * {Insert class description here}
@@ -65,7 +47,7 @@ import java.util.regex.Pattern;
 @Service
 public class ApplicationObjectVariableService implements IApplicationObjectVariableService {
 
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(ApplicationObjectVariableService.class);
+    private static final Logger LOG = LogManager.getLogger(ApplicationObjectVariableService.class);
 
     @Autowired
     private IApplicationObjectService applicationObjectService;
@@ -78,61 +60,44 @@ public class ApplicationObjectVariableService implements IApplicationObjectVaria
     public static final Pattern PROPERTY_VARIABLE_PATTERN = Pattern.compile("%object\\.[^%]+%");
 
     @Override
-    public String decodeValueWithExistingProperties(String stringToDecode, TestCaseStepActionExecution testCaseStepActionExecution, boolean forceCalculation) throws CerberusEventException {
-        TestCaseExecution tCExecution = testCaseStepActionExecution.getTestCaseStepExecution().gettCExecution();
+    public String decodeStringWithApplicationObject(String stringToDecode, TestCaseExecution tCExecution, boolean forceCalculation) throws CerberusEventException {
         String application = tCExecution.getApplicationObj().getApplication();
 
         String stringToDecodeInit = stringToDecode;
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Starting to decode string : : " + stringToDecode);
+            LOG.debug("Starting to decode string (application Object) : " + stringToDecode);
         }
 
         /**
          * Look at all the potencial properties still contained in
          * StringToDecode (considering that properties are between %).
          */
-        List<String> internalPropertiesFromStringToDecode = this.getPropertiesListFromString(stringToDecode);
+        List<String> internalAppObjectsFromStringToDecode = this.getApplicationObjectsStringListFromString(stringToDecode);
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Internal potencial properties still found inside property '" + stringToDecode + "' : " + internalPropertiesFromStringToDecode);
+            LOG.debug("Internal potencial application objects still found inside String '" + stringToDecode + "' : " + internalAppObjectsFromStringToDecode);
         }
 
-        if (internalPropertiesFromStringToDecode.isEmpty()) { // We escape if no property found on the string to decode
+        if (internalAppObjectsFromStringToDecode.isEmpty()) { // We escape if no property found on the string to decode
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Finished to decode (no properties detected in string) : . result : '" + stringToDecodeInit + "' to :'" + stringToDecode + "'");
+                LOG.debug("Finished to decode (no application objects detected in string). Result : '" + stringToDecodeInit + "' to :'" + stringToDecode + "'");
             }
             return stringToDecode;
         }
 
-        Iterator i = internalPropertiesFromStringToDecode.iterator();
-        while(i.hasNext()){
-            String value = (String)i.next();
+        Iterator i = internalAppObjectsFromStringToDecode.iterator();
+        while (i.hasNext()) {
+            String value = (String) i.next();
             String[] valueA = value.split("\\.");
-            if(valueA.length >= 3) {
+            if (valueA.length >= 3) {
                 AnswerItem ans = applicationObjectService.readByKey(application, valueA[1]);
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && ans.getItem() != null) {
                     ApplicationObject ao = (ApplicationObject) ans.getItem();
                     String val = null;
                     if ("picturepath".equals(valueA[2])) {
-                        AnswerItem an = parameterService.readByKey("", "cerberus_applicationobject_path");
-                        if (an.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && an.getItem() != null) {
-                            Parameter url = (Parameter) an.getItem();
-                            val = url.getValue() + "/" + ao.getID() + "/" + ao.getScreenShotFileName();
-                        } else {
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debug("Cannot find the parameter that point the Application Object image folder");
-                            }
-                        }
+                        val = parameterService.getParameterStringByKey("cerberus_applicationobject_path", "", "") + File.separator + ao.getID() + File.separator + ao.getScreenShotFileName();
                     } else if ("pictureurl".equals(valueA[2])) {
-                        AnswerItem an = parameterService.readByKey("", "cerberus_url");
-                        if (an.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && an.getItem() != null) {
-                            Parameter url = (Parameter) an.getItem();
-                            val = url.getValue() + "/ReadApplicationObjectImage?application=" + ao.getApplication() + "&object=" + ao.getObject();
-                        } else {
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debug("Cannot find the parameter that point the Application Object image folder");
-                            }
-                        }
+                        val = parameterService.getParameterStringByKey("cerberus_url", "", "") + "/ReadApplicationObjectImage?application=" + ao.getApplication() + "&object=" + ao.getObject();
                     } else if ("value".equals(valueA[2])) {
                         val = ao.getValue();
                     }
@@ -144,7 +109,7 @@ public class ApplicationObjectVariableService implements IApplicationObjectVaria
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Finished to decode String : '" + stringToDecodeInit + "' to :'" + stringToDecode + "'");
+            LOG.debug("Finished to decode String (application Object) : '" + stringToDecodeInit + "' to :'" + stringToDecode + "'");
         }
         return stringToDecode;
     }
@@ -160,7 +125,7 @@ public class ApplicationObjectVariableService implements IApplicationObjectVaria
      * @param str the {@link String} to get all properties
      * @return a list of properties contained into the given {@link String}
      */
-    private List<String>    getPropertiesListFromString(String str) {
+    private List<String> getApplicationObjectsStringListFromString(String str) {
         List<String> properties = new ArrayList<String>();
         if (str == null) {
             return properties;

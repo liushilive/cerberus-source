@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,19 +27,19 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Application;
+import org.cerberus.crud.service.IApplicationService;
+import org.cerberus.crud.service.impl.ApplicationService;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.crud.service.IApplicationService;
-import org.cerberus.crud.service.impl.ApplicationService;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
@@ -60,6 +60,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "ReadApplication", urlPatterns = {"/ReadApplication"})
 public class ReadApplication extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(ReadApplication.class);
     private IApplicationService applicationService;
 
     /**
@@ -130,7 +131,7 @@ public class ReadApplication extends HttpServlet {
             response.getWriter().print(jsonResponse.toString());
 
         } catch (JSONException e) {
-            org.apache.log4j.Logger.getLogger(ReadApplication.class.getName()).log(org.apache.log4j.Level.ERROR, null, e);
+            LOG.warn(e);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }
@@ -151,7 +152,7 @@ public class ReadApplication extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadApplication.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -169,7 +170,7 @@ public class ReadApplication extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadApplication.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -199,12 +200,17 @@ public class ReadApplication extends HttpServlet {
         String columnToSort[] = sColumns.split(",");
         String columnName = columnToSort[columnToSortParameter];
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
 
         Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
             if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
                 List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+                if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                } 
             }
         }
 
@@ -229,7 +235,7 @@ public class ReadApplication extends HttpServlet {
 
     private AnswerItem findApplicationByKey(String id, ApplicationContext appContext, boolean userHasPermissions) throws JSONException, CerberusException {
         AnswerItem item = new AnswerItem();
-        JSONObject object = new JSONObject();
+        JSONObject response = new JSONObject();
 
         IApplicationService libService = appContext.getBean(IApplicationService.class);
 
@@ -239,12 +245,12 @@ public class ReadApplication extends HttpServlet {
         if (answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
             //if the service returns an OK message then we can get the item and convert it to JSONformat
             Application lib = (Application) answer.getItem();
-            JSONObject response = convertApplicationToJSONObject(lib);
-            object.put("contentTable", response);
+            JSONObject object = convertApplicationToJSONObject(lib);
+            response.put("contentTable", object);
         }
 
-        object.put("hasPermissions", userHasPermissions);
-        item.setItem(object);
+        response.put("hasPermissions", userHasPermissions);
+        item.setItem(response);
         item.setResultMessage(answer.getResultMessage());
 
         return item;

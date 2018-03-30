@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,10 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -36,25 +40,31 @@ function initPage() {
     $('#addTestcampaignModal').on('hidden.bs.modal', addEntryModalCloseHandler);
     $('#viewTestcampaignModal').on('hidden.bs.modal', viewEntryModalCloseHandler);
 
+    displayInvariantList("notifystart", "CAMPAIGNSTARTNOTIF", false);
+    displayInvariantList("notifyend", "CAMPAIGNENDNOTIF", false);
+
+
     $('#editTestcampaignModal a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
         var target = $(e.target).attr("href"); // activated tab
         if (target == "#tabsCreate-1") {
-
-        } else if (target == "#tabsCreate-2") {
-            $("#batteryTestcampaignsTable").DataTable().draw();
         } else if (target == "#tabsCreate-3") {
             $("#parameterTestcampaignsTable").DataTable().draw();
+        } else if (target == "#tabsCreate-4") {
+            $("#labelTestcampaignsTable").DataTable().draw();
+        } else if (target == "#tabsCreate-5") {
+            $("#parameterTestcaseTable").DataTable().draw();
         }
     });
 
     $('#addTestcampaignModal a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
         var target = $(e.target).attr("href"); // activated tab
         if (target == "#tabsCreate-11") {
-
-        } else if (target == "#tabsCreate-12") {
-            $("#addModalBatteryTestcampaignsTable").DataTable().draw();
         } else if (target == "#tabsCreate-13") {
             $("#addModalParameterTestcampaignsTable").DataTable().draw();
+        } else if (target == "#tabsCreate-14") {
+            $("#addModalLabelTestcampaignsTable").DataTable().draw();
+        } else if (target == "#tabsCreate-5") {
+            $("#parameterTestcaseTable").DataTable().draw();
         }
     });
 
@@ -64,7 +74,7 @@ function initPage() {
 
     //configure and create the dataTable
     var configurations = new TableConfigurationsServerSide("testcampaignsTable", "ReadCampaign", "contentTable", aoColumnsFunc(), [1, 'asc']);
-    createDataTableWithPermissions(configurations, renderOptionsForCampaign, "#testcampaignList");
+    createDataTableWithPermissions(configurations, renderOptionsForCampaign, "#testcampaignList", undefined, true);
 }
 
 function displayPageLabel() {
@@ -76,10 +86,14 @@ function displayPageLabel() {
     $("[name='campaignField']").html(doc.getDocLabel("page_testcampaign", "campaign_field"));
     $("[name='descriptionField']").html(doc.getDocLabel("page_testcampaign", "description_field"));
     $("[name='tabDescription']").html(doc.getDocLabel("page_testcampaign", "description_tab"));
-    $("[name='tabBatteries']").html(doc.getDocLabel("page_testcampaign", "battery_tab"));
+    $("[name='tabLabels']").html(doc.getDocLabel("label", "label"));
     $("[name='tabParameters']").html(doc.getDocLabel("page_testcampaign", "parameter_tab"));
     $("[name='buttonClose']").html(doc.getDocLabel("page_testcampaign", "close_btn"));
     $("[name='buttonAdd']").html(doc.getDocLabel("page_testcampaign", "save_btn"));
+
+    $("[name='distriblistField']").html(doc.getDocLabel("testcampaign", "distribList"));
+    $("[name='notifystartField']").html(doc.getDocLabel("testcampaign", "notifyStartTagExecution"));
+    $("[name='notifyendField']").html(doc.getDocLabel("testcampaign", "notifyEndTagExecution"));
 
     displayHeaderLabel(doc);
 
@@ -89,68 +103,69 @@ function displayPageLabel() {
 
 function renderOptionsForCampaign(data) {
     var doc = new Doc();
-    if ($("#createTestcampaignButton").length === 0) {
-        var contentToAdd = "<div class='marginBottom10'><button id='createTestcampaignButton' type='button' class='btn btn-default'>\n\
+    if (data["hasPermissions"]) {
+        if ($("#createTestcampaignButton").length === 0) {
+            var contentToAdd = "<div class='marginBottom10'><button id='createTestcampaignButton' type='button' class='btn btn-default'>\n\
             <span class='glyphicon glyphicon-plus-sign'></span> " + doc.getDocLabel("page_testcampaign", "button_create") + "</button></div>";
-        $("#testcampaignsTable_wrapper div#testcampaignsTable_length").before(contentToAdd);
-        $('#testcampaignList #createTestcampaignButton').click(addEntryClick);
-    }
-}
-
-function renderOptionsForCampaign2(id) {
-    var doc = new Doc();
-    var data = getSelectTestBattery(false, true);
-    console.log(data.find("option"));
-    $("#" + id + "_wrapper #addBatteryTestcampaign").remove();
-    var contentToAdd =
-        "<div class='marginBottom10 form-inline' id='addBatteryTestcampaign'>" +
-        "<div class='form-group marginRight10'>" +
-        "<select id='batteryTestSelect' class='form-control' style='width:200px;'>";
-    for (var i = 0; i < data.find("option").length; i++) {
-        if (!findValueTableDataByCol(id, 0, data.find("option")[i].value)) {
-            contentToAdd +=
-                "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].text + "</option>";
+            $("#testcampaignsTable_wrapper div#testcampaignsTable_length").before(contentToAdd);
+            $('#testcampaignList #createTestcampaignButton').click(addEntryClick);
         }
     }
-    contentToAdd +=
-        "</select>" +
-        "</div>" +
-        "<div class='form-group'>" +
-        "<button type='button' id='addBatteryTestcampaignButton' class='btn btn-primary' name='ButtonEdit' onclick='addBatteryEntryClick(\"" + id + "\")'>" + doc.getDocLabel("page_testcampaign", "add_btn") + "</button>" +
-        "</div>" +
-        "</div>";
-    $("#" + id + "_wrapper div#" + id + "_length").before(contentToAdd);
-    $("#" + id + "_wrapper #batteryTestSelect").select2();
-    if ($("#" + id + '_wrapper #batteryTestSelect option').size() <= 0) {
-        $("#" + id + '_wrapper #batteryTestSelect').parent().hide();
-        $("#" + id + '_wrapper #addBatteryTestcampaignButton').off().prop("disabled", true);
+}
+
+function renderOptionsForCampaign_Label(id) {
+    var doc = new Doc();
+    var data = getSelectInvariant("SYSTEM", false, true, "");
+    $("#" + id + "_wrapper #addLabelTestcampaign").remove();
+    var contentToAdd =
+            "<div class='marginBottom10 form-inline' id='addLabelTestcampaign'>" +
+            "<div class='form-group marginRight10 col-sm-3' style='padding-right: 0px; padding-left: 0px;'>" +
+            "<select id='labelSelect' class='form-control' style='width:100%;' onchange='updateSelectLabel(\"" + id + "\")'>";
+    for (var i = 0; i < data.find("option").length; i++) {
+        contentToAdd +=
+                "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].value + "</option>";
     }
+    contentToAdd +=
+            "</select>" +
+            "</div>" +
+            "<div class='form-group marginRight10 col-sm-3' style='padding-right: 0px; padding-left: 0px;'>" +
+            "<select id='labelSelect2' class='form-control' style='width:100%;'>" +
+            "</select>" +
+            "</div>" +
+            "<div class='form-group'>" +
+            "<button type='button' id='addLabelTestcampaignButton' disabled='true' class='btn btn-primary' name='ButtonEdit' onclick='addLabelEntryClick(\"" + id + "\")'>" + doc.getDocLabel("page_testcampaign", "add_btn") + "</button>" +
+            "</div>" +
+            "</div>";
+    $("#" + id + "_wrapper div#" + id + "_length").before(contentToAdd);
+    $("#" + id + "_wrapper #labelSelect").select2();
+    $("#" + id + "_wrapper #labelSelect2").select2();
+    updateSelectLabel(id);
 
 }
 
-function renderOptionsForCampaign3(id) {
+function renderOptionsForCampaign_Parameter(id) {
     var doc = new Doc();
     var data = getSelectInvariant("CAMPAIGN_PARAMETER", false, true);
     $("#" + id + "_wrapper #addParameterTestcampaign").remove();
     var contentToAdd =
-        "<div class='marginBottom10 form-inline' id='addParameterTestcampaign'>" +
-        "<div class='form-group marginRight10'>" +
-        "<select id='parameterTestSelect' class='form-control' style='width:200px;' onchange='updateSelectParameter(\"" + id + "\")'>";
+            "<div class='marginBottom10 form-inline' id='addParameterTestcampaign'>" +
+            "<div class='form-group marginRight10 col-sm-3' style='padding-right: 0px; padding-left: 0px;'>" +
+            "<select id='parameterTestSelect' class='form-control' style='width:100%;' onchange='updateSelectParameter(\"" + id + "\")'>";
     for (var i = 0; i < data.find("option").length; i++) {
         contentToAdd +=
-            "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].value + "</option>";
+                "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].value + "</option>";
     }
     contentToAdd +=
-        "</select>" +
-        "</div>" +
-        "<div class='form-group marginRight10'>" +
-        "<select id='parameterTestSelect2' class='form-control' style='width:200px;'>" +
-        "</select>" +
-        "</div>" +
-        "<div class='form-group'>" +
-        "<button type='button' id='addParameterTestcampaignButton' class='btn btn-primary' name='ButtonEdit' onclick='addParameterEntryClick(\"" + id + "\")'>" + doc.getDocLabel("page_testcampaign", "add_btn") + "</button>" +
-        "</div>" +
-        "</div>";
+            "</select>" +
+            "</div>" +
+            "<div class='form-group marginRight10 col-sm-3' style='padding-right: 0px; padding-left: 0px;'>" +
+            "<select id='parameterTestSelect2' class='form-control' style='width:100%;'>" +
+            "</select>" +
+            "</div>" +
+            "<div class='form-group'>" +
+            "<button type='button' id='addParameterTestcampaignButton' class='btn btn-primary' name='ButtonEdit' onclick='addParameterEntryClick(\"" + id + "\")'>" + doc.getDocLabel("page_testcampaign", "add_btn") + "</button>" +
+            "</div>" +
+            "</div>";
     $("#" + id + "_wrapper div#" + id + "_length").before(contentToAdd);
     $("#" + id + "_wrapper #parameterTestSelect").select2();
     $("#" + id + "_wrapper #parameterTestSelect2").select2();
@@ -158,34 +173,85 @@ function renderOptionsForCampaign3(id) {
 
 }
 
-function renderOptionsForCampaign4(data) {
-    if ($("#blankSpaceBattery").length === 0) {
-        var contentToAdd = "<div class='marginBottom10' style='height:34px;' id='blankSpaceBattery'></div>";
-        $("#viewTestcampaignsTable_wrapper div#viewTestcampaignsTable_length").before(contentToAdd);
+function renderOptionsForCampaign_TestcaseCriterias(id) {
+    var doc = new Doc();
+    var data = getSelectInvariant("CAMPAIGN_TCCRITERIA", false, true);
+    $("#" + id + "_wrapper #addParameterTestcase").remove();
+    var contentToAdd =
+            "<div class='marginBottom10 form-inline' id='addParameterTestcase'>" +
+            "<div class='form-group marginRight10 col-sm-3' style='padding-right: 0px; padding-left: 0px;'>" +
+            "<select id='criteriaTestSelect' class='form-control' style='width:100%;' onchange='updateSelectCriteria(\"" + id + "\")'>";
+    for (var i = 0; i < data.find("option").length; i++) {
+        contentToAdd +=
+                "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].value + "</option>";
     }
+    contentToAdd +=
+            "</select>" +
+            "</div>" +
+            "<div class='form-group marginRight10 col-sm-3' style='padding-right: 0px; padding-left: 0px;'>" +
+            "<select id='criteriaTestSelect2' class='form-control' style='width:100%;'>" +
+            "</select>" +
+            "</div>" +
+            "<div class='form-group'>" +
+            "<button type='button' id='addCriteriaTestcampaignButton' class='btn btn-primary' name='ButtonEdit' onclick='addCriteriaEntryClick(\"" + id + "\")'>" + doc.getDocLabel("page_testcampaign", "add_btn") + "</button>" +
+            "</div>" +
+            "</div>";
+    $("#" + id + "_wrapper div#" + id + "_length").before(contentToAdd);
+    $("#" + id + "_wrapper #criteriaTestSelect").select2();
+    $("#" + id + "_wrapper #criteriaTestSelect2").select2();
+    updateSelectCriteria(id);
+
+}
+
+function renderOptionsForCampaign_TestCase(data) {
 }
 
 function viewEntryClick(param) {
     clearResponseMessageMainPage();
 
     var doc = new Doc();
+    var formEdit = $('#viewTestcampaignModal');
 
     $("[name='viewTestcampaignField']").html(doc.getDocLabel("page_testcampaign", "viewtestcampaign_field") + " " + param);
 
-    //Store the campaign name, we need it if we want to add him a battery test
     $("#campaignKey").val(param);
 
-    if ($("#viewTestcampaignModal #viewTestcampaignsTable_wrapper").length > 0) {
-        $("#viewTestcampaignModal #viewTestcampaignsTable").DataTable().destroy();
-        $("#viewTestcampaignModal #viewTestcampaignsTable").empty();
-    }
-    //configure and create the dataTable
-    var configurations = new TableConfigurationsServerSide("viewTestcampaignsTable", "ReadTestBatteryContent?campaign=" + param, "contentTable", aoColumnsFunc4(), [0, 'asc']);
-    createDataTableWithPermissions(configurations, renderOptionsForCampaign4, "#viewTestcampaignList");
+    showLoader("#testcampaignList");
 
-    var formEdit = $('#viewTestcampaignModal');
 
-    formEdit.modal('show');
+    var jqxhr = $.getJSON("ReadCampaign?testcase=true", "campaign=" + param);
+    $.when(jqxhr).then(function (data) {
+        var obj = data["contentTable"];
+
+        /* TESTCASE */
+
+        var array = [];
+
+        $.each(obj.testcase, function (e) {
+            array.push(
+                    [obj.testcase[e].test, obj.testcase[e].testCase, obj.testcase[e].application, obj.testcase[e].description, obj.testcase[e].status]
+                    );
+        });
+
+        if ($("#viewTestcampaignModal #viewTestcampaignsTable_wrapper").length > 0) {
+            $("#viewTestcampaignModal #viewTestcampaignsTable").DataTable().clear();
+            $("#viewTestcampaignModal #viewTestcampaignsTable").DataTable().rows.add(array).draw();
+
+//            $("#viewTestcampaignModal #viewTestcampaignsTable").DataTable().destroy();
+//            $("#viewTestcampaignModal #viewTestcampaignsTable").empty();
+        } else {
+            //configure and create the dataTable
+//    var configurations = new TableConfigurationsServerSide("viewTestcampaignsTable", "ReadCampaign?testcase=true&campaign=" + param, "contentTable.testcase", aoColumnsFunc_TestCase(), [0, 'asc']);
+            var configurations = new TableConfigurationsClientSide("viewTestcampaignsTable", array, aoColumnsFunc_TestCase(), true);
+            createDataTableWithPermissions(configurations, renderOptionsForCampaign_TestCase, "#viewTestcampaignList", undefined, true);
+        }
+
+        hideLoader("#testcampaignList");
+
+        formEdit.modal('show');
+
+    });
+
 }
 
 function viewEntryModalCloseHandler() {
@@ -199,17 +265,35 @@ function viewEntryModalCloseHandler() {
 function editEntryClick(param) {
     clearResponseMessageMainPage();
 
-    //Store the campaign name, we need it if we want to add him a battery test
+    //Store the campaign name
     $("#campaignKey").val(param);
 
     var formEdit = $('#editTestcampaignModal');
 
-    var jqxhr = $.getJSON("ReadCampaign?battery=true&parameter=true", "param=" + param);
+    showLoader("#testcampaignList");
+
+    var jqxhr = $.getJSON("ReadCampaign?parameter=true&label=true", "campaign=" + param);
     $.when(jqxhr).then(function (data) {
         var obj = data["contentTable"];
+        var parameters = []
+        var criterias = []
 
+        for (var i = 0; i < obj.parameter.length; i++)
+        {
+            if ((obj.parameter[i].parameter === "BROWSER")
+                    || (obj.parameter[i].parameter === "COUNTRY")
+                    || (obj.parameter[i].parameter === "ENVIRONMENT")
+                    || (obj.parameter[i].parameter === "ROBOT")) {
+                parameters.push(obj.parameter[i])
+            } else {
+                criterias.push(obj.parameter[i])
+            }
+        }
 
         formEdit.find("#campaign").prop("value", obj["campaign"]);
+        formEdit.find("#notifystart").val(obj["notifyStartTagExecution"]);
+        formEdit.find("#notifyend").val(obj["notifyEndTagExecution"]);
+        formEdit.find("#distriblist").prop("value", obj["distribList"]);
         formEdit.find("#description").prop("value", obj["description"]);
         formEdit.find("#id").prop("value", obj["campaignID"]);
 
@@ -222,38 +306,32 @@ function editEntryClick(param) {
             $('#editTestcampaignButton').attr('hidden', 'hidden');
         }
 
-        /* BATTERIES */
+        /* LABEL */
 
         var array = [];
 
-        $.each(obj.battery, function (e) {
+        $.each(obj.label, function (e) {
             array.push(
-                $.map(obj.battery[e], function (value, index) {
-                    return [value];
-                })
-            );
+                    [obj.label[e].campaign, obj.label[e].campaignLabelID, obj.label[e].LabelId, obj.label[e].label.label + " - " + obj.label[e].label.color, obj.label[e].label.system]
+                    );
         });
 
-        if ($("#editTestcampaignModal #batteryTestcampaignsTable_wrapper").length > 0) {
-            $("#editTestcampaignModal #batteryTestcampaignsTable").DataTable().clear();
-            $("#editTestcampaignModal #batteryTestcampaignsTable").DataTable().rows.add(array).draw();
+        if ($("#editTestcampaignModal #labelTestcampaignsTable_wrapper").length > 0) {
+            $("#editTestcampaignModal #labelTestcampaignsTable").DataTable().clear();
+            $("#editTestcampaignModal #labelTestcampaignsTable").DataTable().rows.add(array).draw();
         } else {
             //configure and create the dataTable
-            var configurations = new TableConfigurationsClientSide("batteryTestcampaignsTable", array, aoColumnsFunc2("batteryTestcampaignsTable"), true);
-            createDataTableWithPermissions(configurations, null, "#batteryTestcampaignList");
+            var configurations = new TableConfigurationsClientSide("labelTestcampaignsTable", array, aoColumnsFunc_Label("labelTestcampaignsTable"), true);
+            createDataTableWithPermissions(configurations, null, "#labelTestcampaignList", undefined, true);
         }
-        renderOptionsForCampaign2("batteryTestcampaignsTable");
+        renderOptionsForCampaign_Label("labelTestcampaignsTable");
 
         /* PARAMETERS */
 
         var array = [];
 
-        $.each(obj.parameter, function (e) {
-            array.push(
-                $.map(obj.parameter[e], function (value, index) {
-                    return [value];
-                })
-            );
+        $.each(parameters, function (e) {
+            array.push([parameters[e].campaign, parameters[e].campaignparameterID, parameters[e].parameter, parameters[e].value])
         });
 
         if ($("#editTestcampaignModal #parameterTestcampaignsTable_wrapper").length > 0) {
@@ -261,16 +339,42 @@ function editEntryClick(param) {
             $("#editTestcampaignModal #parameterTestcampaignsTable").DataTable().rows.add(array).draw();
         } else {
             //configure and create the dataTable
-            var configurations = new TableConfigurationsClientSide("parameterTestcampaignsTable", array, aoColumnsFunc3("parameterTestcampaignsTable"), true);
-            createDataTableWithPermissions(configurations, null, "#parameterTestcampaignList");
+            var configurations = new TableConfigurationsClientSide("parameterTestcampaignsTable", array, aoColumnsFunc_Parameter("parameterTestcampaignsTable"), true);
+            createDataTableWithPermissions(configurations, null, "#parameterTestcampaignList", undefined, true);
         }
-        renderOptionsForCampaign3("parameterTestcampaignsTable");
+        renderOptionsForCampaign_Parameter("parameterTestcampaignsTable");
+        hideLoader("#testcampaignList");
+
+        $('#editTestcampaignModal .nav-tabs a[href="#tabsCreate-1"]').tab('show');
+        formEdit.modal('show');
+
+        /* CRITERIAS */
+
+        var array = [];
+
+        $.each(criterias, function (e) {
+            array.push([criterias[e].campaign, criterias[e].campaignparameterID, criterias[e].parameter, criterias[e].value])
+        });
+
+        if ($("#editTestcampaignModal #parameterTestcaseTable_wrapper").length > 0) {
+            $("#editTestcampaignModal #parameterTestcaseTable").DataTable().clear();
+            $("#editTestcampaignModal #parameterTestcaseTable").DataTable().rows.add(array).draw();
+        } else {
+            //configure and create the dataTable
+            var configurations = new TableConfigurationsClientSide("parameterTestcaseTable", array, aoColumnsFunc_Parameter("parameterTestcaseTable"), true);
+            createDataTableWithPermissions(configurations, null, "#parameterTestcaseTable", undefined, true);
+        }
+
+        renderOptionsForCampaign_TestcaseCriterias("parameterTestcaseTable")
+
+        hideLoader("#testcampaignList");
+
+        $('#editTestcampaignModal .nav-tabs a[href="#tabsCreate-1"]').tab('show');
+        formEdit.modal('show');
+
 
     });
 
-    $('#editTestcampaignModal .nav-tabs a[href="#tabsCreate-1"]').tab('show');
-
-    formEdit.modal('show');
 }
 
 function editEntryModalSaveHandler() {
@@ -283,9 +387,9 @@ function editEntryModalSaveHandler() {
         data[sa[i].name] = sa[i].value;
     }
 
-    var batteries = null;
-    if ($("#batteryTestcampaignsTable_wrapper").length > 0) {
-        batteries = $("#batteryTestcampaignsTable").DataTable().data().toArray();
+    var labels = null;
+    if ($("#labelTestcampaignsTable_wrapper").length > 0) {
+        labels = $("#labelTestcampaignsTable").DataTable().data().toArray();
     }
 
     var parameters = null;
@@ -293,23 +397,35 @@ function editEntryModalSaveHandler() {
         parameters = $("#parameterTestcampaignsTable").DataTable().data().toArray();
     }
 
+    var criterias = null
+    if ($("#parameterTestcaseTable_wrapper").length > 0) {
+        criterias = $("#parameterTestcaseTable").DataTable().data()
+        for (let i = 0; i < criterias.length; i++) {
+            parameters.push(criterias[i])
+        }
+    }
+
     // Get the header data from the form.
     //var data = convertSerialToJSONObject(formEdit.serialize());
 
     showLoaderInModal('#editTestcampaignModal');
     $.ajax({
-        url: "UpdateCampaign2",
+        url: "UpdateCampaign",
         async: true,
         method: "POST",
         data: {
             Campaign: data.campaign,
             CampaignID: data.id,
+            DistribList: data.distriblist,
+            NotifyStart: data.notifystart,
+            NotifyEnd: data.notifyend,
             Description: data.description,
-            Batteries: JSON.stringify(batteries),
+//            Batteries: JSON.stringify(batteries),
+            Labels: JSON.stringify(labels),
             Parameters: JSON.stringify(parameters)
         },
         success: function (data) {
-            data = JSON.parse(data);
+//            data = JSON.parse(data);
             hideLoaderInModal('#editTestcampaignModal');
             if (getAlertType(data.messageType) === 'success') {
                 var oTable = $("#testcampaignsTable").dataTable();
@@ -338,27 +454,40 @@ function addEntryClick() {
     clearResponseMessageMainPage();
     $("#addTestcampaignModal #campaign").empty();
 
-    if ($("#addModalBatteryTestcampaignsTable_wrapper").length > 0) {
-        $("#addModalBatteryTestcampaignsTable").DataTable().clear().draw();
+    // LABEL
+    if ($("#addModalLabelTestcampaignsTable_wrapper").length > 0) {
+        $("#addModalLabelTestcampaignsTable").DataTable().clear().draw();
     } else {
         //configure and create the dataTable
-        var configurations = new TableConfigurationsClientSide("addModalBatteryTestcampaignsTable", null, aoColumnsFunc2("addModalBatteryTestcampaignsTable"), true);
-        createDataTableWithPermissions(configurations, null, "#addModalBatteryTestcampaignList");
+        var configurations = new TableConfigurationsClientSide("addModalLabelTestcampaignsTable", null, aoColumnsFunc_Label("addModalLabelTestcampaignsTable"), true);
+        createDataTableWithPermissions(configurations, null, "#addModalLabelTestcampaignList", undefined, true);
     }
-    renderOptionsForCampaign2("addModalBatteryTestcampaignsTable");
+    renderOptionsForCampaign_Label("addModalLabelTestcampaignsTable");
 
+    // PARAMETER
     if ($("#addModalParameterTestcampaignsTable_wrapper").length > 0) {
         $("#addModalParameterTestcampaignsTable").DataTable().clear().draw();
     } else {
         //configure and create the dataTable
-        var configurations = new TableConfigurationsClientSide("addModalParameterTestcampaignsTable", null, aoColumnsFunc3("addModalParameterTestcampaignsTable"), true);
-        createDataTableWithPermissions(configurations, null, "#addModalParameterTestcampaignList");
+        var configurations = new TableConfigurationsClientSide("addModalParameterTestcampaignsTable", null, aoColumnsFunc_Parameter("addModalParameterTestcampaignsTable"), true);
+        createDataTableWithPermissions(configurations, null, "#addModalParameterTestcampaignList", undefined, true);
     }
-    renderOptionsForCampaign3("addModalParameterTestcampaignsTable");
+    renderOptionsForCampaign_Parameter("addModalParameterTestcampaignsTable");
+
+    // CRITERIA
+
+    if ($("#addModalParameterTestcaseTable_wrapper").length > 0) {
+        $("#addModalParameterTestcaseTable").DataTable().clear().draw();
+    } else {
+        //configure and create the dataTable
+        var configurations = new TableConfigurationsClientSide("addModalParameterTestcaseTable", null, aoColumnsFunc_Parameter("addModalParameterTestcaseTable"), true);
+        createDataTableWithPermissions(configurations, null, "#addModalParameterTestcaseList", undefined, true);
+    }
+    renderOptionsForCampaign_TestcaseCriterias("addModalParameterTestcaseTable");
 
     $('#addTestcampaignModal .nav-tabs a[href="#tabsCreate-11"]').tab('show');
-
     $('#addTestcampaignModal').modal('show');
+
 }
 
 function addEntryModalSaveHandler() {
@@ -371,20 +500,28 @@ function addEntryModalSaveHandler() {
         data[sa[i].name] = sa[i].value;
     }
 
-    var batteries = null;
-    if ($("#addModalBatteryTestcampaignsTable_wrapper").length > 0) {
-        batteries = $("#addModalBatteryTestcampaignsTable").DataTable().data().toArray();
+    var labels = null;
+    if ($("#addModalLabelTestcampaignsTable_wrapper").length > 0) {
+        labels = $("#addModalLabelTestcampaignsTable").DataTable().data().toArray();
     }
-    for (var i = 0; i < batteries.length; i++) {
-        batteries[i][1] = data.campaign;
+    for (var i = 0; i < labels.length; i++) {
+        labels[i][0] = data.campaign;
     }
 
     var parameters = null;
     if ($("#addModalParameterTestcampaignsTable_wrapper").length > 0) {
         parameters = $("#addModalParameterTestcampaignsTable").DataTable().data().toArray();
     }
+
+    var criterias = null
+    if ($("#addModalParameterTestcaseTable").length > 0) {
+        criterias = $("#addModalParameterTestcaseTable").DataTable().data()
+        for (let i = 0; i < criterias.length; i++) {
+            parameters.push(criterias[i])
+        }
+    }
     for (var i = 0; i < parameters.length; i++) {
-        parameters[i][2] = data.campaign;
+        parameters[i][0] = data.campaign;
     }
     // Get the header data from the form.
     //var data = convertSerialToJSONObject(formEdit.serialize());
@@ -396,12 +533,16 @@ function addEntryModalSaveHandler() {
         method: "POST",
         data: {
             Campaign: data.campaign,
+            DistribList: data.distriblist,
+            NotifyStart: data.notifystart,
+            NotifyEnd: data.notifyend,
             Description: data.description,
-            Batteries: JSON.stringify(batteries),
+//            Batteries: JSON.stringify(batteries),
+            Labels: JSON.stringify(labels),
             Parameters: JSON.stringify(parameters)
         },
         success: function (data) {
-            data = JSON.parse(data);
+//            data = JSON.parse(data);
             hideLoaderInModal('#addTestcampaignModal');
             if (getAlertType(data.messageType) === 'success') {
                 var oTable = $("#testcampaignsTable").dataTable();
@@ -431,7 +572,7 @@ function removeEntryClick(key) {
     showModalConfirmation(function (ev) {
         var id = $('#confirmationModal #hiddenField1').prop("value");
         $.ajax({
-            url: "DeleteCampaign2?key=" + key,
+            url: "DeleteCampaign?key=" + key,
             async: true,
             method: "GET",
             success: function (data) {
@@ -445,29 +586,70 @@ function removeEntryClick(key) {
         });
 
         $('#confirmationModal').modal('hide');
-    }, doc.getDocLabel("page_testcampaign", "title_remove"), doc.getDocLabel("page_testcampaign", "message_remove"), id, undefined, undefined, undefined);
+    }, undefined, doc.getDocLabel("page_testcampaign", "title_remove"), doc.getDocLabel("page_testcampaign", "message_remove"), id, undefined, undefined, undefined);
 }
 
-function addBatteryEntryClick(tableId) {
-    $("#" + tableId + '_wrapper #addBatteryTestcampaignButton').off().prop("disabled", true);
-    $("#" + tableId).DataTable().row.add([$("#" + tableId + '_wrapper #batteryTestSelect').find(":selected").val(), $("#campaignKey").val()]).draw();
-    renderOptionsForCampaign2(tableId);
+function addLabelEntryClick(tableId) {
+    $("#" + tableId + '_wrapper #addLabelTestcampaignButton').off().prop("disabled", true);
+    $("#" + tableId).DataTable().row.add([
+        $("#campaignKey").val()
+                , 0
+                , $("#" + tableId + '_wrapper #labelSelect2').find(":selected").val()
+                , $("#" + tableId + '_wrapper #labelSelect2').find(":selected").text()
+                , $("#" + tableId + '_wrapper #labelSelect').find(":selected").val()
+    ]).draw();
+    updateSelectLabel(tableId);
 }
 
-function removeBatteryEntryClick(tableId, key) {
-    $('#' + tableId + '_wrapper #removeTestbattery').filter(function (i, e) {
+function removeLabelEntryClick(tableId, key) {
+    $('#' + tableId + '_wrapper #removeLabel').filter(function (i, e) {
         return $(e).attr("key") == key;
     }).off().prop("disabled", true);
     $("#" + tableId).DataTable().rows(function (i, d, n) {
-        return d[0] == key;
+        return d[2] == key;
     }).remove().draw();
-    renderOptionsForCampaign2(tableId);
+    updateSelectLabel(tableId);
+}
+
+function updateSelectLabel(id) {
+    var val = $("#" + id + '_wrapper #labelSelect').find(":selected").val();
+    var data = getSelectLabel(val, true, true);
+    $("#" + id + "_wrapper #labelSelect2").empty();
+    var optionList = "";
+    for (var i = 0; i < data.find("option").length; i++) {
+        if (!(findValueTableDataByCol(id, 2, data.find("option")[i].value)))
+            optionList +=
+                    "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].text + "</option>";
+    }
+    $("#" + id + "_wrapper #labelSelect2").append(optionList);
+    $("#" + id + '_wrapper #addlabelTestcampaignButton').prop("disabled", true);
+    if ($("#" + id + '_wrapper #labelSelect2 option').size() <= 0) {
+        $("#" + id + '_wrapper #labelSelect2').parent().hide();
+        $("#" + id + '_wrapper #addlabelTestcampaignButton').prop("disabled", true);
+    } else {
+        $("#" + id + '_wrapper #labelSelect2').parent().show();
+        $("#" + id + '_wrapper #addLabelTestcampaignButton').bind("click", function () {
+            addParameterEntryClick(id);
+        }).prop("disabled", false);
+    }
 }
 
 function addParameterEntryClick(tableId) {
     $("#" + tableId + '_wrapper #addParameterTestcampaignButton').off().prop("disabled", true);
-    $("#" + tableId).DataTable().row.add([0, $("#" + tableId + '_wrapper #parameterTestSelect').find(":selected").val(), $("#campaignKey").val(), $("#" + tableId + '_wrapper #parameterTestSelect2').find(":selected").val()]).draw();
+    $("#" + tableId).DataTable().row.add([$("#campaignKey").val()
+                , 0
+                , $("#" + tableId + '_wrapper #parameterTestSelect').find(":selected").val()
+                , $("#" + tableId + '_wrapper #parameterTestSelect2').find(":selected").val()]).draw();
     updateSelectParameter(tableId);
+}
+
+function addCriteriaEntryClick(tableId) {
+    $("#" + tableId + '_wrapper #addCriteriaTestcampaignButton').off().prop("disabled", true);
+    $("#" + tableId).DataTable().row.add([$("#campaignKey").val()
+                , 0
+                , $("#" + tableId + '_wrapper #criteriaTestSelect').find(":selected").val()
+                , $("#" + tableId + '_wrapper #criteriaTestSelect2').find(":selected").val()]).draw();
+    updateSelectCriteria(tableId);
 }
 
 function removeParameterEntryClick(tableId, key, key1) {
@@ -475,7 +657,7 @@ function removeParameterEntryClick(tableId, key, key1) {
         return $(e).attr("key") == key && $(e).attr("key1") == key1;
     }).off().prop("disabled", true);
     $("#" + tableId).DataTable().rows(function (i, d, n) {
-        return d[1] == key && d[3] == key1;
+        return d[2] == key && d[3] == key1;
     }).remove().draw()
     updateSelectParameter(tableId);
 }
@@ -488,14 +670,19 @@ function getSys() {
 
 function updateSelectParameter(id) {
     var val = $("#" + id + '_wrapper #parameterTestSelect').find(":selected").val();
-    var data = getSelectInvariant(val, false, true);
-    console.log(data);
+    var data = []
+
+    if (val === "ROBOT") {
+        data = getSelectRobot(true, true);
+    } else {
+        data = getSelectInvariant(val, false, true);
+    }
+
     $("#" + id + "_wrapper #parameterTestSelect2").empty();
     var optionList = "";
     for (var i = 0; i < data.find("option").length; i++) {
-        if (!(findValueTableDataByCol(id, 1, val) && findValueTableDataByCol(id, 3, data.find("option")[i].value)))
-            optionList +=
-                "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].value + "</option>";
+        if (!(findValueTableDataByCol(id, 2, val) && findValueTableDataByCol(id, 3, data.find("option")[i].value)))
+            optionList += "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].text + "</option>";
     }
     $("#" + id + "_wrapper #parameterTestSelect2").append(optionList);
     if ($("#" + id + '_wrapper #parameterTestSelect2 option').size() <= 0) {
@@ -505,6 +692,36 @@ function updateSelectParameter(id) {
         $("#" + id + '_wrapper #parameterTestSelect2').parent().show();
         $("#" + id + '_wrapper #addParameterTestcampaignButton').bind("click", function () {
             addParameterEntryClick(id);
+        }).prop("disabled", false);
+    }
+}
+
+function updateSelectCriteria(id) {
+    var val = $("#" + id + '_wrapper #criteriaTestSelect').find(":selected").val();
+    var data = []
+    if (val === "STATUS") {
+        data = getSelectInvariant("TCSTATUS", false, true);
+    } else if (val === "APPLICATION") {
+        data = getSelectApplicationWithoutSystem();
+    } else {
+        data = getSelectInvariant(val, false, true);
+    }
+
+    $("#" + id + "_wrapper #criteriaTestSelect2").empty();
+    var optionList = "";
+    for (var i = 0; i < data.find("option").length; i++) {
+        if (!(findValueTableDataByCol(id, 2, val) && findValueTableDataByCol(id, 3, data.find("option")[i].value)))
+            optionList +=
+                    "<option value='" + data.find("option")[i].value + "'>" + data.find("option")[i].value + "</option>";
+    }
+    $("#" + id + "_wrapper #criteriaTestSelect2").append(optionList);
+    if ($("#" + id + '_wrapper #criteriaTestSelect2 option').size() <= 0) {
+        $("#" + id + '_wrapper #criteriaTestSelect2').parent().hide();
+        $("#" + id + '_wrapper #addCriteriaTestcampaignButton').prop("disabled", true);
+    } else {
+        $("#" + id + '_wrapper #criteriaTestSelect2').parent().show();
+        $("#" + id + '_wrapper #addCriteriaTestcampaignButton').bind("click", function () {
+            addCriteriaEntryClick(id);
         }).prop("disabled", false);
     }
 }
@@ -527,6 +744,7 @@ function aoColumnsFunc(tableId) {
             "data": null,
             "bSortable": false,
             "bSearchable": false,
+            "sWidth": "80px",
             "title": doc.getDocLabel("page_testcampaign", "button_col"),
             "mRender": function (data, type, obj) {
                 var hasPermissions = $("#" + tableId).attr("hasPermissions");
@@ -544,22 +762,40 @@ function aoColumnsFunc(tableId) {
                                         name="viewTestcampaign" title="' + doc.getDocLabel("page_testcampaign", "button_view") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-eye-open"></span></button>';
 
-                return '<div class="center btn-group width150">' + editTestcampaign + removeTestcampaign + viewTestcampaign + '</div>';
+                return '<div class="center btn-group">' + editTestcampaign + removeTestcampaign + viewTestcampaign + '</div>';
 
-            },
-            "width": "100px"
+            }
         },
         {"data": "campaign", "sName": "campaign", "title": doc.getDocLabel("page_testcampaign", "testcampaign_col")},
         {
+            "data": "distribList",
+            "sName": "distribList",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("testcampaign", "distribList")
+        },
+        {
+            "data": "notifyStartTagExecution",
+            "sName": "notifyStartTagExecution",
+            "sWidth": "30px",
+            "title": doc.getDocLabel("testcampaign", "notifyStartTagExecution")
+        },
+        {
+            "data": "notifyEndTagExecution",
+            "sName": "notifyEndTagExecution",
+            "sWidth": "30px",
+            "title": doc.getDocLabel("testcampaign", "notifyEndTagExecution")
+        },
+        {
             "data": "description",
             "sName": "description",
+            "sWidth": "80px",
             "title": doc.getDocLabel("page_testcampaign", "description_col")
         }
     ];
     return aoColumns;
 }
 
-function aoColumnsFunc2(tableId) {
+function aoColumnsFunc_Label(tableId) {
     var doc = new Doc();
     var aoColumns = [
         {
@@ -570,22 +806,23 @@ function aoColumnsFunc2(tableId) {
             "mRender": function (data, type, obj) {
                 var hasPermissions = $("#" + tableId).attr("hasPermissions");
 
-                var removeTestcampaign = '<button id="removeTestbattery" key="' + obj[0] + '" onclick="removeBatteryEntryClick(\'' + tableId + '\',\'' + obj[0] + '\');"\n\
-                                        class="removeTestbattery btn btn-default btn-xs margin-right5" \n\
-                                        name="removeTestbattery" title="' + doc.getDocLabel("page_testcampaign", "button_remove") + '" type="button">\n\
+                var removeButton = '<button id="removeTestlabel" key="' + obj[2] + '" onclick="removeLabelEntryClick(\'' + tableId + '\',\'' + obj[2] + '\');"\n\
+                                        class="removeTestlabel btn btn-default btn-xs margin-right5" \n\
+                                        name="removeTestlabel" title="' + doc.getDocLabel("page_testcampaign", "button_remove") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-trash"></span></button>';
 
-                return '<div class="center btn-group width150">' + removeTestcampaign + '</div>';
+                return '<div class="center btn-group">' + removeButton + '</div>';
 
-            },
-            "width": "100px"
+            }
         },
-        {"data": "0", "sName": "testbattery", "title": doc.getDocLabel("page_testcampaign", "testbattery_col")}
+        {"data": "2", "sName": "labelId", "title": doc.getDocLabel("label", "id")},
+        {"data": "4", "sName": "system", "title": doc.getDocLabel("label", "system")},
+        {"data": "3", "sName": "label", "title": doc.getDocLabel("label", "label")}
     ];
     return aoColumns;
 }
 
-function aoColumnsFunc3(tableId) {
+function aoColumnsFunc_Parameter(tableId) {
     var doc = new Doc();
     var aoColumns = [
         {
@@ -595,37 +832,34 @@ function aoColumnsFunc3(tableId) {
             "title": doc.getDocLabel("page_testcampaign", "button_col"),
             "mRender": function (data, type, obj) {
                 var hasPermissions = $("#" + tableId).attr("hasPermissions");
-                var removeTestcampaign = '<button id="removeTestparameter" key="' + obj[1] + '" key1="' + obj[3] + '" onclick="removeParameterEntryClick(\'' + tableId + '\',\'' + obj[1] + '\',\'' + obj[3] + '\');"\n\
+                var removeButton = '<button id="removeTestparameter" key="' + obj[2] + '" key1="' + obj[3] + '" onclick="removeParameterEntryClick(\'' + tableId + '\',\'' + obj[2] + '\',\'' + obj[3] + '\');"\n\
                                         class="removeTestparameter btn btn-default btn-xs margin-right5" \n\
                                         name="removeTestparameter" title="' + doc.getDocLabel("page_testcampaign", "button_remove") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-trash"></span></button>';
 
-                return '<div class="center btn-group width150">' + removeTestcampaign + '</div>';
+                return '<div class="center btn-group">' + removeButton + '</div>';
 
-            },
-            "width": "100px"
+            }
         },
-        {"data": "1", "sName": "parameter", "title": doc.getDocLabel("page_testcampaign", "parameter_col")},
+        {"data": "2", "sName": "parameter", "title": doc.getDocLabel("page_testcampaign", "parameter_col")},
         {"data": "3", "sName": "value", "title": doc.getDocLabel("page_testcampaign", "value_col")}
     ];
     return aoColumns;
 }
 
-function aoColumnsFunc4() {
+function aoColumnsFunc_TestCase() {
     var doc = new Doc();
     var aoColumns = [
+        {"data": "0", "sName": "tbc.Test", "title": doc.getDocLabel("test", "Test")},
         {
-            "data": "testbattery",
-            "sName": "tbc.testbattery",
-            "title": doc.getDocLabel("page_testcampaign", "testbattery_col")
-        },
-        {"data": "test", "sName": "tbc.Test", "title": doc.getDocLabel("page_testcampaign", "test_col")},
-        {
-            "data": "testCase", "sName": "tbc.Testcase", "title": doc.getDocLabel("page_testcampaign", "testcase_col"),
+            "data": "1", "sName": "tbc.Testcase", "title": doc.getDocLabel("testcase", "TestCase"),
             "mRender": function (data, type, obj) {
-                return "<a target=\"_blank\" href='TestCase.jsp?Test=" + obj["test"] + "&TestCase=" + obj["testCase"] + "'>" + obj["testCase"] + "</a>";
+                return "<a target=\"_blank\" href='TestCaseScript.jsp?test=" + obj[0] + "&testcase=" + obj[1] + "'>" + obj[1] + "</a>";
             }
-        }
+        },
+        {"data": "2", "sName": "tbc.application", "title": doc.getDocLabel("application", "Application")},
+        {"data": "3", "sName": "tbc.description", "title": doc.getDocLabel("testcase", "Description")},
+        {"data": "4", "sName": "tec.status", "title": doc.getDocLabel("testcase", "Status")}
     ];
     return aoColumns;
 }

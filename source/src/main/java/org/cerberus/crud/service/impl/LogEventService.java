@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,16 +21,12 @@ package org.cerberus.crud.service.impl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import org.cerberus.crud.dao.ILogEventDAO;
 import org.cerberus.crud.entity.LogEvent;
-import org.cerberus.crud.entity.Parameter;
 import org.cerberus.crud.factory.IFactoryLogEvent;
 import org.cerberus.crud.service.ILogEventService;
 import org.cerberus.crud.service.IParameterService;
-import org.cerberus.exception.CerberusException;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
@@ -68,42 +64,35 @@ public class LogEventService implements ILogEventService {
     }
 
     @Override
-    public void createPrivateCalls(String page, String action, String log, HttpServletRequest request) {
+    public void createForPrivateCalls(String page, String action, String log, HttpServletRequest request) {
         // Only log if cerberus_log_publiccalls parameter is equal to Y.
         String myUser = "";
-        if (!(request.getUserPrincipal() == null)) {
-            myUser = ParameterParserUtil.parseStringParam(request.getUserPrincipal().getName(), "");
+        String remoteIP = "";
+        String localIP = "";
+        if (request != null) {
+            remoteIP = request.getRemoteAddr();
+            if (request.getHeader("x-forwarded-for") != null) {
+                remoteIP = request.getHeader("x-forwarded-for");
+            }
+            if (!(request.getUserPrincipal() == null)) {
+                myUser = ParameterParserUtil.parseStringParam(request.getUserPrincipal().getName(), "");
+            }
+            localIP = request.getLocalAddr();
         }
-        this.create(factoryLogEvent.create(0, 0, myUser, null, page, action, log, request.getRemoteAddr(), request.getLocalAddr()));
+        this.create(factoryLogEvent.create(0, 0, myUser, null, page, action, log, remoteIP, localIP));
     }
 
     @Override
-    public void createPrivateCalls(String page, String action, String log) {
+    public void createForPrivateCalls(String page, String action, String log) {
         // Only log if cerberus_log_publiccalls parameter is equal to Y.
         this.create(factoryLogEvent.create(0, 0, "", null, page, action, log, null, null));
     }
 
     @Override
-    public void createPublicCalls(String page, String action, String log, HttpServletRequest request) {
+    public void createForPublicCalls(String page, String action, String log, HttpServletRequest request) {
         // Only log if cerberus_log_publiccalls parameter is equal to Y.
-        String doit = "";
-        try {
-            Parameter p = parameterService.findParameterByKey("cerberus_log_publiccalls", "");
-            //p can be null if the DAO fail to obain the parameter
-            if (p != null) {
-                doit = p.getValue();
-            } else {
-                //if some exception occurrs while accessing the parameter then we will activate the logs in order to 
-                //Check if there are more problems
-                doit = "Y";
-                Logger.getLogger(LogEventService.class.getName()).log(Level.WARNING, "Parameter is not available: cerberus_log_publiccalls", "");
-            }
-            
-        } catch (CerberusException ex) {
-            Logger.getLogger(LogEventService.class.getName()).log(Level.SEVERE, null, ex);
-        }
 
-        if (doit.equalsIgnoreCase("Y")) { // The parameter cerberus_log_publiccalls is activated so we log all Public API calls.
+        if (parameterService.getParameterBooleanByKey("cerberus_log_publiccalls", "", false)) { // The parameter cerberus_log_publiccalls is activated so we log all Public API calls.
             String myUser = "";
             if (!(request.getUserPrincipal() == null)) {
                 myUser = ParameterParserUtil.parseStringParam(request.getUserPrincipal().getName(), "");

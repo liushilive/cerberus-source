@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,13 +27,12 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.crud.entity.TestCaseCountryProperties;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.crud.factory.IFactoryLogEvent;
-import org.cerberus.crud.factory.impl.FactoryLogEvent;
-import org.cerberus.log.MyLogger;
 import org.cerberus.crud.service.ILogEventService;
 import org.cerberus.crud.service.ITestCaseCountryPropertiesService;
 import org.cerberus.crud.service.ITestCaseCountryService;
@@ -56,6 +55,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "ImportPropertyOfATestCaseToAnOtherTestCase", urlPatterns = {"/ImportPropertyOfATestCaseToAnOtherTestCase"})
 public class ImportPropertyOfATestCaseToAnOtherTestCase extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(ImportPropertyOfATestCaseToAnOtherTestCase.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -130,7 +131,7 @@ public class ImportPropertyOfATestCaseToAnOtherTestCase extends HttpServlet {
                                     //testCaseCountryPropertiesService.insertTestCaseCountryProperties(countryProperties);
                                 }
                             } catch (CerberusException ex) {
-                                MyLogger.log(ImportPropertyOfATestCaseToAnOtherTestCase.class.getName(), org.apache.log4j.Level.DEBUG, ex.toString());
+                                LOG.debug(ex.toString());
                             }
                         }
                         //insert the new property for all countries specified
@@ -142,7 +143,7 @@ public class ImportPropertyOfATestCaseToAnOtherTestCase extends HttpServlet {
                         if(answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())){
                             //  Adding Log entry.
                             ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                            logEventService.createPrivateCalls( "/ImportPropertyOfATestCaseToAnOtherTestCase", "CREATE", "Override from imported test step: " + propertyName, request);
+                            logEventService.createForPrivateCalls( "/ImportPropertyOfATestCaseToAnOtherTestCase", "CREATE", "Override from imported test step: " + propertyName, request);
                         }                        
                     }
                 }else{
@@ -165,7 +166,7 @@ public class ImportPropertyOfATestCaseToAnOtherTestCase extends HttpServlet {
           
         }  catch (JSONException ex) {
 
-            org.apache.log4j.Logger.getLogger(CreateTestDataLib.class.getName()).log(org.apache.log4j.Level.ERROR, null, ex);
+            LOG.warn(ex);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }

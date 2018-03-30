@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -45,7 +45,7 @@ public class TestDataLibDataService implements ITestDataLibDataService {
 
     private final String OBJECT_NAME = "TestDataLibData";
 
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(TestDataLibDataService.class);
+    private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger(TestDataLibDataService.class);
 
     @Override
     public AnswerItem readByKey(Integer testDataLibID, String subData) {
@@ -112,6 +112,7 @@ public class TestDataLibDataService implements ITestDataLibDataService {
 
     @Override
     public Answer compareListAndUpdateInsertDeleteElements(Integer testDataLibId, List<TestDataLibData> newList) {
+    	
         Answer ans = new Answer(null);
 
         MessageEvent msg1 = new MessageEvent(MessageEventEnum.GENERIC_OK);
@@ -130,7 +131,7 @@ public class TestDataLibDataService implements ITestDataLibDataService {
         List<TestDataLibData> listToUpdateOrInsert = new ArrayList(newList);
         listToUpdateOrInsert.removeAll(oldList);
         List<TestDataLibData> listToUpdateOrInsertToIterate = new ArrayList(listToUpdateOrInsert);
-
+        
         for (TestDataLibData objectDifference : listToUpdateOrInsertToIterate) {
             for (TestDataLibData objectInDatabase : oldList) {
                 if (objectDifference.hasSameKey(objectInDatabase)) {
@@ -139,10 +140,6 @@ public class TestDataLibDataService implements ITestDataLibDataService {
                     listToUpdateOrInsert.remove(objectDifference);
                 }
             }
-        }
-        if (!listToUpdateOrInsert.isEmpty()) {
-            ans = this.createList(listToUpdateOrInsert);
-            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
         }
 
         /**
@@ -163,6 +160,13 @@ public class TestDataLibDataService implements ITestDataLibDataService {
             ans = this.deleteList(listToDelete);
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
         }
+
+        // We insert only at the end (after deletion of all potencial enreg - linked with #1281)
+        if (!listToUpdateOrInsert.isEmpty()) {
+            ans = this.createList(listToUpdateOrInsert);
+            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
+        }
+
         return finalAnswer;
     }
 

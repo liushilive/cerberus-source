@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,14 +21,15 @@ package org.cerberus.crud.service.impl;
 
 import java.util.List;
 import java.util.Map;
-
-import org.apache.log4j.Logger;
+import javax.servlet.http.HttpServletRequest;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.IRobotDAO;
-import org.cerberus.engine.entity.MessageGeneral;
 import org.cerberus.crud.entity.Robot;
 import org.cerberus.crud.entity.RobotCapability;
 import org.cerberus.crud.service.IRobotCapabilityService;
 import org.cerberus.crud.service.IRobotService;
+import org.cerberus.engine.entity.MessageGeneral;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.enums.MessageGeneralEnum;
 import org.cerberus.exception.CerberusException;
@@ -49,7 +50,7 @@ public class RobotService implements IRobotService {
     /**
      * The associated {@link Logger} to this class
      */
-    private static final Logger LOGGER = Logger.getLogger(RobotService.class);
+    private static final Logger LOGGER = LogManager.getLogger(RobotService.class);
 
     @Autowired
     private IRobotDAO robotDao;
@@ -63,7 +64,7 @@ public class RobotService implements IRobotService {
     }
 
     @Override
-    public AnswerItem<Robot> readByKey(String robot) {
+    public Robot readByKey(String robot) throws CerberusException {
         return fillCapabilities(robotDao.readByKey(robot));
     }
 
@@ -105,7 +106,7 @@ public class RobotService implements IRobotService {
 
         // Second, delete its capabilities
         AnswerUtil.agregateAnswer(finalAnswer, robotCapabilityService.delete(robot.getCapabilities()));
-        
+
         // Finally return aggregated answer
         return finalAnswer;
     }
@@ -123,6 +124,30 @@ public class RobotService implements IRobotService {
 
         // Finally return aggregated answer
         return finalAnswer;
+    }
+
+    @Override
+    public boolean hasPermissionsRead(Robot robot, HttpServletRequest request) {
+        // Access right calculation.
+        return true;
+    }
+
+    @Override
+    public boolean hasPermissionsUpdate(Robot robot, HttpServletRequest request) {
+        // Access right calculation.
+        return (request.isUserInRole("RunTest"));
+    }
+
+    @Override
+    public boolean hasPermissionsCreate(Robot robot, HttpServletRequest request) {
+        // Access right calculation.
+        return (request.isUserInRole("RunTest"));
+    }
+
+    @Override
+    public boolean hasPermissionsDelete(Robot robot, HttpServletRequest request) {
+        // Access right calculation.
+        return (request.isUserInRole("RunTest"));
     }
 
     @Override
@@ -152,6 +177,11 @@ public class RobotService implements IRobotService {
         throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR));
     }
 
+    private Robot fillCapabilities(Robot robotItem) throws CerberusException {
+        robotItem.setCapabilities(robotCapabilityService.convert(robotCapabilityService.readByRobot(robotItem.getRobot())));
+        return robotItem;
+    }
+
     private AnswerItem<Robot> fillCapabilities(AnswerItem<Robot> robotItem) {
         try {
             Robot robot = convert(robotItem);
@@ -179,7 +209,7 @@ public class RobotService implements IRobotService {
 
     @Override
     public AnswerList<List<String>> readDistinctValuesByCriteria(String searchParameter, Map<String, List<String>> individualSearch, String columnName) {
-        return robotDao.readDistinctValuesByCriteria(searchParameter,individualSearch,columnName);
+        return robotDao.readDistinctValuesByCriteria(searchParameter, individualSearch, columnName);
     }
 
 }

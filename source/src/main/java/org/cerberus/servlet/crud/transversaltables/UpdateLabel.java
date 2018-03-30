@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,13 +22,13 @@ package org.cerberus.servlet.crud.transversaltables;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Label;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.factory.IFactoryLabel;
@@ -54,6 +54,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
  */
 @WebServlet(name = "UpdateLabel", urlPatterns = {"/UpdateLabel"})
 public class UpdateLabel extends HttpServlet {
+
+    private static final Logger LOG = LogManager.getLogger(UpdateLabel.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -88,18 +90,23 @@ public class UpdateLabel extends HttpServlet {
          */
         // Parameter that are already controled by GUI (no need to decode) --> We SECURE them
         String system = policy.sanitize(request.getParameter("system"));
+        String type = policy.sanitize(request.getParameter("type"));
         Integer id = Integer.valueOf(policy.sanitize(request.getParameter("id")));
+        String reqtype = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("reqtype"), "", charset);
+        String reqstatus = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("reqstatus"), "", charset);
+        String reqcriticity = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("reqcriticity"), "", charset);
         // Parameter that needs to be secured --> We SECURE+DECODE them
-        String label = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("label"), "", charset);
+        String label = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("label"), "", charset);
         String color = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("color"), "", charset);
         String parentLabel = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("parentLabel"), "", charset);
-        String description = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("description"), "", charset);
+        String description = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("description"), "", charset);
+        String longDesc = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("longdesc"), "", charset);
         String usr = request.getUserPrincipal().getName();
-        
+
         /**
          * Checking all constrains before calling the services.
          */
-        if (id==0) {
+        if (id == 0) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Label")
                     .replace("%OPERATION%", "Update")
@@ -126,15 +133,15 @@ public class UpdateLabel extends HttpServlet {
                  * object exist, then we can delete it.
                  */
                 Timestamp updateDate = new Timestamp(new Date().getTime());
-                Label l = labelFactory.create(id, system, label, color, parentLabel, description, null, null, usr, updateDate);
+                Label l = labelFactory.create(id, system, label, type, color, parentLabel, reqtype, reqstatus, reqcriticity, description, longDesc, null, null, usr, updateDate);
                 ans = labelService.update(l);
 
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     /**
-                     * Delete was succesfull. Adding Log entry.
+                     * Delete was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/UpdateLabel", "UPDATE", "Update Label : ['" + id + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateLabel", "UPDATE", "Update Label : ['" + id + "']", request);
                 }
 
             }
@@ -166,10 +173,9 @@ public class UpdateLabel extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateLabel.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateLabel.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -188,10 +194,9 @@ public class UpdateLabel extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateLabel.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateLabel.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

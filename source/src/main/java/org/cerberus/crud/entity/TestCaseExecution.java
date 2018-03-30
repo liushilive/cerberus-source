@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -17,13 +19,14 @@
  */
 package org.cerberus.crud.entity;
 
-import org.cerberus.engine.entity.MessageGeneral;
-import org.cerberus.engine.entity.Session;
-import org.cerberus.engine.entity.Selenium;
+import java.sql.Timestamp;
 import java.util.List;
-import org.apache.log4j.Logger;
-import org.cerberus.util.answer.AnswerItem;
-import org.cerberus.util.answer.AnswerList;
+import java.util.TreeMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.cerberus.engine.entity.MessageGeneral;
+import org.cerberus.engine.entity.Selenium;
+import org.cerberus.engine.entity.Session;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,13 +36,19 @@ import org.json.JSONObject;
  */
 public class TestCaseExecution {
 
+    private static final Logger LOG = LogManager.getLogger(TestCaseExecution.class);
+
     private long id;
+    private String system;
     private String test;
     private String testCase;
+    private String description;
     private String build;
     private String revision;
     private String environment;
+    private String environmentData;
     private String country;
+    private String robotDecli;
     private String browser;
     private String version;
     private String platform;
@@ -49,58 +58,269 @@ public class TestCaseExecution {
     private String controlStatus;
     private String controlMessage;
     private String application;
-    private String ip; // Host the Selenium IP
     private String url;
+    private String ip; // Host the Selenium IP
     private String port; // host the Selenium Port
     private String tag;
-    private String finished;
-    private int verbose;
     private String status;
     private String crbVersion;
     private String executor;
     private String screenSize;
+    private String conditionOper;
+    private String conditionVal1Init;
+    private String conditionVal2Init;
+    private String conditionVal1;
+    private String conditionVal2;
+    private String manualExecution;
+    private String userAgent;
+    private long queueID;
+    private String UsrCreated;
+    private Timestamp DateCreated;
+    private String UsrModif;
+    private Timestamp DateModif;
+    private int testCaseVersion;
 
     /**
      * From here are data outside database model.
      */
-    private Application applicationObj;
-    private String environmentData;
-    private Invariant environmentDataObj;
-    private Invariant CountryObj;
+    // Execution Parameters
+    private String queueState;
+    private int verbose;
     private int screenshot;
     private String outputFormat;
-    private Test testObj;
-    private TestCase testCaseObj;
-    private List<TestCase> PreTestCaseList;
-    private CountryEnvParam countryEnvParam;
-    private CountryEnvironmentParameters countryEnvironmentParameters;
     private boolean manualURL;
     private String myHost;
     private String myContextRoot;
     private String myLoginRelativeURL;
     private String seleniumIP;
+    private String seleniumIPUser;
+    private String seleniumIPPassword;
     private String seleniumPort;
-    private List<TestCaseStepExecution> testCaseStepExecutionList; // Host the list of Steps that will be executed (both pre tests and main test)
-    private List<TestCaseExecutionData> testCaseExecutionDataList; // Host the full list of data calculated during the execution.
-    private MessageGeneral resultMessage;
-    private Selenium selenium;
-    private String executionUUID;
     private Integer pageSource;
     private Integer seleniumLog;
-    private Session session;
-    private String manualExecution;
-    private List<TestCaseCountryProperties> testCaseCountryPropertyList;
-    private long idFromQueue;
     private Integer numberOfRetries;
-    private String userAgent;
     private boolean synchroneous;
     private String timeout;
-    private AnswerList testCaseStepExecutionAnswerList;
-    private AnswerItem lastSOAPCalled;
+    // Objects.
+    private TestCaseExecutionQueue testCaseExecutionQueue;
+    private Application applicationObj;
+    private Invariant CountryObj;
+    private Test testObj;
+    private TestCase testCaseObj;
+    private List<TestCase> preTestCaseList;
+    private CountryEnvParam countryEnvParam;
+    private CountryEnvironmentParameters countryEnvironmentParameters;
+    private Invariant environmentDataObj;
+    // Host the list of the files stored at execution level
+    private List<TestCaseExecutionFile> fileList;
+    // Host the list of Steps that will be executed (both pre tests and main test)
+    private List<TestCaseStepExecution> testCaseStepExecutionList;
+    // Host the full list of data calculated during the execution.
+    private TreeMap<String, TestCaseExecutionData> testCaseExecutionDataMap;
+    // This is used to keep track of all property calculated within a step/action/control. It is reset each time we enter a step/action/control and the property name is added to the list each time it gets calculated. In case it was already asked for calculation, we stop the execution with FA message.
+    private List<String> recursiveAlreadyCalculatedPropertiesList;
+    private List<TestCaseCountryProperties> testCaseCountryPropertyList;
+    // Others
+    private MessageGeneral resultMessage;
+    private String executionUUID;
+    private Selenium selenium;
+    private Session session;
     private List<RobotCapability> capabilities;
+    private AppService lastServiceCalled;
+    private Integer nbExecutions; // Has the nb of execution that was necessary to execute the testcase.
+    // Global parameters.
     private Integer cerberus_action_wait_default;
+    private boolean cerberus_featureflipping_activatewebsocketpush;
+    private long cerberus_featureflipping_websocketpushperiod;
+    private long lastWebsocketPush;
 
-    private static final Logger LOG = Logger.getLogger(TestCaseExecution.class);
+    /**
+     * Invariant PROPERTY TYPE String.
+     */
+    public static final String CONTROLSTATUS_OK = "OK";
+    public static final String CONTROLSTATUS_KO = "KO";
+    public static final String CONTROLSTATUS_NA = "NA";
+    public static final String CONTROLSTATUS_PE = "PE";
+    public static final String CONTROLSTATUS_CA = "CA";
+    public static final String CONTROLSTATUS_FA = "FA";
+    public static final String CONTROLSTATUS_QU = "QU";
+
+    public String getSystem() {
+        return system;
+    }
+
+    public void setSystem(String system) {
+        this.system = system;
+    }
+
+    public String getRobotDecli() {
+        return robotDecli;
+    }
+
+    public void setRobotDecli(String robotDecli) {
+        this.robotDecli = robotDecli;
+    }
+
+    public Integer getNbExecutions() {
+        return nbExecutions;
+    }
+
+    public void setNbExecutions(Integer nbExecutions) {
+        this.nbExecutions = nbExecutions;
+    }
+
+    public String getQueueState() {
+        return queueState;
+    }
+
+    public void setQueueState(String queueState) {
+        this.queueState = queueState;
+    }
+
+    public TestCaseExecutionQueue getTestCaseExecutionQueue() {
+        return testCaseExecutionQueue;
+    }
+
+    public void setTestCaseExecutionQueue(TestCaseExecutionQueue testCaseExecutionQueue) {
+        this.testCaseExecutionQueue = testCaseExecutionQueue;
+    }
+
+    public String getUsrCreated() {
+        return UsrCreated;
+    }
+
+    public void setUsrCreated(String UsrCreated) {
+        this.UsrCreated = UsrCreated;
+    }
+
+    public Timestamp getDateCreated() {
+        return DateCreated;
+    }
+
+    public void setDateCreated(Timestamp DateCreated) {
+        this.DateCreated = DateCreated;
+    }
+
+    public String getUsrModif() {
+        return UsrModif;
+    }
+
+    public void setUsrModif(String UsrModif) {
+        this.UsrModif = UsrModif;
+    }
+
+    public Timestamp getDateModif() {
+        return DateModif;
+    }
+
+    public void setDateModif(Timestamp DateModif) {
+        this.DateModif = DateModif;
+    }
+
+    public long getQueueID() {
+        return queueID;
+    }
+
+    public void setQueueID(long queueID) {
+        this.queueID = queueID;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public List<String> getRecursiveAlreadyCalculatedPropertiesList() {
+        return recursiveAlreadyCalculatedPropertiesList;
+    }
+
+    public void setRecursiveAlreadyCalculatedPropertiesList(List<String> recursiveAlreadyCalculatedPropertiesList) {
+        this.recursiveAlreadyCalculatedPropertiesList = recursiveAlreadyCalculatedPropertiesList;
+    }
+
+    public TreeMap<String, TestCaseExecutionData> getTestCaseExecutionDataMap() {
+        return testCaseExecutionDataMap;
+    }
+
+    public void setTestCaseExecutionDataMap(TreeMap<String, TestCaseExecutionData> testCaseExecutionDataMap) {
+        this.testCaseExecutionDataMap = testCaseExecutionDataMap;
+    }
+    public static final String CONTROLSTATUS_NE = "NE";
+
+    public AppService getLastServiceCalled() {
+        return lastServiceCalled;
+    }
+
+    public void setLastServiceCalled(AppService lastServiceCalled) {
+        this.lastServiceCalled = lastServiceCalled;
+    }
+
+    public long getLastWebsocketPush() {
+        return lastWebsocketPush;
+    }
+
+    public void setLastWebsocketPush(long lastWebsocketPush) {
+        this.lastWebsocketPush = lastWebsocketPush;
+    }
+
+    public String getConditionOper() {
+        return conditionOper;
+    }
+
+    public void setConditionOper(String conditionOper) {
+        this.conditionOper = conditionOper;
+    }
+
+    public String getConditionVal1Init() {
+        return conditionVal1Init;
+    }
+
+    public void setConditionVal1Init(String conditionVal1Init) {
+        this.conditionVal1Init = conditionVal1Init;
+    }
+
+    public String getConditionVal2Init() {
+        return conditionVal2Init;
+    }
+
+    public void setConditionVal2Init(String conditionVal2Init) {
+        this.conditionVal2Init = conditionVal2Init;
+    }
+
+    public String getConditionVal1() {
+        return conditionVal1;
+    }
+
+    public void setConditionVal1(String conditionVal1) {
+        this.conditionVal1 = conditionVal1;
+    }
+
+    public String getConditionVal2() {
+        return conditionVal2;
+    }
+
+    public void setConditionVal2(String conditionVal2) {
+        this.conditionVal2 = conditionVal2;
+    }
+
+    public long getCerberus_featureflipping_websocketpushperiod() {
+        return cerberus_featureflipping_websocketpushperiod;
+    }
+
+    public void setCerberus_featureflipping_websocketpushperiod(long cerberus_featureflipping_websocketpushperiod) {
+        this.cerberus_featureflipping_websocketpushperiod = cerberus_featureflipping_websocketpushperiod;
+    }
+
+    public boolean isCerberus_featureflipping_activatewebsocketpush() {
+        return cerberus_featureflipping_activatewebsocketpush;
+    }
+
+    public void setCerberus_featureflipping_activatewebsocketpush(boolean cerberus_featureflipping_activatewebsocketpush) {
+        this.cerberus_featureflipping_activatewebsocketpush = cerberus_featureflipping_activatewebsocketpush;
+    }
 
     public Integer getCerberus_action_wait_default() {
         return cerberus_action_wait_default;
@@ -117,7 +337,7 @@ public class TestCaseExecution {
     public void setApplication(String application) {
         this.application = application;
     }
-    
+
     public String getUserAgent() {
         return userAgent;
     }
@@ -136,14 +356,6 @@ public class TestCaseExecution {
 
     public void decreaseNumberOfRetries() {
         this.numberOfRetries--;
-    }
-
-    public long getIdFromQueue() {
-        return idFromQueue;
-    }
-
-    public void setIdFromQueue(long idFromQueue) {
-        this.idFromQueue = idFromQueue;
     }
 
     public List<TestCaseCountryProperties> getTestCaseCountryPropertyList() {
@@ -318,12 +530,64 @@ public class TestCaseExecution {
         }
     }
 
+    public List<TestCaseExecutionFile> getFileList() {
+        return fileList;
+    }
+
+    public void setFileList(List<TestCaseExecutionFile> fileList) {
+        this.fileList = fileList;
+    }
+
+    public void addFileList(TestCaseExecutionFile file) {
+        if (file != null) {
+            this.fileList.add(file);
+        }
+    }
+
+    public void addFileList(List<TestCaseExecutionFile> fileList) {
+        if (fileList != null) {
+            for (TestCaseExecutionFile testCaseExecutionFile : fileList) {
+                this.fileList.add(testCaseExecutionFile);
+            }
+        }
+    }
+
     public List<TestCaseStepExecution> getTestCaseStepExecutionList() {
         return testCaseStepExecutionList;
     }
 
     public void setTestCaseStepExecutionList(List<TestCaseStepExecution> testCaseStepExecutionList) {
         this.testCaseStepExecutionList = testCaseStepExecutionList;
+    }
+
+    public void addTestCaseStepExecutionList(TestCaseStepExecution testCaseStepExecution) {
+        if (testCaseStepExecution != null) {
+            this.testCaseStepExecutionList.add(testCaseStepExecution);
+        }
+    }
+
+    public void addTestCaseStepExecutionList(List<TestCaseStepExecution> testCaseStepExecutionList) {
+        if (testCaseStepExecutionList != null) {
+            for (TestCaseStepExecution testCaseStepExecution : testCaseStepExecutionList) {
+                this.testCaseStepExecutionList.add(testCaseStepExecution);
+            }
+        }
+    }
+
+    public String getSeleniumIPUser() {
+        return seleniumIPUser;
+    }
+
+    public void setSeleniumIPUser(String seleniumIPUser) {
+        this.seleniumIPUser = seleniumIPUser;
+    }
+
+    public String getSeleniumIPPassword() {
+        return seleniumIPPassword;
+    }
+
+    public void setSeleniumIPPassword(String seleniumIPPassword) {
+        this.seleniumIPPassword = seleniumIPPassword;
     }
 
     public String getSeleniumIP() {
@@ -454,14 +718,6 @@ public class TestCaseExecution {
         this.environment = environment;
     }
 
-    public String getFinished() {
-        return finished;
-    }
-
-    public void setFinished(String finished) {
-        this.finished = finished;
-    }
-
     public long getId() {
         return id;
     }
@@ -551,19 +807,11 @@ public class TestCaseExecution {
     }
 
     public List<TestCase> getPreTestCaseList() {
-        return PreTestCaseList;
+        return preTestCaseList;
     }
 
     public void setPreTestCaseList(List<TestCase> PreTCase) {
-        this.PreTestCaseList = PreTCase;
-    }
-
-    public List<TestCaseExecutionData> getTestCaseExecutionDataList() {
-        return testCaseExecutionDataList;
-    }
-
-    public void setTestCaseExecutionDataList(List<TestCaseExecutionData> testCaseExecutionDataList) {
-        this.testCaseExecutionDataList = testCaseExecutionDataList;
+        this.preTestCaseList = PreTCase;
     }
 
     public String getExecutor() {
@@ -582,22 +830,6 @@ public class TestCaseExecution {
         this.screenSize = screenSize;
     }
 
-    public void setTestCaseStepExecutionList(AnswerList testCaseStepExecutionAnswerList) {
-        this.testCaseStepExecutionAnswerList = testCaseStepExecutionAnswerList;
-    }
-
-    public AnswerList getTestCaseStepExecutionAnswerList() {
-        return testCaseStepExecutionAnswerList;
-    }
-
-    public AnswerItem getLastSOAPCalled() {
-        return lastSOAPCalled;
-    }
-
-    public void setLastSOAPCalled(AnswerItem lastSOAPCalled) {
-        this.lastSOAPCalled = lastSOAPCalled;
-    }
-
     public List<RobotCapability> getCapabilities() {
         return capabilities;
     }
@@ -605,16 +837,33 @@ public class TestCaseExecution {
     public void setCapabilities(List<RobotCapability> capabilities) {
         this.capabilities = capabilities;
     }
+    
+    public int getTestCaseVersion() {
+    	return this.testCaseVersion;
+    }
+    
+    public void setTestCaseVersion(int testCaseVersion) {
+    	this.testCaseVersion = testCaseVersion;
+    }
 
-    public JSONObject toJson() {
+    /**
+     * Convert the current TestCaseExecution into JSON format
+     *
+     * @param withChilds boolean that define if childs should be included
+     * @return TestCaseExecution in JSONObject format
+     */
+    public JSONObject toJson(boolean withChilds) {
         JSONObject result = new JSONObject();
         try {
+            result.put("type", "testCaseExecution");
             result.put("id", this.getId());
             result.put("test", this.getTest());
             result.put("testcase", this.getTestCase());
+            result.put("description", this.getDescription());
             result.put("build", this.getBuild());
             result.put("revision", this.getRevision());
             result.put("environment", this.getEnvironment());
+            result.put("environmentData", this.getEnvironmentData());
             result.put("country", this.getCountry());
             result.put("browser", this.getBrowser());
             result.put("version", this.getVersion());
@@ -630,18 +879,61 @@ public class TestCaseExecution {
             result.put("url", this.getUrl());
             result.put("port", this.getPort());
             result.put("tag", this.getTag());
-            result.put("finished", this.getFinished());
             result.put("verbose", this.getVerbose());
             result.put("status", this.getStatus());
             result.put("crbVersion", this.getCrbVersion());
             result.put("executor", this.getExecutor());
             result.put("screenSize", this.getScreenSize());
-            JSONArray array = new JSONArray();
-            for (Object testCaseStepExecution : this.getTestCaseStepExecutionAnswerList().getDataList()) {
-                array.put(((TestCaseStepExecution) testCaseStepExecution).toJson());
+            result.put("conditionOper", this.getConditionOper());
+            result.put("conditionVal1Init", this.getConditionVal1Init());
+            result.put("conditionVal2Init", this.getConditionVal2Init());
+            result.put("conditionVal1", this.getConditionVal1());
+            result.put("conditionVal2", this.getConditionVal2());
+            result.put("userAgent", this.getUserAgent());
+            result.put("queueId", this.getQueueID());
+            result.put("manualExecution", this.getManualExecution());
+            result.put("testCaseVersion", this.getTestCaseVersion());
+            result.put("system", this.getSystem());
+            result.put("robotDecli", this.getRobotDecli());
+
+            if (withChilds) {
+                // Looping on ** Step **
+                JSONArray array = new JSONArray();
+                if (this.getTestCaseStepExecutionList() != null) {
+                    for (Object testCaseStepExecution : this.getTestCaseStepExecutionList()) {
+                        array.put(((TestCaseStepExecution) testCaseStepExecution).toJson(true, false));
+                    }
+                }
+                result.put("testCaseStepExecutionList", array);
+
+                // ** TestCase **
+                if (this.getTestCaseObj() != null) {
+                    TestCase tc = this.getTestCaseObj();
+                    result.put("testCaseObj", tc.toJson());
+                }
+
+                // Looping on ** Execution Data **
+                array = new JSONArray();
+                for (String key1 : this.getTestCaseExecutionDataMap().keySet()) {
+                    TestCaseExecutionData tced = (TestCaseExecutionData) this.getTestCaseExecutionDataMap().get(key1);
+                    array.put((tced).toJson(true, false));
+                }
+                result.put("testCaseExecutionDataList", array);
+
+                // Looping on ** Media File Execution **
+                array = new JSONArray();
+                if (this.getFileList() != null) {
+                    for (Object testCaseFileExecution : this.getFileList()) {
+                        array.put(((TestCaseExecutionFile) testCaseFileExecution).toJson());
+                    }
+                }
+                result.put("fileList", array);
+
             }
-            result.put("testCaseStepExecutionList", array);
+
         } catch (JSONException ex) {
+            LOG.error(ex.toString());
+        } catch (Exception ex) {
             LOG.error(ex.toString());
         }
         return result;

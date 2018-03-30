@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.cerberus.servlet.crud.usermanagement;
 
 import org.cerberus.crud.entity.User;
@@ -55,7 +54,7 @@ public class UpdateMyUserReporting extends HttpServlet {
             userService.updateUser(user);
             
             ILogEventService logEventService = appContext.getBean(LogEventService.class);
-            logEventService.createPrivateCalls("/UpdateMyUserReporting", "UPDATE", "Update user reporting preference for user: " + login, request);
+            logEventService.createForPrivateCalls("/UpdateMyUserReporting", "UPDATE", "Update user reporting preference for user: " + login, request);
             
         } catch (CerberusException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.

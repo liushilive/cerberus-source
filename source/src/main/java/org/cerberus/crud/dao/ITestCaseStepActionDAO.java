@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -46,8 +48,10 @@ public interface ITestCaseStepActionDAO {
     void delete(TestCaseStepAction tcsa) throws CerberusException ;
 
     List<TestCaseStepAction> findTestCaseStepActionbyTestTestCase(String test, String testCase) throws CerberusException ;
-    
+
     AnswerList readByTestTestCase(String test, String testcase);
-    
+
+    AnswerList readByVarious1(String test, String testcase, int step);
+
     Answer create(TestCaseStepAction testCaseStepAction);
 }

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import org.cerberus.crud.entity.TestCaseCountryProperties;
 import org.cerberus.crud.entity.TestCaseExecution;
+import org.cerberus.crud.entity.TestCaseExecutionData;
 import org.cerberus.crud.entity.TestDataLib;
 import org.cerberus.util.answer.AnswerList;
 import org.json.JSONArray;
@@ -39,9 +40,10 @@ public interface IDataLibService {
      * @param lib
      * @param testCaseCountryProperty
      * @param tCExecution
+     * @param testCaseExecutionData
      * @return
      */
-    AnswerList<HashMap<String, String>> getFromDataLib(TestDataLib lib, TestCaseCountryProperties testCaseCountryProperty, TestCaseExecution tCExecution);
+    AnswerList<HashMap<String, String>> getFromDataLib(TestDataLib lib, TestCaseCountryProperties testCaseCountryProperty, TestCaseExecution tCExecution, TestCaseExecutionData testCaseExecutionData);
 
     /**
      * This method return the first ObjectData from DataSet

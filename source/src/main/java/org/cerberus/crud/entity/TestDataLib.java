@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -36,6 +38,7 @@ public class TestDataLib {
     private String database;
     private String script;
     private String databaseUrl;
+    private String service;
     private String servicePath;
     private String method;
     private String envelope;
@@ -58,8 +61,16 @@ public class TestDataLib {
 
     public static final String TYPE_INTERNAL = "INTERNAL";
     public static final String TYPE_SQL = "SQL";
-    public static final String TYPE_SOAP = "SOAP";
+    public static final String TYPE_SERVICE = "SERVICE";
     public static final String TYPE_CSV = "CSV";
+
+    public String getService() {
+        return service;
+    }
+
+    public void setService(String service) {
+        this.service = service;
+    }
 
     public List<TestDataLibData> getSubDataLib() {
         return subDataLib;
@@ -76,7 +87,7 @@ public class TestDataLib {
     public void setDatabaseCsv(String databaseCsv) {
         this.databaseCsv = databaseCsv;
     }
-    
+
     public String getDatabaseUrl() {
         return databaseUrl;
     }
@@ -268,5 +279,5 @@ public class TestDataLib {
     public void setSeparator(String separator) {
         this.separator = separator;
     }
-    
+
 }

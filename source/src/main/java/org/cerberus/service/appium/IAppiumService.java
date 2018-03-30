@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,6 +23,7 @@ import org.cerberus.engine.entity.Identifier;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.engine.entity.Session;
 import org.cerberus.engine.entity.SwipeAction;
+import org.cerberus.engine.entity.SwipeAction.Direction;
 
 /**
  *
@@ -41,5 +42,7 @@ public interface IAppiumService {
     MessageEvent hideKeyboard(Session session);
 
     MessageEvent swipe(Session session, SwipeAction swipeAction);
-
+    
+    Direction getDirectionForSwipe(Session session, SwipeAction action) throws IllegalArgumentException;
+    
 }

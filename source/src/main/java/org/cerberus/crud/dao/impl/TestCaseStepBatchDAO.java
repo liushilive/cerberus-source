@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -24,12 +26,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.dao.ITestCaseStepBatchDAO;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.crud.entity.TestCaseStepBatch;
 import org.cerberus.crud.factory.IFactoryTestCaseStepBatch;
-import org.cerberus.log.MyLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -43,6 +45,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class TestCaseStepBatchDAO implements ITestCaseStepBatchDAO {
 
+    private static final Logger LOG = LogManager.getLogger(TestCaseStepBatchDAO.class);
+    
     /**
      * Description of the variable here.
      */
@@ -66,42 +70,26 @@ public class TestCaseStepBatchDAO implements ITestCaseStepBatchDAO {
         List<TestCaseStepBatch> list = null;
         final String query = "SELECT * FROM testcasestepbatch WHERE test = ? AND testcase = ? AND step = ?";
 
-        Connection connection = this.databaseSpring.connect();
-        try {
-            PreparedStatement preStat = connection.prepareStatement(query);
-            try {
-                preStat.setString(1, test);
-                preStat.setString(2, testcase);
-                preStat.setInt(3, stepNumber);
-
-                ResultSet resultSet = preStat.executeQuery();
-                list = new ArrayList<TestCaseStepBatch>();
-                try {
-                    while (resultSet.next()) {
-                        String batch = resultSet.getString("Batch");
-                        list.add(factoryTestCaseStepBatch.create(test, testcase, stepNumber, batch));
-                    }
-                } catch (SQLException exception) {
-                    MyLogger.log(TestCaseStepBatchDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
-                } finally {
-                    resultSet.close();
+        
+        try(Connection connection = this.databaseSpring.connect();
+        		PreparedStatement preStat = connection.prepareStatement(query);) {
+            
+        	preStat.setString(1, test);
+            preStat.setString(2, testcase);
+            preStat.setInt(3, stepNumber);
+            
+            list = new ArrayList<TestCaseStepBatch>();
+            try(ResultSet resultSet = preStat.executeQuery();) {
+                while (resultSet.next()) {
+                    String batch = resultSet.getString("Batch");
+                    list.add(factoryTestCaseStepBatch.create(test, testcase, stepNumber, batch));
                 }
             } catch (SQLException exception) {
-                MyLogger.log(TestCaseStepBatchDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
-            } finally {
-                preStat.close();
-            }
+                LOG.warn("Unable to execute query : "+exception.toString());
+            } 
         } catch (SQLException exception) {
-            MyLogger.log(TestCaseStepBatchDAO.class.getName(), Level.ERROR, "Unable to execute query : "+exception.toString());
-        } finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                MyLogger.log(TestCaseStepActionControlDAO.class.getName(), Level.WARN, e.toString());
-            }
-        }
+            LOG.warn("Unable to execute query : "+exception.toString());
+        } 
         return list;
     }
 }

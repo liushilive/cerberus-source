@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -35,16 +35,16 @@ import org.springframework.stereotype.Service;
 public class IdentifierService implements IIdentifierService {
 
     @Override
-    public Identifier convertStringToIdentifier(String input) { 
+    public Identifier convertStringToIdentifier(String input) {
         return getIdentifier(input, "id");
     }
-    
+
     @Override
-    public Identifier convertStringToSelectIdentifier(String input) { 
+    public Identifier convertStringToSelectIdentifier(String input) {
         return getIdentifier(input, "value");
     }
-    
-    private Identifier getIdentifier(String input, String defaultIdentifier){
+
+    private Identifier getIdentifier(String input, String defaultIdentifier) {
         Identifier result = new Identifier();
         String identifier;
         String locator;
@@ -56,7 +56,7 @@ public class IdentifierService implements IIdentifierService {
             identifier = strings[0];
             locator = strings[1];
         }
-       
+
         result.setIdentifier(identifier);
         result.setLocator(locator);
         return result;
@@ -67,7 +67,7 @@ public class IdentifierService implements IIdentifierService {
         String[] selectOptionAttributes = {"label", "value", "index", "regexLabel", "regexValue", "regexIndex"};
 
         if (!Arrays.asList(selectOptionAttributes).contains(identifier)) {
-            MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SELECT_NO_IDENTIFIER);
+            MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_UNKOWN_IDENTIFIER_SELENIUM_SELECT);
             message.setDescription(message.getDescription().replace("%IDENTIFIER%", identifier));
             throw new CerberusEventException(message);
         }
@@ -76,10 +76,10 @@ public class IdentifierService implements IIdentifierService {
 
     @Override
     public void checkWebElementIdentifier(String identifier) throws CerberusEventException {
-        String[] selectOptionAttributes = {"id", "name", "class", "css", "xpath", "link", "data-cerberus", "picture"};
+        String[] selectOptionAttributes = {"id", "name", "class", "css", "xpath", "link", "data-cerberus", "coord", "picture"};
 
         if (!Arrays.asList(selectOptionAttributes).contains(identifier)) {
-            MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_NO_SUCH_ELEMENT);
+            MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_UNKOWN_IDENTIFIER_SELENIUM);
             message.setDescription(message.getDescription().replace("%IDENTIFIER%", identifier));
             throw new CerberusEventException(message);
         }
@@ -90,7 +90,18 @@ public class IdentifierService implements IIdentifierService {
         String[] selectOptionAttributes = {"script", "procedure"};
 
         if (!Arrays.asList(selectOptionAttributes).contains(identifier)) {
-            MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_NO_SUCH_ELEMENT);
+            MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_UNKOWN_IDENTIFIER_SQL);
+            message.setDescription(message.getDescription().replace("%IDENTIFIER%", identifier));
+            throw new CerberusEventException(message);
+        }
+    }
+
+    @Override
+    public void checkSikuliIdentifier(String identifier) throws CerberusEventException {
+        String[] selectOptionAttributes = {"picture", "text"};
+
+        if (!Arrays.asList(selectOptionAttributes).contains(identifier)) {
+            MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_UNKOWN_IDENTIFIER_SIKULI);
             message.setDescription(message.getDescription().replace("%IDENTIFIER%", identifier));
             throw new CerberusEventException(message);
         }

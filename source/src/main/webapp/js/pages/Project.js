@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -37,7 +40,7 @@ function initPage() {
     //configure and create the dataTable
     var configurations = new TableConfigurationsServerSide("projectsTable", "ReadProject", "contentTable", aoColumnsFunc("projectsTable"), [1,'asc']);
 
-    createDataTableWithPermissions(configurations, renderOptionsForProject, "#project");
+    createDataTableWithPermissions(configurations, renderOptionsForProject, "#project", undefined, true);
 }
 
 function displayPageLabel() {
@@ -90,7 +93,7 @@ function deleteEntryHandlerClick() {
 
         }
         //show message in the main page
-        showMessageMainPage(messageType, data.message);
+        showMessageMainPage(messageType, data.message, false);
         //close confirmation window
         $('#confirmationModal').modal('hide');
     }).fail(handleErrorAjaxAfterTimeout);
@@ -101,7 +104,7 @@ function deleteEntryClick(entry) {
     var doc = new Doc();
     var messageComplete = doc.getDocLabel("page_project", "message_delete");
     messageComplete = messageComplete.replace("%ENTRY%", entry);
-    showModalConfirmation(deleteEntryHandlerClick, doc.getDocLabel("page_project", "button_delete"), messageComplete, entry, "", "", "");
+    showModalConfirmation(deleteEntryHandlerClick, undefined, doc.getDocLabel("page_project", "button_delete"), messageComplete, entry, "", "", "");
 }
 
 function addEntryModalSaveHandler() {
@@ -196,6 +199,7 @@ function aoColumnsFunc(tableId) {
             "title": doc.getDocLabel("page_global", "columnAction"),
             "bSortable": false,
             "bSearchable": false,
+            "sWidth": "50px",
             "mRender": function (data, type, obj) {
                 var hasPermissions = $("#" + tableId).attr("hasPermissions");
 
@@ -217,20 +221,33 @@ function aoColumnsFunc(tableId) {
                 return '<div class="center btn-group width150">' + viewEntry + '</div>';
             }
         },
-        {"data": "idProject",
+        {
+            "data": "idProject",
+            "like":true,
             "sName": "idProject",
+            "sWidth": "50px",
             "title": doc.getDocOnline("project", "idproject")},
-        {"data": "code",
+        {
+            "data": "code",
             "sName": "VCCode",
+            "sWidth": "50px",
             "title": doc.getDocOnline("project", "code")},
-        {"data": "description",
+        {
+            "data": "description",
+            "like":true,
             "sName": "description",
+            "sWidth": "50px",
             "title": doc.getDocOnline("project", "description")},
-        {"data": "active",
+        {
+            "data": "active",
             "sName": "active",
+            "sWidth": "50px",
             "title": doc.getDocOnline("project", "active")},
-        {"data": "dateCreation",
+        {
+            "data": "dateCreation",
+            "like":true,
             "sName": "dateCre",
+            "sWidth": "50px",
             "title": doc.getDocOnline("project", "dateCreation")}
     ];
     return aoColumns;

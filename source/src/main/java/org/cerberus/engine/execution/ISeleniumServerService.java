@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -42,7 +42,7 @@ public interface ISeleniumServerService {
      * Stop the server if started
      *
      * @param session
-     * @return true if server succassfully closed
+     * @return true if server successfully closed
      */
     boolean stopServer(Session session);
 

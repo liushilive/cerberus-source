@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -22,12 +24,9 @@ import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.cerberus.crud.entity.Application;
 import org.cerberus.crud.entity.ApplicationObject;
-import org.cerberus.crud.factory.IFactoryApplication;
 import org.cerberus.crud.factory.IFactoryApplicationObject;
 import org.cerberus.crud.service.IApplicationObjectService;
-import org.cerberus.crud.service.IApplicationService;
 import org.cerberus.crud.service.ILogEventService;
 import org.cerberus.crud.service.impl.LogEventService;
 import org.cerberus.engine.entity.MessageEvent;
@@ -56,10 +55,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static java.lang.System.out;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -67,6 +64,8 @@ import static java.lang.System.out;
  */
 @WebServlet(name = "CreateApplicationObject", urlPatterns = {"/CreateApplicationObject"})
 public class CreateApplicationObject extends HttpServlet {
+
+    private static final Logger LOG = LogManager.getLogger(CreateApplicationObject.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -108,7 +107,7 @@ public class CreateApplicationObject extends HttpServlet {
                 FileItem fileItem = it.next();
                 boolean isFormField = fileItem.isFormField();
                 if (isFormField) {
-                    fileData.put(fileItem.getFieldName(), ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileItem.getString(), null, charset));
+                    fileData.put(fileItem.getFieldName(), fileItem.getString("UTF-8"));
                 } else {
                     file = fileItem;
                 }
@@ -116,15 +115,15 @@ public class CreateApplicationObject extends HttpServlet {
         } catch (FileUploadException e) {
             e.printStackTrace();
         }
-        
+
         /**
          * Parsing and securing all required parameters.
          */
         // Parameter that are already controled by GUI (no need to decode) --> We SECURE them
         // Parameter that needs to be secured --> We SECURE+DECODE them
-        String application = fileData.get("application");
-        String object = fileData.get("object");
-        String value = fileData.get("value");
+        String application = ParameterParserUtil.parseStringParamAndDecode(fileData.get("application"), null, charset);
+        String object = ParameterParserUtil.parseStringParamAndDecode(fileData.get("object"), null, charset);
+        String value = ParameterParserUtil.parseStringParam(fileData.get("value"), null);
 
         String usrcreated = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getRemoteUser(), "", charset);
         String datecreated = new Timestamp(new java.util.Date().getTime()).toString();
@@ -141,7 +140,7 @@ public class CreateApplicationObject extends HttpServlet {
                     .replace("%OPERATION%", "Create")
                     .replace("%REASON%", "Application name is missing!"));
             ans.setResultMessage(msg);
-        } else if(StringUtil.isNullOrEmpty(object)){
+        } else if (StringUtil.isNullOrEmpty(object)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "ApplicationObject")
                     .replace("%OPERATION%", "Create")
@@ -155,11 +154,11 @@ public class CreateApplicationObject extends HttpServlet {
             IApplicationObjectService applicationobjectService = appContext.getBean(IApplicationObjectService.class);
             IFactoryApplicationObject factoryApplicationobject = appContext.getBean(IFactoryApplicationObject.class);
             String fileName = "";
-            if(file != null) {
+            if (file != null) {
                 fileName = file.getName();
             }
 
-            ApplicationObject applicationData = factoryApplicationobject.create(-1,application,object,value,fileName,usrcreated,datecreated,usrmodif,datemodif);
+            ApplicationObject applicationData = factoryApplicationobject.create(-1, application, object, value, fileName, usrcreated, datecreated, usrmodif, datemodif);
             ans = applicationobjectService.create(applicationData);
 
             if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
@@ -167,11 +166,11 @@ public class CreateApplicationObject extends HttpServlet {
                  * Object created. Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createPrivateCalls("/CreateApplicationObject", "CREATE", "Create Application Object: ['" + application + "','" + object + "']", request);
+                logEventService.createForPrivateCalls("/CreateApplicationObject", "CREATE", "Create Application Object: ['" + application + "','" + object + "']", request);
 
                 if (file != null) {
-                    AnswerItem an = applicationobjectService.readByKey(application,object);
-                    if(an.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && an.getItem() != null) {
+                    AnswerItem an = applicationobjectService.readByKey(application, object);
+                    if (an.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && an.getItem() != null) {
                         applicationData = (ApplicationObject) an.getItem();
                         ans = applicationobjectService.uploadFile(applicationData.getID(), file);
                         if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
@@ -207,9 +206,9 @@ public class CreateApplicationObject extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateApplicationObject.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateApplicationObject.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -227,9 +226,9 @@ public class CreateApplicationObject extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateApplicationObject.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateApplicationObject.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

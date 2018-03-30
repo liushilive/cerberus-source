@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,13 +20,13 @@
 package org.cerberus.servlet.crud.batch;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.BatchInvariant;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.factory.IFactoryBatchInvariant;
@@ -52,7 +54,8 @@ import org.owasp.html.Sanitizers;
 public class CreateBatchInvariant extends HttpServlet {
 
     private final String OBJECT_NAME = "BatchInvariant";
-
+    private static final Logger LOG = LogManager.getLogger(CreateBatchInvariant.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -114,7 +117,7 @@ public class CreateBatchInvariant extends HttpServlet {
                  * Object created. Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createPrivateCalls("/CreateBatchInvariant", "CREATE", "Create BatchInvariant : ['" + batch + "']", request);
+                logEventService.createForPrivateCalls("/CreateBatchInvariant", "CREATE", "Create BatchInvariant : ['" + batch + "']", request);
             }
         }
 
@@ -144,9 +147,9 @@ public class CreateBatchInvariant extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateBatchInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateBatchInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -164,9 +167,9 @@ public class CreateBatchInvariant extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(CreateBatchInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(CreateBatchInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,8 +30,16 @@ import org.cerberus.util.answer.AnswerList;
  */
 public interface ITestCaseStepExecutionService {
 
+    /**
+     *
+     * @param testCaseStepExecution
+     */
     void insertTestCaseStepExecution(TestCaseStepExecution testCaseStepExecution);
 
+    /**
+     *
+     * @param testCaseStepExecution
+     */
     void updateTestCaseStepExecution(TestCaseStepExecution testCaseStepExecution);
 
     /**
@@ -41,7 +49,21 @@ public interface ITestCaseStepExecutionService {
      */
     List<TestCaseStepExecution> findTestCaseStepExecutionById(long id);
     
+    /**
+     *
+     * @param executionId
+     * @param test
+     * @param testcase
+     * @return
+     */
     AnswerList readByVarious1(long executionId, String test, String testcase);
     
+    /**
+     *
+     * @param executionId
+     * @param test
+     * @param testcase
+     * @return
+     */
     AnswerList readByVarious1WithDependency(long executionId, String test, String testcase);
 }

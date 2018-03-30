@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,7 @@
  */
 package org.cerberus.crud.factory;
 
+import java.sql.Timestamp;
 import org.cerberus.crud.entity.Application;
 
 /**
@@ -27,8 +28,8 @@ import org.cerberus.crud.entity.Application;
 public interface IFactoryApplication {
 
     /**
-     * @param application  ID of the application.
-     * @param description  Description of the Application.
+     * @param application ID of the application.
+     * @param description Description of the Application.
      * @param sort
      * @param type
      * @param system
@@ -38,19 +39,24 @@ public interface IFactoryApplication {
      * @param mavengroupid
      * @param bugtrackerurl
      * @param bugtrackernewurl
+     * @param usrCreated
+     * @param dateCreated
+     * @param usrModif
+     * @param dateModif
      * @return
      */
-    Application create(String application, String description
-            , int sort, String type, String system, String subsystem
-            , String svnurl, String deploytype, String mavengroupid
-            , String bugtrackerurl, String bugtrackernewurl);
-    
+    Application create(String application, String description,
+            int sort, String type, String system, String subsystem,
+            String svnurl, String deploytype, String mavengroupid,
+            String bugtrackerurl, String bugtrackernewurl,
+            String usrCreated, Timestamp dateCreated, String usrModif, Timestamp dateModif);
+
     /**
      * Return Application object with only application defined
+     *
      * @param application
-     * @return 
+     * @return
      */
     Application create(String application);
-
 
 }

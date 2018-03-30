@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -48,6 +50,8 @@ public interface ITestCaseStepActionControlDAO {
     public List<TestCaseStepActionControl> findControlByTestTestCase(String test, String testCase) throws CerberusException;
 
     public AnswerList readByTestTestCase(String test, String testcase);
-    
+
+    public AnswerList readByVarious1(String test, String testcase, int step, int sequence);
+
     Answer create(TestCaseStepActionControl testCaseStepActionControl);
 }

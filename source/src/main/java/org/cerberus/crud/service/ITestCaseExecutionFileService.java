@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,7 @@
  */
 package org.cerberus.crud.service;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -39,11 +40,20 @@ public interface ITestCaseExecutionFileService {
      * @param id
      * @return
      */
-    public AnswerItem<TestCaseExecutionFile> readByKey(long id);
-    
+    AnswerItem<TestCaseExecutionFile> readByKey(long id);
+
     /**
      *
-     * @param id
+     * @param exeId
+     * @param level
+     * @param fileDesc
+     * @return
+     */
+    AnswerItem<TestCaseExecutionFile> readByKey(long exeId, String level, String fileDesc);
+
+    /**
+     *
+     * @param exeId
      * @param level
      * @param start
      * @param amount
@@ -53,19 +63,19 @@ public interface ITestCaseExecutionFileService {
      * @param individualSearch
      * @return
      */
-    AnswerList<List<TestCaseExecutionFile>> readByVariousByCriteria(long id, String level, int start, int amount, String column, String dir, String searchTerm, Map<String, List<String>> individualSearch);
+    AnswerList<List<TestCaseExecutionFile>> readByVariousByCriteria(long exeId, String level, int start, int amount, String column, String dir, String searchTerm, Map<String, List<String>> individualSearch);
 
     /**
      *
-     * @param id
+     * @param exeId
      * @param level
      * @return
      */
-    AnswerList<List<TestCaseExecutionFile>> readByVarious(long id, String level);
-    
+    AnswerList<List<TestCaseExecutionFile>> readByVarious(long exeId, String level);
+
     /**
      *
-     * @param exeid
+     * @param exeId
      * @param level
      * @param fileDesc
      * @param fileName
@@ -73,8 +83,8 @@ public interface ITestCaseExecutionFileService {
      * @param usrCreated
      * @return
      */
-    Answer create(long exeid, String level, String fileDesc, String fileName, String fileType, String usrCreated);
-    
+    Answer save(long exeId, String level, String fileDesc, String fileName, String fileType, String usrCreated);
+
     /**
      *
      * @param id
@@ -82,6 +92,24 @@ public interface ITestCaseExecutionFileService {
      * in database.
      */
     boolean exist(long id);
+
+    /**
+     *
+     * @param exeId
+     * @param level
+     * @param fileDesc
+     * @return
+     */
+    boolean exist(long exeId, String level, String fileDesc);
+    
+    /**
+    *
+    * @param exeId
+    * @param level
+    * @return
+    */
+   boolean exist(long exeId, String level);
+
 
     /**
      *
@@ -103,7 +131,27 @@ public interface ITestCaseExecutionFileService {
      * @return
      */
     Answer update(TestCaseExecutionFile object);
+    
+    /**
+     * 
+     * @param folder
+     */
+    void deleteFile(String root, String fileName);
 
+    /**
+     *
+     * @param object
+     * @return
+     */
+    Answer save(TestCaseExecutionFile object);
+    
+    /**
+    *
+    * @param object
+    * @return
+    */
+   Answer saveManual(TestCaseExecutionFile object);
+    
     /**
      *
      * @param answerItem
@@ -126,5 +174,13 @@ public interface ITestCaseExecutionFileService {
      * @throws CerberusException
      */
     void convert(Answer answer) throws CerberusException;
+    
+    /**
+     * 
+     * @param fileName
+     * @param extension
+     * @return
+     */
+    public String checkExtension(String fileName, String extension);
 
 }

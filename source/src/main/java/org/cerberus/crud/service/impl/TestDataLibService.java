@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.fileupload.FileItem;
 import org.cerberus.crud.dao.ITestDataLibDAO;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.engine.entity.MessageGeneral;
@@ -56,7 +58,7 @@ public class TestDataLibService implements ITestDataLibService {
     @Autowired
     private IParameterService parameterService;
 
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(TestDataLibService.class);
+    private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger(TestDataLibService.class);
 
     @Override
     public AnswerItem readByNameBySystemByEnvironmentByCountry(String name, String system, String environment, String country) {
@@ -67,10 +69,15 @@ public class TestDataLibService implements ITestDataLibService {
     public AnswerItem readByKey(int testDatalib) {
         return testDataLibDAO.readByKey(testDatalib);
     }
+    
+    @Override
+    public Answer uploadFile(int id, FileItem file) {
+        return testDataLibDAO.uploadFile(id, file);
+    }
 
     @Override
-    public AnswerList readNameListByName(String testDataLibName, int limit) {
-        return testDataLibDAO.readNameListByName(testDataLibName, limit);
+    public AnswerList readNameListByName(String testDataLibName, int limit, boolean like) {
+        return testDataLibDAO.readNameListByName(testDataLibName, limit, like);
     }
 
     @Override
@@ -135,28 +142,8 @@ public class TestDataLibService implements ITestDataLibService {
     }
 
     @Override
-    public Answer create(TestDataLib object) {
-        Answer answer;
-        Answer answer1;
-        if (object.getSubDataLib() == null) { // We only create the TestDataLib
-            return testDataLibDAO.create(object);
-
-        } else { //We create TestDataLib and all its subdata.
-
-            answer = testDataLibDAO.create(object);
-            if (answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
-                List<TestDataLibData> completeSubDataList = new ArrayList<TestDataLibData>();
-
-                //if success, then enrich the list of subdata with id of the created object.
-                for (TestDataLibData libData : object.getSubDataLib()) {
-                    TestDataLibData data = testDataLibDataFactory.create(-1, object.getTestDataLibID(), libData.getSubData(), libData.getValue(),
-                            libData.getColumn(), libData.getParsingAnswer(), libData.getColumnPosition(), libData.getDescription());
-                    completeSubDataList.add(data);
-                }
-                answer1 = testDataLibDataService.createList(completeSubDataList);
-            }
-            return answer;
-        }
+    public AnswerItem create(TestDataLib object) {
+        return testDataLibDAO.create(object);
     }
 
     @Override

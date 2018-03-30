@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -31,8 +31,15 @@ import org.springframework.stereotype.Service;
 public class FactoryCampaign implements IFactoryCampaign {
 
     @Override
-    public Campaign create(Integer campaignID, String campaign, String description) {
-        return new Campaign(campaignID, campaign, description);
+    public Campaign create(Integer campaignID, String campaign, String distribList, String notifyStartTagExecution, String notifyEndTagExecution, String description) {
+        Campaign newObject = new Campaign();
+        newObject.setCampaignID(campaignID);
+        newObject.setCampaign(campaign);
+        newObject.setDistribList(distribList);
+        newObject.setNotifyStartTagExecution(notifyStartTagExecution);
+        newObject.setNotifyEndTagExecution(notifyEndTagExecution);
+        newObject.setDescription(description);
+        return newObject;
     }
 
 }

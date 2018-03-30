@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,13 +20,14 @@
 package org.cerberus.servlet.crud.transversaltables;
 
 import java.io.IOException;
-import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.Parameter;
@@ -53,6 +54,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "UpdateParameter", urlPatterns = {"/UpdateParameter"})
 public class UpdateParameter extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(UpdateParameter.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -124,7 +127,7 @@ public class UpdateParameter extends HttpServlet {
 
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/UpdateParameter", "UPDATE", "Update Parameter : ['" + id + "','" + system + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateParameter", "UPDATE", "Update Parameter : ['" + id + "','" + system + "']", request);
                 }
                 if (system1 != null && system1value != null) {
                     Parameter para1 = factoryparameter.create(system1, id, system1value, "");
@@ -135,7 +138,7 @@ public class UpdateParameter extends HttpServlet {
                          * Object updated. Adding Log entry.
                          */
                         logEventService = appContext.getBean(LogEventService.class);
-                        logEventService.createPrivateCalls("/UpdateParameter", "UPDATE", "Update Parameter : ['" + id + "','" + system1 + "']", request);
+                        logEventService.createForPrivateCalls("/UpdateParameter", "UPDATE", "Update Parameter : ['" + id + "','" + system1 + "']", request);
                     }
                 }
             }
@@ -170,10 +173,9 @@ public class UpdateParameter extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateLabel.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateLabel.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -192,10 +194,9 @@ public class UpdateParameter extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateLabel.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateLabel.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

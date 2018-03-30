@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -56,6 +56,9 @@ public interface IFactoryTestCase {
      * @param behavior
      * @param howTo
      * @param tcActive
+     * @param conditionOper
+     * @param conditionVal1
+     * @param conditionVal2
      * @param fromBuild
      * @param fromRev
      * @param toBuild
@@ -66,6 +69,7 @@ public interface IFactoryTestCase {
      * @param targetRev
      * @param comment
      * @param userAgent
+     * @param screenSize
      * @param testCaseCountry
      * @param testCaseCountryProperties
      * @param testCaseStep
@@ -75,9 +79,9 @@ public interface IFactoryTestCase {
     TestCase create(String test, String testCase, String origine, String refOrigine, String usrCreated,
                  String implementer, String usrModif, String project, String ticket, String function, String application,
                  String activeQA, String activeUAT, String activePROD, int priority, String group, String status,
-                 String description, String behavior, String howTo, String tcActive, String fromBuild,
+                 String description, String behavior, String howTo, String tcActive, String conditionOper, String conditionVal1, String conditionVal2, String fromBuild,
                  String fromRev, String toBuild, String toRev, String lastExecutionStatus, String bugID,
-                 String targetBuild, String targetRev, String comment, String userAgent, List<TestCaseCountry> testCaseCountry,
+                 String targetBuild, String targetRev, String comment, String userAgent, String screenSize, List<TestCaseCountry> testCaseCountry,
                  List<TestCaseCountryProperties> testCaseCountryProperties, List<TestCaseStep> testCaseStep,
                  List<TestCaseStepBatch> testCaseStepBatch);
     
@@ -104,6 +108,9 @@ public interface IFactoryTestCase {
      * @param behavior
      * @param howTo
      * @param tcActive
+     * @param conditionOper
+     * @param conditionVal1
+     * @param conditionVal2
      * @param fromBuild
      * @param fromRev
      * @param toBuild
@@ -115,15 +122,16 @@ public interface IFactoryTestCase {
      * @param comment
      * @param dateCreated
      * @param userAgent
+     * @param screenSize
      * @param dateModif
      * @return
      */
     TestCase create(String test, String testCase, String origine, String refOrigine, String usrCreated,
                  String implementer, String usrModif, String project, String ticket, String function, String application,
                  String activeQA, String activeUAT, String activePROD, int priority, String group, String status,
-                 String description, String behavior, String howTo, String tcActive, String fromBuild,
+                 String description, String behavior, String howTo, String tcActive, String conditionOper, String conditionVal1, String conditionVal2, String fromBuild,
                  String fromRev, String toBuild, String toRev, String lastExecutionStatus, String bugID,
-                 String targetBuild, String targetRev, String comment,  String dateCreated, String userAgent, Timestamp dateModif);
+                 String targetBuild, String targetRev, String comment,  String dateCreated, String userAgent, String screenSize, Timestamp dateModif, int testCaseVersion);
 
     /**
      *

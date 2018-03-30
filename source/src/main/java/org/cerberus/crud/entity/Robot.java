@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,8 @@
  */
 package org.cerberus.crud.entity;
 
+import org.cerberus.util.StringUtil;
+
 import java.util.List;
 
 /**
@@ -31,17 +33,37 @@ public class Robot {
     private String robot;
     private String host;
     private String port;
+    private String hostUser;
+    private String hostPassword;
     private String platform;
     private String browser;
     private String version;
     private String active;
     private String description;
     private String userAgent;
+    private String robotDecli;
+    private String screenSize;
     
     /**
      * From here are data outside database model.
      */
     private List<RobotCapability> capabilities;
+
+    public String getRobotDecli() {
+        return robotDecli;
+    }
+
+    public void setRobotDecli(String robotDecli) {
+        this.robotDecli = robotDecli;
+    }
+
+    public String getScreenSize() {
+        return screenSize;
+    }
+
+    public void setScreenSize(String screenSize) {
+        this.screenSize = screenSize;
+    }
     
     public String getUserAgent() {
         return userAgent;
@@ -77,6 +99,14 @@ public class Robot {
 
     public String getHost() {
         return host;
+    }
+
+    public String getHostWithCredential() {
+        String credential = "";
+        if(!StringUtil.isNullOrEmpty(this.getHostUser()))
+            credential = this.getHostUser() + ":" + this.getHostPassword() + "@";
+
+        return credential + this.getHost();
     }
 
     public void setHost(String host) {
@@ -131,4 +161,19 @@ public class Robot {
 		this.capabilities = capabilities;
 	}
 
+    public String getHostUser() {
+        return hostUser;
+    }
+
+    public void setHostUser(String hostUser) {
+        this.hostUser = hostUser;
+    }
+
+    public String getHostPassword() {
+        return hostPassword;
+    }
+
+    public void setHostPassword(String hostPassword) {
+        this.hostPassword = hostPassword;
+    }
 }

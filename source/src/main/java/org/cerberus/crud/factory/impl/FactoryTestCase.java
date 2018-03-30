@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,6 +21,8 @@ package org.cerberus.crud.factory.impl;
 
 import java.sql.Timestamp;
 import java.util.List;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import org.cerberus.crud.entity.TestCase;
 import org.cerberus.crud.entity.TestCaseCountry;
@@ -36,15 +38,20 @@ import org.cerberus.crud.factory.IFactoryTestCase;
 @Service
 public class FactoryTestCase implements IFactoryTestCase {
 
-    private TestCase newTestCase;
+    private static final Logger LOG = LogManager.getLogger(FactoryTestCase.class);
+    
+//    private TestCase newTestCase;
 
     @Override
     public TestCase create(String test, String testCase, String origine, String refOrigine, String usrCreated, String implementer, String usrModif, String project, String ticket, String function, String application,
-            String activeQA, String activeUAT, String activePROD, int priority, String group, String status, String description, String behavior, String howTo, String tcActive, String fromBuild, String fromRev,
-            String toBuild, String toRev, String lastExecutionStatus, String bugID, String targetBuild, String targetRev, String comment, String userAgent, List<TestCaseCountry> testCaseCountry,
+            String activeQA, String activeUAT, String activePROD, int priority, String group, String status, String description, String behavior, String howTo, String tcActive, String conditionOper, String conditionVal1, String conditionVal2, String fromBuild, String fromRev,
+            String toBuild, String toRev, String lastExecutionStatus, String bugID, String targetBuild, String targetRev, String comment, String userAgent, String screenSize, List<TestCaseCountry> testCaseCountry,
             List<TestCaseCountryProperties> testCaseCountryProperties, List<TestCaseStep> testCaseStep, List<TestCaseStepBatch> testCaseStepBatch) {
-        newTestCase = new TestCase();
+        TestCase newTestCase = new TestCase();
         newTestCase.setTcActive(tcActive);
+        newTestCase.setConditionOper(conditionOper);
+        newTestCase.setConditionVal1(conditionVal1);
+        newTestCase.setConditionVal2(conditionVal2);
         newTestCase.setApplication(application);
         newTestCase.setBugID(bugID);
         newTestCase.setComment(comment);
@@ -73,6 +80,7 @@ public class FactoryTestCase implements IFactoryTestCase {
         newTestCase.setUsrCreated(usrCreated);
         newTestCase.setUsrModif(usrModif);
         newTestCase.setUserAgent(userAgent);
+        newTestCase.setScreenSize(screenSize);
         newTestCase.setLastExecutionStatus(lastExecutionStatus);
         newTestCase.setTestCaseCountry(testCaseCountry);
         newTestCase.setTestCaseCountryProperties(testCaseCountryProperties);
@@ -85,10 +93,13 @@ public class FactoryTestCase implements IFactoryTestCase {
 
     @Override
     public TestCase create(String test, String testCase, String origine, String refOrigine, String usrCreated, String implementer, String usrModif, String project, String ticket, String function, String application,
-            String activeQA, String activeUAT, String activePROD, int priority, String group, String status, String description, String behavior, String howTo, String tcActive, String fromBuild, String fromRev,
-            String toBuild, String toRev, String lastExecutionStatus, String bugID, String targetBuild, String targetRev, String comment, String dateCreated, String userAgent, Timestamp dateModif) {
-        newTestCase = new TestCase();
+            String activeQA, String activeUAT, String activePROD, int priority, String group, String status, String description, String behavior, String howTo, String tcActive, String conditionOper, String conditionVal1, String conditionVal2, String fromBuild, String fromRev,
+            String toBuild, String toRev, String lastExecutionStatus, String bugID, String targetBuild, String targetRev, String comment, String dateCreated, String userAgent, String screenSize, Timestamp dateModif, int testCaseVersion) {
+        TestCase newTestCase = new TestCase();
         newTestCase.setTcActive(tcActive);
+        newTestCase.setConditionOper(conditionOper);
+        newTestCase.setConditionVal1(conditionVal1);
+        newTestCase.setConditionVal2(conditionVal2);
         newTestCase.setApplication(application);
         newTestCase.setBugID(bugID);
         newTestCase.setComment(comment);
@@ -121,13 +132,15 @@ public class FactoryTestCase implements IFactoryTestCase {
         newTestCase.setDateModif(dateModif);
         newTestCase.setUsrModif(usrModif);
         newTestCase.setUserAgent(userAgent);
+        newTestCase.setScreenSize(screenSize);
+        newTestCase.setTestCaseVersion(testCaseVersion);
 
         return newTestCase;
     }
 
     @Override
     public TestCase create(String test, String testCase) {
-        newTestCase = new TestCase();
+        TestCase newTestCase = new TestCase();
         newTestCase.setTest(test);
         newTestCase.setTestCase(testCase);
         return newTestCase;
@@ -135,7 +148,7 @@ public class FactoryTestCase implements IFactoryTestCase {
 
     @Override
     public TestCase create(String test, String testCase, String description) {
-        newTestCase = new TestCase();
+        TestCase newTestCase = new TestCase();
         newTestCase.setTest(test);
         newTestCase.setTestCase(testCase);
         newTestCase.setDescription(description);

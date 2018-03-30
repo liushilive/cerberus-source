@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -24,22 +24,22 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.TestCaseExecution;
-import org.cerberus.crud.entity.TestCaseExecutionInQueue;
+import org.cerberus.crud.entity.TestCaseExecutionQueue;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.crud.service.ITestCaseExecutionInQueueService;
 import org.cerberus.crud.service.ITestCaseExecutionService;
 import org.cerberus.dto.SummaryStatisticsDTO;
 import org.cerberus.util.ParameterParserUtil;
@@ -49,6 +49,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
+import org.cerberus.crud.service.ITestCaseExecutionQueueService;
 
 /**
  *
@@ -56,9 +57,12 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
  */
 @WebServlet(name = "GetReportData", urlPatterns = {"/GetReportData"})
 public class GetReportData extends HttpServlet {
+    
+    private static final Logger LOG = LogManager.getLogger(GetReportData.class);
 
     ITestCaseExecutionService testCaseExecutionService;
-    ITestCaseExecutionInQueueService testCaseExecutionInQueueService;
+    ITestCaseExecutionQueueService testCaseExecutionInQueueService;
+
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -73,7 +77,7 @@ public class GetReportData extends HttpServlet {
         response.setContentType("text/html;charset=UTF-8");
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
         testCaseExecutionService = appContext.getBean(ITestCaseExecutionService.class);
-        testCaseExecutionInQueueService = appContext.getBean(ITestCaseExecutionInQueueService.class);
+        testCaseExecutionInQueueService = appContext.getBean(ITestCaseExecutionQueueService.class);
 
         response.setContentType("application/json");
         response.setCharacterEncoding("utf8");
@@ -85,19 +89,33 @@ public class GetReportData extends HttpServlet {
         /**
          * Get list of execution by tag, env, country, browser
          */
-        AnswerList<TestCaseExecution> listOfExecution = testCaseExecutionService.readByTagByCriteria(tag, 0, 0, null, null, null, null);
+        AnswerList<TestCaseExecution> listOfExecution = testCaseExecutionService.readByTagByCriteria(tag, 0, 0, null, null, null);
         List<TestCaseExecution> testCaseExecutions = listOfExecution.getDataList();
 
         /**
          * Get list of Execution in Queue by Tag
          */
-        List<TestCaseExecutionInQueue> testCaseExecutionsInQueue = testCaseExecutionInQueueService.findTestCaseExecutionInQueuebyTag(tag);
+        List<TestCaseExecutionQueue> testCaseExecutionsInQueue = testCaseExecutionInQueueService.findTestCaseExecutionInQueuebyTag(tag);
 
         /**
          * Feed hash map with execution from the two list (to get only one by
          * test,testcase,country,env,browser)
          */
         testCaseExecutions = hashExecution(testCaseExecutions, testCaseExecutionsInQueue);
+
+        /**
+         * Geting the global start and end of the execution tag.
+         */
+        long startMin = 0;
+        long endMax = 0;
+        for (TestCaseExecution testCaseExecution : testCaseExecutions) {
+            if ((startMin == 0) || (testCaseExecution.getStart() < startMin)) {
+                startMin = testCaseExecution.getStart();
+            }
+            if ((endMax == 0) || (testCaseExecution.getEnd() > endMax)) {
+                endMax = testCaseExecution.getEnd();
+            }
+        }
 
         if (!split) {
 
@@ -135,7 +153,11 @@ public class GetReportData extends HttpServlet {
 
             jsonResult.put("axis", axisMap.values());
             jsonResult.put("tag", tag);
+            jsonResult.put("start", new Date(startMin));
+            jsonResult.put("end", new Date(endMax));
+
         } else if (split) {
+
             boolean env = ParameterParserUtil.parseBooleanParam(request.getParameter("env"), false);
             boolean country = ParameterParserUtil.parseBooleanParam(request.getParameter("country"), false);
             boolean browser = ParameterParserUtil.parseBooleanParam(request.getParameter("browser"), false);
@@ -145,7 +167,7 @@ public class GetReportData extends HttpServlet {
             List<TestCaseExecution> columnTcExec = columnExec.getDataList();
 
             AnswerList columnQueue = testCaseExecutionInQueueService.readDistinctColumnByTag(tag, env, country, browser, app);
-            List<TestCaseExecutionInQueue> columnInQueue = columnQueue.getDataList();
+            List<TestCaseExecutionQueue> columnInQueue = columnQueue.getDataList();
 
             Map<String, TestCaseExecution> testCaseExecutionsList = new LinkedHashMap();
 
@@ -157,7 +179,7 @@ public class GetReportData extends HttpServlet {
                 testCaseExecutionsList.put(key, column);
             }
 
-            for (TestCaseExecutionInQueue column : columnInQueue) {
+            for (TestCaseExecutionQueue column : columnInQueue) {
                 TestCaseExecution testCaseExecution = testCaseExecutionInQueueService.convertToTestCaseExecution(column);
                 String key = testCaseExecution.getBrowser()
                         + testCaseExecution.getCountry()
@@ -173,7 +195,7 @@ public class GetReportData extends HttpServlet {
                 SummaryStatisticsDTO stat = new SummaryStatisticsDTO();
                 stat.setEnvironment(column.getEnvironment());
                 stat.setCountry(column.getCountry());
-                stat.setBrowser(column.getBrowser());
+                stat.setRobotDecli(column.getBrowser());
                 stat.setApplication(column.getApplication());
 
                 statMap.put(column.getEnvironment() + "_" + column.getCountry() + "_" + column.getBrowser() + "_" + column.getApplication(),
@@ -202,11 +224,11 @@ public class GetReportData extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(GetReportData.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (ParseException ex) {
-            Logger.getLogger(GetReportData.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(GetReportData.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -224,11 +246,11 @@ public class GetReportData extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(GetReportData.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (ParseException ex) {
-            Logger.getLogger(GetReportData.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(GetReportData.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -242,7 +264,7 @@ public class GetReportData extends HttpServlet {
         return "Short description";
     }// </editor-fold>
 
-    private List<TestCaseExecution> hashExecution(List<TestCaseExecution> testCaseExecutions, List<TestCaseExecutionInQueue> testCaseExecutionsInQueue) throws ParseException {
+    private List<TestCaseExecution> hashExecution(List<TestCaseExecution> testCaseExecutions, List<TestCaseExecutionQueue> testCaseExecutionsInQueue) throws ParseException {
         Map<String, TestCaseExecution> testCaseExecutionsList = new LinkedHashMap();
         SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
@@ -254,7 +276,7 @@ public class GetReportData extends HttpServlet {
                     + testCaseExecution.getTestCase();
             testCaseExecutionsList.put(key, testCaseExecution);
         }
-        for (TestCaseExecutionInQueue testCaseExecutionInQueue : testCaseExecutionsInQueue) {
+        for (TestCaseExecutionQueue testCaseExecutionInQueue : testCaseExecutionsInQueue) {
             TestCaseExecution testCaseExecution = testCaseExecutionInQueueService.convertToTestCaseExecution(testCaseExecutionInQueue);
             String key = testCaseExecution.getBrowser() + "_"
                     + testCaseExecution.getCountry() + "_"
@@ -262,7 +284,7 @@ public class GetReportData extends HttpServlet {
                     + testCaseExecution.getTest() + "_"
                     + testCaseExecution.getTestCase();
             if ((testCaseExecutionsList.containsKey(key)
-                    && formater.parse(String.valueOf(testCaseExecutionsList.get(key).getStart())).before(formater.parse(String.valueOf(testCaseExecution.getStart()))))
+                    && testCaseExecutionsList.get(key).getStart() < testCaseExecution.getStart())
                     || !testCaseExecutionsList.containsKey(key)) {
                 testCaseExecutionsList.put(key, testCaseExecution);
             }

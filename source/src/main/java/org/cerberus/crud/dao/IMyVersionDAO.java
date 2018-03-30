@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -36,5 +38,7 @@ public interface IMyVersionDAO {
     MyVersion findMyVersionByKey(String key);
     
     boolean updateMyVersion(MyVersion myVersion);
+    
+    boolean updateMyVersionString(MyVersion myVersion);
     
 }

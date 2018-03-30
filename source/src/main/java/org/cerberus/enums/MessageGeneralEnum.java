@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,21 +20,12 @@
 package org.cerberus.enums;
 
 /**
- * {Insert class description here}
- *
- * @author Tiago Bernardes
- * @version 1.0, 19/Dez/2012
- * @since 0.9.0
+ * Message is a generic Message that is used to feedback the result of any
+ * Cerberus execution. For every message, we have: - a number - a 2 digit code
+ * that report the status of the event. - a clear message that will be reported
+ * to the user. describing what was done or the error that occurred.
  */
 public enum MessageGeneralEnum {
-
-    /**
-     * Message is a generic Message that is used to feedback the result of any Cerberus execution.
-     * For every message, we have:
-     * - a number
-     * - a 2 digit code that report the status of the event.
-     * - a clear message that will be reported to the user. describing what was done or the error that occurred.
-     */
 
     VALIDATION_FAILED_ENVIRONMENT_NOTACTIVE(50, "", "The environment selected isn't active."),
     VALIDATION_FAILED_TESTCASE_NOTACTIVE(51, "", "The test case selected isn't active."),
@@ -48,8 +41,9 @@ public enum MessageGeneralEnum {
     VALIDATION_FAILED_RUNPROD_NOTDEFINED(59, "", "The test case isn't defined to run in Production environment. You try to run it on '%ENV%' that belong to the PROD environment group."),
     VALIDATION_FAILED_COUNTRY_NOTDEFINED(60, "", "The test case isn't defined to run in selected country."),
     VALIDATION_FAILED_ENVIRONMENT_NOTDEFINED(61, "", "The environment selected '%ENV%' belong to a group of environment '%ENVGP%' that is neither DEV, QA, UAT and PROD."),
-    VALIDATION_FAILED_ENVIRONMENT_UNDER_MAINTENANCE(62, "", "The environment is under maintenance. You try to run a test aginst an environment that is currently under maintenance."),
-    VALIDATION_FAILED_SELENIUM_COULDNOTCONNECT(63, "", "Could not contact Selenium server on %SSIP% using port %SSPORT%. Possible causes are invalid address of the remote server or browser start-up failure."),
+    VALIDATION_FAILED_ENVIRONMENT_UNDER_MAINTENANCE(62, "", "The environment %SYSTEM% - %COUNTRY% - %ENV% is under daily maintenance (%START% to %END%). You try to run a test against an environment that is currently under maintenance."),
+    VALIDATION_FAILED_SELENIUM_COULDNOTCONNECT(63, "", "Could not contact Selenium server on %SSIP% using port %SSPORT%. Possible causes are invalid address of the remote server or browser start-up failure. %ERROR%"),
+    VALIDATION_FAILED_SIKULI_COULDNOTCONNECT(63, "", "Could not contact Sikuli server on %SSIP% using port %SSPORT%. Possible causes are invalid address of the remote server or cerberus-extension-sikuli not started properly."),
     VALIDATION_FAILED_APPLICATION_NOT_FOUND(64, "", "Application '%APPLI%' does not exist."),
     VALIDATION_FAILED_COUNTRYENV_NOT_FOUND(65, "", "System '%SYSTEM%' Country '%COUNTRY%' environment '%ENV%' parameters does not exist."),
     VALIDATION_FAILED_COUNTRYENVAPP_NOT_FOUND(66, "", "Country '%COUNTRY%' environment '%ENV%' application '%APPLI%' parameters does not exist."),
@@ -66,31 +60,33 @@ public enum MessageGeneralEnum {
     VALIDATION_FAILED_ENVIRONMENT_DOESNOTEXIST_MAN(82, "", "The environment you defined in myenvdata parameter '%ENV%' does not exit."),
     VALIDATION_FAILED_SELENIUM_EMPTYORBADIP(83, "", "Selenium IP parameter (ss_ip) : '%IP%' is empty or badly formated."),
     VALIDATION_FAILED_SELENIUM_EMPTYORBADPORT(84, "", "Selenium Port parameter (ss_p) : '%PORT%' is empty or badly formated."),
-    VALIDATION_FAILED_VERBOSE_USED_WITH_INCORRECT_BROWSER(85, "", "Verbose should be used only with Firefox. For other browsers, it should be set to 0."),
     VALIDATION_FAILED_URL_MALFORMED(86, "", "URL to access Selenium server '%URL%' is not correct and cannot be handled by Cerberus. Please check your Selenium server and port parameter."),
     VALIDATION_FAILED_TEST_NOT_FOUND(87, "", "Test '%TEST%' does not exist."),
     VALIDATION_FAILED_TEST_NOTACTIVE(88, "", "The test '%TEST%' isn't active."),
     VALIDATION_FAILED_USERAGENTDIFFERENT(90, "", "User Agent has been specified at robot and TestCase level with different values. TestCase : '%UATESTCASE%' Robot : '%UAROBOT%'"),
     VALIDATION_SUCCEEDED(89, "", "The validation succeeded"),
-
     EXECUTION_PE_TESTSTARTED(5, "PE", "Test started..."),
     EXECUTION_PE_CHECKINGPARAMETERS(5, "PE", "Checking parameters..."),
     EXECUTION_PE_LOADINGDATA(5, "PE", "Loading data..."),
     EXECUTION_PE_VALIDATIONSTARTING(5, "PE", "Validation is beeing done..."),
+    EXECUTION_PE_STARTINGROBOTSERVER(5, "PE", "Connection to Robot Server..."),
     EXECUTION_PE_CREATINGRUNID(5, "PE", "Creating RunID..."),
-    EXECUTION_PE_SELENIUMSTARTING(5, "PE", "Selenium Server is starting..."),
     EXECUTION_PE_LOADINGDETAILEDDATA(5, "PE", "Loading detailed data..."),
     EXECUTION_PE_TESTEXECUTING(5, "PE", "Test is executing..."),
     EXECUTION_OK(1, "OK", "The test case finished successfully"),
     EXECUTION_KO(2, "KO", "The test case finished, but failed on validations."),
     EXECUTION_FA(3, "FA", "The test case failed to be executed. More lickely due to an error in the test or in cerberus configuration."),
+    EXECUTION_FA_SERVLETVALIDATONS(14, "FA", "The test case failed to be submitted."),
     EXECUTION_FA_ACTION(4, "FA", "The test case failed to be executed because of an action."),
-    EXECUTION_FA_SELENIUM(8, "FA", "The test case failed to be executed. Could not start Selenium. %MES%."),    
+    EXECUTION_FA_SELENIUM(8, "FA", "The test case failed to be executed. Could not start Selenium. %MES%."),
     EXECUTION_FA_CONNECTIVITY(10, "FA", "The test case failed to be executed. Connectivity issues were found."),
     EXECUTION_FA_CERBERUS(9, "FA", "The test case failed to be executed due to error in Cerberus, please contact Administrator of Cerberus. %MES%."),
+    EXECUTION_FA_CONDITION(11, "FA", "The test case failed to be executed. An error occured when evaluating the %AREA%condition '%COND%'. %MES%"),
+    EXECUTION_FA_CONDITIONDECODE(11, "FA", "The test case failed to be executed. An error occured when decoding the %AREA%condition. %MES%"),
     EXECUTION_CA(6, "CA", "The test case has been cancelled by the user."),
     EXECUTION_NA(7, "NA", "The test case could not be run because of missing testing data."),
-        
+    EXECUTION_NA_CONDITION(12, "NA", "The test case was not executed following the evaluation of the condition '%COND%'. %MES%"),
+    EXECUTION_NE(13, "NE", "The test case has not been executed."),
     APPLICATION_NOT_FOUND(100, "FA", "Application does not exist."),
     NOT_IMPLEMEMTED(101, "FA", "Missing data."),
     NO_DATA_FOUND(102, "FA", "Missing data."),
@@ -98,7 +94,6 @@ public enum MessageGeneralEnum {
     CANNOT_UPDATE_TABLE(104, "", "Cannot update table."),
     SOAPLIB_NOT_FOUND(105, "FA", "SOAP Library was not found"),
     SOAPLIB_MALFORMED_URL(106, "FA", "SOAP Attachment File badly configured"),
-    
     GUI_TEST_CREATION_NOT_HAVE_RIGHT(403, "", "Error : You dont have the user right to create a Test. Please contact your Cerberus Administrator."),
     GUI_TEST_DUPLICATION_NOT_EXISTING_TEST(403, "", "Error : You're trying to duplicate a test which does not exist anymore."),
     GUI_TEST_CREATION_ISSUE(403, "", "Error : A problem has been found inserting data in database. Please contact your Cerberus Administrator."),
@@ -106,7 +101,6 @@ public enum MessageGeneralEnum {
     GUI_TESTCASE_DUPLICATION_ALREADY_EXISTS(403, "", "Error : You're trying to duplicate a testcase which already exists."),
     GUI_TESTCASE_DELETE_USED_STEP(403, "", "Error : You're trying to delete a testcase which have some step used in other tests. Please remove the link before delete this testcase."),
     GUI_TESTCASE_NON_ADMIN_SAVE_WORKING_TESTCASE(403, "", "Error : You're trying to save a WORKING testcase without having the TestAdmin right to do so."),
-
     // Data operations
     DATA_OPERATION_SUCCESS(000, MessageCodeEnum.GENERIC_CODE_SUCCESS.getCodeString(), "The requested operation was concluded with success."),
     DATA_OPERATION_WARNING(000, MessageCodeEnum.GENERIC_CODE_WARNING.getCodeString(), "The requested operation was concluded but with warnings."),
@@ -114,7 +108,7 @@ public enum MessageGeneralEnum {
     GENERIC_SUCCESS(000, MessageCodeEnum.GENERIC_CODE_SUCCESS.getCodeString(), "The requested operation was concluded with success."),
     GENERIC_WARNING(000, MessageCodeEnum.GENERIC_CODE_WARNING.getCodeString(), "The requested operation was concluded but with warnings."),
     GENERIC_ERROR(900, MessageCodeEnum.GENERIC_CODE_ERROR.getCodeString(), "An error occurred while executing the requested operation !");
-    
+
     private final int code;
     private final String codeString;
     private final String description;
@@ -141,6 +135,5 @@ public enum MessageGeneralEnum {
     public String toString() {
         return "MessageGeneralEnum{" + "code=" + code + ", codeString=" + codeString + ", description=" + description + '}';
     }
-    
-    
+
 }

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,15 +22,14 @@ package org.cerberus.servlet.information;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.database.dao.ICerberusInformationDAO;
-import org.cerberus.engine.entity.ExecutionThreadPool;
 import org.cerberus.engine.entity.ExecutionUUID;
 import org.cerberus.crud.entity.SessionCounter;
 import org.cerberus.crud.entity.TestCaseExecution;
@@ -51,6 +50,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "ReadCerberusDetailInformation", urlPatterns = {"/ReadCerberusDetailInformation"})
 public class ReadCerberusDetailInformation extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(ReadCerberusDetailInformation.class);
+    
     private ICerberusInformationDAO cerberusDatabaseInformation;
     private IDatabaseVersioningService databaseVersionService;
     private IMyVersionService myVersionService;
@@ -68,14 +69,11 @@ public class ReadCerberusDetailInformation extends HttpServlet {
             throws ServletException, IOException {
         JSONObject jsonResponse = new JSONObject();
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
-        ExecutionThreadPool etp = appContext.getBean(ExecutionThreadPool.class);
         ExecutionUUID euuid = appContext.getBean(ExecutionUUID.class);
         SessionCounter sc = appContext.getBean(SessionCounter.class);
         Infos infos = new Infos();
 
         try {
-            jsonResponse.put("size_queue", etp.getPoolSize());
-            jsonResponse.put("queue_in_execution", etp.getInQueue());
             jsonResponse.put("simultaneous_execution", euuid.size());
             JSONArray executionArray = new JSONArray();
             for (Object ex : euuid.getExecutionUUIDList().values()) {
@@ -96,7 +94,6 @@ public class ReadCerberusDetailInformation extends HttpServlet {
             jsonResponse.put("simultaneous_execution_list", executionArray);
             jsonResponse.put("simultaneous_session", sc.getTotalActiveSession());
             jsonResponse.put("active_users", sc.getActiveUsers());
-            jsonResponse.put("number_of_thread", etp.getInExecution());
 
             cerberusDatabaseInformation = appContext.getBean(ICerberusInformationDAO.class);
 
@@ -134,9 +131,18 @@ public class ReadCerberusDetailInformation extends HttpServlet {
 
             // JAVA Informations.
             jsonResponse.put("javaVersion", System.getProperty("java.version"));
+            Runtime instance = Runtime.getRuntime();
+            int mb = 1024 * 1024;
+            jsonResponse.put("javaFreeMemory", instance.freeMemory() / mb);
+            jsonResponse.put("javaTotalMemory", instance.totalMemory() / mb);
+            jsonResponse.put("javaUsedMemory", (instance.totalMemory() - instance.freeMemory()) / mb);
+            jsonResponse.put("javaMaxMemory", instance.maxMemory() / mb);
+
+            String str1 = getServletContext().getServerInfo();
+            jsonResponse.put("applicationServerInfo", str1);
 
         } catch (JSONException ex) {
-            Logger.getLogger(ReadCerberusDetailInformation.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
 
         response.setContentType("application/json");

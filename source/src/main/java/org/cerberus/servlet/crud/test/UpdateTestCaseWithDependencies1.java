@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,29 +19,28 @@
  */
 package org.cerberus.servlet.crud.test;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.TestCase;
-import org.cerberus.crud.entity.TestCaseCountry;
-import org.cerberus.crud.entity.TestCaseCountryProperties;
 import org.cerberus.crud.entity.TestCaseStep;
 import org.cerberus.crud.entity.TestCaseStepAction;
 import org.cerberus.crud.entity.TestCaseStepActionControl;
-import org.cerberus.crud.factory.IFactoryTestCaseCountry;
-import org.cerberus.crud.factory.IFactoryTestCaseCountryProperties;
+import org.cerberus.crud.entity.TestCaseCountryProperties;
 import org.cerberus.crud.factory.IFactoryTestCaseStep;
 import org.cerberus.crud.factory.IFactoryTestCaseStepAction;
 import org.cerberus.crud.factory.IFactoryTestCaseStepActionControl;
+import org.cerberus.crud.factory.IFactoryTestCaseCountryProperties;
 import org.cerberus.crud.service.ILogEventService;
 import org.cerberus.crud.service.ITestCaseCountryPropertiesService;
 import org.cerberus.crud.service.ITestCaseService;
@@ -62,8 +61,6 @@ import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
-import org.springframework.web.util.HtmlUtils;
-import org.cerberus.crud.factory.IFactoryTestCase;
 
 /**
  *
@@ -71,6 +68,8 @@ import org.cerberus.crud.factory.IFactoryTestCase;
  */
 @WebServlet(name = "UpdateTestCaseWithDependencies1", urlPatterns = {"/UpdateTestCaseWithDependencies1"})
 public class UpdateTestCaseWithDependencies1 extends HttpServlet {
+
+    private static final Logger LOG = LogManager.getLogger(UpdateTestCaseWithDependencies1.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -87,7 +86,7 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
 
         JSONObject jsonResponse = new JSONObject();
         Answer ans = new Answer();
-        MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+        MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
         ans.setResultMessage(msg);
         PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
@@ -100,10 +99,20 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
         /**
          * Parsing and securing all required parameters.
          */
-        String initialTest = request.getParameter("informationInitialTest");
-        String initialTestCase = request.getParameter("informationInitialTestCase");
-        String test = request.getParameter("informationTest");
-        String testCase = request.getParameter("informationTestCase");
+        StringBuilder sb = new StringBuilder();
+        BufferedReader br = request.getReader();
+        String str;
+        while ((str = br.readLine()) != null) {
+            sb.append(str);
+        }
+        JSONObject jObj = new JSONObject(sb.toString());
+        String initialTest = jObj.getString("informationInitialTest");
+        String initialTestCase = jObj.getString("informationInitialTestCase");
+        String test = jObj.getString("informationTest");
+        String testCase = jObj.getString("informationTestCase");
+        JSONArray properties = jObj.getJSONArray("propArr");
+        JSONArray stepArray = jObj.getJSONArray("stepArray");
+
         boolean duplicate = false;
 
         /**
@@ -139,92 +148,89 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
              * The service was able to perform the query and confirm the object
              * exist, then we can update it.
              */
-             if (!request.isUserInRole("Test")) { // We cannot update the testcase if the user is not at least in Test role.
-                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
-                    msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCase")
-                            .replace("%OPERATION%", "Update")
-                            .replace("%REASON%", "Not enought privilege to update the testcase. You mut belong to Test Privilege."));
-                    ans.setResultMessage(msg);
+            if (!testCaseService.hasPermissionsUpdate(tc, request)) { // We cannot update the testcase if the user is not at least in Test role.
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
+                msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCase")
+                        .replace("%OPERATION%", "Update")
+                        .replace("%REASON%", "Not enought privilege to update the testcase. You mut belong to Test Privilege or even TestAdmin in case the test is in WORKING status."));
+                ans.setResultMessage(msg);
 
-                } else if ((tc.getStatus().equalsIgnoreCase("WORKING")) && !(request.isUserInRole("TestAdmin"))) { // If Test Case is WORKING we need TestAdmin priviliges.
-                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
-                    msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCase")
-                            .replace("%OPERATION%", "Update")
-                            .replace("%REASON%", "Not enought privilege to update the testcase. The test case is in WORKING status and needs TestAdmin privilige to be updated"));
-                    ans.setResultMessage(msg);
+            } else {
 
-                } else {
+                // Test Case exist and we can update it so Global update start here //
+                /**
+                 * TestcaseCountryProperties Update.
+                 */
+                List<TestCaseCountryProperties> tccpFromPage = getTestCaseCountryPropertiesFromParameter(request, appContext, test, testCase, properties);
+                tccpService.compareListAndUpdateInsertDeleteElements(initialTest, initialTestCase, tccpFromPage);
 
-                    // Test Case exist and we can update it so Global update start here //
-                    /**
-                     * TestcaseCountryProperties Update.
-                     */
-                    List<TestCaseCountryProperties> tccpFromPage = getTestCaseCountryPropertiesFromParameter(request, appContext, test, testCase);
-                    tccpService.compareListAndUpdateInsertDeleteElements(initialTest, initialTestCase, tccpFromPage);
+                /*
+                 * Get steps, actions and controls from page by:
+                 * - generating a new step, action or control number,
+                 * - setting the correct related step and action for action or control
+                 */
+                List<TestCaseStep> tcsFromPage = getTestCaseStepFromParameter(request, appContext, test, testCase, duplicate, stepArray);
+                List<TestCaseStepAction> tcsaFromPage = new ArrayList();
+                List<TestCaseStepActionControl> tcsacFromPage = new ArrayList();
 
-                    /*
-                    * Get steps, actions and controls from page by:
-                    * - generating a new step, action or control number,
-                    * - setting the correct related step and action for action or control
-                     */
-                    List<TestCaseStep> tcsFromPage = getTestCaseStepFromParameter(request, appContext, test, testCase, duplicate);
-                    List<TestCaseStepAction> tcsaFromPage = new ArrayList();
-                    List<TestCaseStepActionControl> tcsacFromPage = new ArrayList();
+                int nextStepNumber = getMaxStepNumber(tcsFromPage);
+                for (TestCaseStep tcs : tcsFromPage) {
+                    if (tcs.getStep() == -1) {
+                        tcs.setStep(++nextStepNumber);
+                    }
 
-                    int nextStepNumber = getMaxStepNumber(tcsFromPage);
-                    for (TestCaseStep tcs : tcsFromPage) {
-                        if (tcs.getStep() == -1) {
-                            tcs.setStep(++nextStepNumber);
-                        }
-
-                        if (tcs.getTestCaseStepAction() != null) {
-                            int nextSequenceNumber = getMaxSequenceNumber(tcs.getTestCaseStepAction());
-                            for (TestCaseStepAction tcsa : tcs.getTestCaseStepAction()) {
-                                if (tcsa.getSequence() == -1) {
-                                    tcsa.setSequence(++nextSequenceNumber);
-                                }
-                                tcsa.setStep(tcs.getStep());
-
-                                if (tcsa.getTestCaseStepActionControl() != null) {
-                                    int nextControlNumber = getMaxControlNumber(tcsa.getTestCaseStepActionControl());
-                                    for (TestCaseStepActionControl tscac : tcsa.getTestCaseStepActionControl()) {
-                                        if (tscac.getControlSequence() == -1) {
-                                            tscac.setControlSequence(++nextControlNumber);
-                                        }
-                                        tscac.setStep(tcs.getStep());
-                                        tscac.setSequence(tcsa.getSequence());
-                                    }
-                                    tcsacFromPage.addAll(tcsa.getTestCaseStepActionControl());
-                                }
+                    if (tcs.getTestCaseStepAction() != null) {
+                        int nextSequenceNumber = getMaxSequenceNumber(tcs.getTestCaseStepAction());
+                        for (TestCaseStepAction tcsa : tcs.getTestCaseStepAction()) {
+                            if (tcsa.getSequence() == -1) {
+                                tcsa.setSequence(++nextSequenceNumber);
                             }
-                            tcsaFromPage.addAll(tcs.getTestCaseStepAction());
+                            tcsa.setStep(tcs.getStep());
+
+                            if (tcsa.getTestCaseStepActionControl() != null) {
+                                int nextControlNumber = getMaxControlNumber(tcsa.getTestCaseStepActionControl());
+                                for (TestCaseStepActionControl tscac : tcsa.getTestCaseStepActionControl()) {
+                                    if (tscac.getControlSequence() == -1) {
+                                        tscac.setControlSequence(++nextControlNumber);
+                                    }
+                                    tscac.setStep(tcs.getStep());
+                                    tscac.setSequence(tcsa.getSequence());
+                                }
+                                tcsacFromPage.addAll(tcsa.getTestCaseStepActionControl());
+                            }
                         }
+                        tcsaFromPage.addAll(tcs.getTestCaseStepAction());
                     }
-
-                    /*
-                    * Create, update or delete step, action and control according to the needs
-                     */
-                    List<TestCaseStep> tcsFromDtb = new ArrayList(tcsService.getListOfSteps(initialTest, initialTestCase));
-                    tcsService.compareListAndUpdateInsertDeleteElements(tcsFromPage, tcsFromDtb, duplicate);
-
-                    List<TestCaseStepAction> tcsaFromDtb = new ArrayList(tcsaService.findTestCaseStepActionbyTestTestCase(initialTest, initialTestCase));
-                    tcsaService.compareListAndUpdateInsertDeleteElements(tcsaFromPage, tcsaFromDtb, duplicate);
-
-                    List<TestCaseStepActionControl> tcsacFromDtb = new ArrayList(tcsacService.findControlByTestTestCase(initialTest, initialTestCase));
-                    tcsacService.compareListAndUpdateInsertDeleteElements(tcsacFromPage, tcsacFromDtb, duplicate);
-
-                    /**
-                     * Adding Log entry.
-                     */
-                    if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
-                        /**
-                         * Update was succesfull. Adding Log entry.
-                         */
-                        ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                        logEventService.createPrivateCalls("/UpdateTestCaseWithDependencies1", "UPDATE", "Update testcase : ['" + tc.getTest() + "'|'" + tc.getTestCase() + "']", request);
-                    }
-
                 }
+
+                /*
+                 * Create, update or delete step, action and control according to the needs
+                 */
+                List<TestCaseStep> tcsFromDtb = new ArrayList(tcsService.getListOfSteps(initialTest, initialTestCase));
+                tcsService.compareListAndUpdateInsertDeleteElements(tcsFromPage, tcsFromDtb, duplicate);
+
+                List<TestCaseStepAction> tcsaFromDtb = new ArrayList(tcsaService.findTestCaseStepActionbyTestTestCase(initialTest, initialTestCase));
+                tcsaService.compareListAndUpdateInsertDeleteElements(tcsaFromPage, tcsaFromDtb, duplicate);
+
+                List<TestCaseStepActionControl> tcsacFromDtb = new ArrayList(tcsacService.findControlByTestTestCase(initialTest, initialTestCase));
+                tcsacService.compareListAndUpdateInsertDeleteElements(tcsacFromPage, tcsacFromDtb, duplicate);
+                
+                tc.setTestCaseVersion(tc.getTestCaseVersion() + 1);
+                
+                testCaseService.updateTestCase(tc);
+
+                /**
+                 * Adding Log entry.
+                 */
+                if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+                    /**
+                     * Update was successful. Adding Log entry.
+                     */
+                    ILogEventService logEventService = appContext.getBean(LogEventService.class);
+                    logEventService.createForPrivateCalls("/UpdateTestCaseWithDependencies1", "UPDATE", "Update testcase : ['" + tc.getTest() + "'|'" + tc.getTestCase() + "'] version : "+tc.getTestCaseVersion(), request);
+                }
+
+            }
         }
 
         /**
@@ -294,100 +300,20 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
         return nextControlNumber;
     }
 
-    /**
-     * Create new TestCase object from the information of request form
-     *
-     * @param request information from the request page
-     * @return TestCase object
-     * @see org.cerberus.crud.entity.TestCase
-     */
-    private TestCase getTestCaseFromParameter(HttpServletRequest request, ApplicationContext appContext, String test, String testCase) {
-
-        IFactoryTestCase testCaseFactory = appContext.getBean(IFactoryTestCase.class);
-        String origin = request.getParameter("editOrigin");
-        String refOrigin = request.getParameter("editRefOrigin");
-        String creator = request.getParameter("editCreator");
-        String implementer = request.getParameter("editImplementer");
-        String lastModifier = request.getUserPrincipal().getName();
-        String project = request.getParameter("editProject");
-        String ticket = request.getParameter("editTicket");
-        String application = request.getParameter("editApplication");
-        String runQA = request.getParameter("editRunQA");
-        String runUAT = request.getParameter("editRunUAT");
-        String runPROD = request.getParameter("editRunPROD");
-        Integer priority = Integer.parseInt(request.getParameter("editPriority"));
-        String group = request.getParameter("editGroup");
-        String status = request.getParameter("editStatus");
-        String shortDescription = HtmlUtils.htmlEscape(request.getParameter("editDescription"));
-        String description = request.getParameter("valueDetail");
-        String howTo = request.getParameter("howtoDetail");
-        String active = request.getParameter("editTcActive");
-        String fromSprint = request.getParameter("editFromBuild");
-        String fromRevision = request.getParameter("editFromRev");
-        String toSprint = request.getParameter("editToBuild");
-        String toRevision = request.getParameter("editToRev");
-        String bugID = request.getParameter("editBugID");
-        String targetSprint = request.getParameter("editTargetBuild");
-        String targetRevision = request.getParameter("editTargetRev");
-        String comment = HtmlUtils.htmlEscape(request.getParameter("editComment"));
-        String function = request.getParameter("editFunction");
-        String userAgent = request.getParameter("editUserAgent");
-        return testCaseFactory.create(test, testCase, origin, refOrigin, creator, implementer, lastModifier, project, ticket, function, application,
-                runQA, runUAT, runPROD, priority, group, status, shortDescription, description, howTo, active, fromSprint, fromRevision, toSprint,
-                toRevision, null, bugID, targetSprint, targetRevision, comment, userAgent, null, null, null, null);
-    }
-
-    private List<TestCaseCountry> getTestCaseCountryFromParameter(HttpServletRequest request, ApplicationContext appContext, String test, String testCase) {
-        IFactoryTestCaseCountry testCaseCountryFactory = appContext.getBean(IFactoryTestCaseCountry.class);
-        List<TestCaseCountry> countries = new ArrayList<TestCaseCountry>();
-        if (request.getParameterValues("editTestCaseCountry") != null) {
-            for (String country : request.getParameterValues("editTestCaseCountry")) {
-                countries.add(testCaseCountryFactory.create(test, testCase, country));
-            }
-        }
-        return countries;
-    }
-
-    /**
-     * FIXME this method do nothing more than return
-     * request.getParameter(parameter)!
-     */
-    private String getParameterIfExists(HttpServletRequest request, String parameter) {
-        String result = null;
-        if (request.getParameter(parameter) != null) {
-            result = request.getParameter(parameter);
-        }
-        return result;
-    }
-
-    /**
-     * FIXME this method do nothing more than return
-     * request.getParameterValues(parameter)!
-     */
-    private String[] getParameterValuesIfExists(HttpServletRequest request, String parameter) {
-        String[] result = null;
-        if (request.getParameterValues(parameter) != null) {
-            result = request.getParameterValues(parameter);
-        }
-        return result;
-    }
-
-    private List<TestCaseCountryProperties> getTestCaseCountryPropertiesFromParameter(HttpServletRequest request, ApplicationContext appContext, String test, String testCase) throws JSONException {
+    private List<TestCaseCountryProperties> getTestCaseCountryPropertiesFromParameter(HttpServletRequest request, ApplicationContext appContext, String test, String testCase, JSONArray properties) throws JSONException {
         List<TestCaseCountryProperties> testCaseCountryProp = new ArrayList();
 //        String[] testcase_properties_increment = getParameterValuesIfExists(request, "property_increment");
         IFactoryTestCaseCountryProperties testCaseCountryPropertiesFactory = appContext.getBean(IFactoryTestCaseCountryProperties.class);
-        JSONArray properties = new JSONArray(request.getParameter("propArr"));
-
         for (int i = 0; i < properties.length(); i++) {
             JSONObject propJson = properties.getJSONObject(i);
-
             boolean delete = propJson.getBoolean("toDelete");
             String property = propJson.getString("property");
             String description = propJson.getString("description");
+            int cacheExpire = propJson.getInt("cacheExpire");
             String type = propJson.getString("type");
             String value = propJson.getString("value1");
             String value2 = propJson.getString("value2");
-            int length = propJson.getInt("length");
+            String length = propJson.getString("length");
             int rowLimit = propJson.getInt("rowLimit");
             int retryNb = propJson.optInt("retryNb");
             int retryPeriod = propJson.optInt("retryPeriod");
@@ -398,18 +324,17 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
                 for (int j = 0; j < countries.length(); j++) {
                     String country = countries.getString(j);
 
-                    testCaseCountryProp.add(testCaseCountryPropertiesFactory.create(test, testCase, country, property, description, type, database, value, value2, length, rowLimit, nature, retryNb, retryPeriod));
+                    testCaseCountryProp.add(testCaseCountryPropertiesFactory.create(test, testCase, country, property, description, type, database, value, value2, length, rowLimit, nature, retryNb, retryPeriod, cacheExpire));
                 }
             }
         }
         return testCaseCountryProp;
     }
 
-    private List<TestCaseStep> getTestCaseStepFromParameter(HttpServletRequest request, ApplicationContext appContext, String test, String testCase, boolean duplicate) throws JSONException {
+    private List<TestCaseStep> getTestCaseStepFromParameter(HttpServletRequest request, ApplicationContext appContext, String test, String testCase, boolean duplicate, JSONArray stepArray) throws JSONException {
         List<TestCaseStep> testCaseStep = new ArrayList();
         ITestCaseStepService tcsService = appContext.getBean(ITestCaseStepService.class);
         IFactoryTestCaseStep testCaseStepFactory = appContext.getBean(IFactoryTestCaseStep.class);
-        JSONArray stepArray = new JSONArray(request.getParameter("stepArray"));
 
         for (int i = 0; i < stepArray.length(); i++) {
             JSONObject step = stepArray.getJSONObject(i);
@@ -417,6 +342,10 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
             boolean delete = step.getBoolean("toDelete");
             int stepNumber = step.isNull("step") ? -1 : step.getInt("step");
             int sort = step.isNull("sort") ? -1 : step.getInt("sort");
+            String loop = step.getString("loop");
+            String conditionOper = step.getString("conditionOper");
+            String conditionVal1 = step.getString("conditionVal1");
+            String conditionVal2 = step.getString("conditionVal2");
             String description = step.getString("description");
             String useStep = step.getString("useStep");
             String useStepTest = step.getString("useStepTest");
@@ -426,7 +355,7 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
             JSONArray stepActions = step.getJSONArray("actionArr");
 
             if (!delete) {
-                TestCaseStep tcStep = testCaseStepFactory.create(test, testCase, stepNumber, sort, description, useStep, useStepTest, useStepTestCase, useStepStep, inLibrary);
+                TestCaseStep tcStep = testCaseStepFactory.create(test, testCase, stepNumber, sort, loop, conditionOper, conditionVal1, conditionVal2, description, useStep, useStepTest, useStepTestCase, useStepStep, inLibrary);
 
                 if (useStep.equals("N")) {
                     tcStep.setTestCaseStepAction(getTestCaseStepActionFromParameter(request, appContext, test, testCase, stepActions));
@@ -459,7 +388,8 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
             int sequence = tcsaJson.isNull("sequence") ? -1 : tcsaJson.getInt("sequence");
             int sort = tcsaJson.isNull("sort") ? -1 : tcsaJson.getInt("sort");
             String conditionOper = tcsaJson.getString("conditionOper");
-            String conditionVal = tcsaJson.getString("conditionVal");
+            String conditionVal1 = tcsaJson.getString("conditionVal1");
+            String conditionVal2 = tcsaJson.getString("conditionVal2");
             String action = tcsaJson.getString("action");
             String object = tcsaJson.getString("object");
             String property = tcsaJson.getString("property");
@@ -469,7 +399,7 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
             JSONArray controlArray = tcsaJson.getJSONArray("controlArr");
 
             if (!delete) {
-                TestCaseStepAction tcsa = testCaseStepActionFactory.create(test, testCase, step, sequence, sort, conditionOper, conditionVal, action, object, property, forceExeStatus, description, screenshot);
+                TestCaseStepAction tcsa = testCaseStepActionFactory.create(test, testCase, step, sequence, sort, conditionOper, conditionVal1, conditionVal2, action, object, property, forceExeStatus, description, screenshot);
                 tcsa.setTestCaseStepActionControl(getTestCaseStepActionControlFromParameter(request, appContext, test, testCase, controlArray));
                 testCaseStepAction.add(tcsa);
             }
@@ -489,6 +419,9 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
             int sequence = controlJson.isNull("sequence") ? -1 : controlJson.getInt("sequence");
             int control = controlJson.isNull("controlSequence") ? -1 : controlJson.getInt("controlSequence");
             int sort = controlJson.isNull("sort") ? -1 : controlJson.getInt("sort");
+            String conditionOper = controlJson.isNull("conditionOper") ? "always" : controlJson.getString("conditionOper");
+            String conditionVal1 = controlJson.isNull("conditionVal1") ? "" : controlJson.getString("conditionVal1");
+            String conditionVal2 = controlJson.isNull("conditionVal2") ? "" : controlJson.getString("conditionVal2");
             String type = controlJson.getString("objType");
             String controlValue = controlJson.getString("control");
             String value1 = controlJson.getString("value1");
@@ -497,7 +430,7 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
             String description = controlJson.getString("description");
             String screenshot = controlJson.getString("screenshotFileName");
             if (!delete) {
-                testCaseStepActionControl.add(testCaseStepActionControlFactory.create(test, testCase, step, sequence, control, sort, controlValue, value1, value2 , fatal, description, screenshot));
+                testCaseStepActionControl.add(testCaseStepActionControlFactory.create(test, testCase, step, sequence, control, sort, conditionOper, conditionVal1, conditionVal2, controlValue, value1, value2, fatal, description, screenshot));
             }
         }
         return testCaseStepActionControl;
@@ -518,9 +451,9 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            java.util.logging.Logger.getLogger(UpdateTestCaseWithDependencies1.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateTestCaseWithDependencies1.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -538,11 +471,11 @@ public class UpdateTestCaseWithDependencies1 extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            java.util.logging.Logger.getLogger(UpdateTestCaseWithDependencies1.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateTestCaseWithDependencies1.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
-        }
+    }
 
     /**
      * Returns a short description of the servlet.

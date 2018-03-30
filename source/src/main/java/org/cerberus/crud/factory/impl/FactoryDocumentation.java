@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
 public class FactoryDocumentation implements IFactoryDocumentation {
 
     @Override
-    public Documentation create(String docTable, String docField, String docValue, String docLabel, String docDesc) {
+    public Documentation create(String docTable, String docField, String docValue, String docLabel, String docDesc, String docAnchor) {
         Documentation documentation = new Documentation();
         documentation.setDocTable(docTable);
         documentation.setDocField(docField);
@@ -39,6 +39,8 @@ public class FactoryDocumentation implements IFactoryDocumentation {
         documentation.setDocLabel(docLabel);
         documentation.setDocDesc(docDesc);
         documentation.setHavedocDesc(!(StringUtil.isNullOrEmpty(docDesc)));
+        documentation.setDocAnchor(docAnchor);
+        documentation.setHaveDocAnchor(!(StringUtil.isNullOrEmpty(docAnchor)));
         return documentation;
     }
 

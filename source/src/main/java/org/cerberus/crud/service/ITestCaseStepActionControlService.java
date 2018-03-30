@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -53,6 +53,8 @@ public interface ITestCaseStepActionControlService {
     public void compareListAndUpdateInsertDeleteElements(List<TestCaseStepActionControl> newList, List<TestCaseStepActionControl> oldList, boolean duplicate) throws CerberusException;
 
     public AnswerList readByTestTestCase(String test, String testcase);
+
+    public AnswerList readByVarious1(String test, String testcase, int step, int sequence);
 
     Answer create(TestCaseStepActionControl object);
     

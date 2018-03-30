@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -51,9 +51,11 @@ public interface ITestCaseStepActionService {
     public void deleteListTestCaseStepAction(List<TestCaseStepAction> tcsaToDelete) throws CerberusException ;
     
     public void compareListAndUpdateInsertDeleteElements(List<TestCaseStepAction> newList, List<TestCaseStepAction> oldList, boolean duplicate) throws CerberusException;
-    
+
     public AnswerList readByTestTestCase(String test, String testcase);
-    
+
+    public AnswerList readByVarious1WithDependency(String test, String testcase, int step);
+
     Answer create(TestCaseStepAction object);
     
     Answer createList(List<TestCaseStepAction> objectList);

@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -40,7 +42,6 @@ public interface ITestDAO {
 
     boolean createTest(Test test) throws CerberusException;
 
-    boolean deleteTest(Test test);
 
     /**
      *
@@ -57,12 +58,35 @@ public interface ITestDAO {
     
     public AnswerList readByCriteria(int start, int amount, String colName, String dir, String searchTerm, Map<String, List<String>> individualSearch);
 
+    /**
+     *
+     * @param test
+     * @return
+     */
     public Answer create(Test test);
 
-    public Answer update(Test test);
+    /**
+     *
+     * @param keyTest
+     * @param test
+     * @return
+     */
+    public Answer update(String keyTest, Test test);
     
+    /**
+     *
+     * @param test
+     * @return
+     */
     public Answer delete(Test test);
     
+    /**
+     *
+     * @param searchTerm
+     * @param individualSearch
+     * @param columnName
+     * @return
+     */
     public AnswerList<List<String>> readDistinctValuesByCriteria(String searchTerm, Map<String, List<String>> individualSearch, String columnName);
 
 }

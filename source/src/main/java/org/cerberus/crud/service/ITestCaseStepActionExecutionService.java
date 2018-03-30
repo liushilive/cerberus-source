@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,6 +22,7 @@ package org.cerberus.crud.service;
 import java.util.List;
 
 import org.cerberus.crud.entity.TestCaseStepActionExecution;
+import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
 import org.json.JSONArray;
 
@@ -46,9 +47,13 @@ public interface ITestCaseStepActionExecutionService {
     /**
      *
      * @param id
+     * @param test
+     * @param testCase
+     * @param step
+     * @param index
      * @return List of testCaseStepExecution that correspond to the Id.
      */
-    List<TestCaseStepActionExecution> findTestCaseStepActionExecutionByCriteria(long id, String test, String testCase, int step);
+    List<TestCaseStepActionExecution> findTestCaseStepActionExecutionByCriteria(long id, String test, String testCase, int step, int index);
     
     
     /**
@@ -60,7 +65,37 @@ public interface ITestCaseStepActionExecutionService {
      */
     JSONArray lastActionExecutionDuration(String test, String testcase, String country);
 
-    public AnswerList readByVarious1(long executionId, String test, String testcase, int step);
-    
-    public AnswerList readByVarious1WithDependency(long executionId, String test, String testcase, int step);
+    /**
+     *
+     * @param executionId
+     * @param test
+     * @param testcase
+     * @param step
+     * @param index
+     * @return
+     */
+    public AnswerList readByVarious1(long executionId, String test, String testcase, int step, int index);
+
+    /**
+     *
+     * @param executionId
+     * @param test
+     * @param testcase
+     * @param step
+     * @param index
+     * @param sequence
+     * @return
+     */
+    public AnswerItem readByKey(long executionId, String test, String testcase, int step, int index, int sequence);
+
+    /**
+     *
+     * @param executionId
+     * @param test
+     * @param testcase
+     * @param step
+     * @param index
+     * @return
+     */
+    public AnswerList readByVarious1WithDependency(long executionId, String test, String testcase, int step, int index);
 }

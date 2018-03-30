@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -26,7 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.ITestCaseExecutionFileDAO;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.engine.entity.MessageEvent;
@@ -58,7 +61,7 @@ public class TestCaseExecutionFileDAO implements ITestCaseExecutionFileDAO {
     @Autowired
     private IFactoryTestCaseExecutionFile factoryTestCaseExecutionFile;
 
-    private static final Logger LOG = Logger.getLogger(TestCaseExecutionFileDAO.class);
+    private static final Logger LOG = LogManager.getLogger(TestCaseExecutionFileDAO.class);
 
     private final String OBJECT_NAME = "Testase Execution File";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -68,7 +71,7 @@ public class TestCaseExecutionFileDAO implements ITestCaseExecutionFileDAO {
     public AnswerItem<TestCaseExecutionFile> readByKey(long id) {
         AnswerItem ans = new AnswerItem();
         TestCaseExecutionFile result = null;
-        final String query = "SELECT * FROM `testcaseexecutionfile` WHERE `id` = ?";
+        final String query = "SELECT * FROM `testcaseexecutionfile` exf WHERE `id` = ?";
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
 
@@ -78,56 +81,90 @@ public class TestCaseExecutionFileDAO implements ITestCaseExecutionFileDAO {
             LOG.debug("SQL.param.id : " + id);
         }
 
-        Connection connection = this.databaseSpring.connect();
-        try {
-            PreparedStatement preStat = connection.prepareStatement(query);
-            try {
-                preStat.setLong(1, id);
-                ResultSet resultSet = preStat.executeQuery();
-                try {
-                    if (resultSet.first()) {
-                        result = loadFromResultSet(resultSet);
-                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                        msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                        ans.setItem(result);
-                    } else {
-                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                    }
-                } catch (SQLException exception) {
-                    LOG.error("Unable to execute query : " + exception.toString());
-                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-                } finally {
-                    resultSet.close();
+        try( Connection connection = this.databaseSpring.connect();
+        		PreparedStatement preStat = connection.prepareStatement(query);) {
+            
+        	preStat.setLong(1, id);
+                
+            try(ResultSet resultSet = preStat.executeQuery();) {
+                if (resultSet.first()) {
+                    result = loadFromResultSet(resultSet);
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    ans.setItem(result);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
                 }
             } catch (SQLException exception) {
                 LOG.error("Unable to execute query : " + exception.toString());
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
                 msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-            } finally {
-                preStat.close();
-            }
+            } 
         } catch (SQLException exception) {
             LOG.error("Unable to execute query : " + exception.toString());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
             msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-        } finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException exception) {
-                LOG.warn("Unable to close connection : " + exception.toString());
-            }
-        }
-
+        } 
         //sets the message
         ans.setResultMessage(msg);
         return ans;
     }
 
     @Override
-    public AnswerList<List<TestCaseExecutionFile>> readByVariousByCriteria(long id, String level, int start, int amount, String column, String dir, String searchTerm, Map<String, List<String>> individualSearch) {
+    public AnswerItem<TestCaseExecutionFile> readByKey(long exeId, String level, String fileDesc) {
+        AnswerItem ans = new AnswerItem();
+        TestCaseExecutionFile result = null;
+        StringBuilder query = new StringBuilder("SELECT * FROM `testcaseexecutionfile` exf WHERE `exeid` = ? and `level` = ? ");
+        if(fileDesc != null) {
+        	query.append("and `filedesc` = ? ");
+        }
+        MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+        msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
+
+        // Debug message on SQL.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL : " + query);
+            LOG.debug("SQL.param.id : " + exeId);
+            LOG.debug("SQL.param.id : " + level);
+            LOG.debug("SQL.param.id : " + fileDesc);
+        }
+        
+        try(Connection connection = this.databaseSpring.connect();
+        		PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+            
+            preStat.setLong(1, exeId);
+            preStat.setString(2, level);
+            if(fileDesc != null) {
+                preStat.setString(3, fileDesc);
+            }
+            
+            try(ResultSet resultSet = preStat.executeQuery();) {
+                if (resultSet.first()) {
+                    result = loadFromResultSet(resultSet);
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    ans.setItem(result);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                }
+            } catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+            } 
+
+        } catch (SQLException exception) {
+            LOG.error("Unable to execute query : " + exception.toString());
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+            msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+        } 
+        //sets the message
+        ans.setResultMessage(msg);
+        return ans;
+    }
+
+    @Override
+    public AnswerList<List<TestCaseExecutionFile>> readByVariousByCriteria(long exeId, String level, int start, int amount, String column, String dir, String searchTerm, Map<String, List<String>> individualSearch) {
         AnswerList response = new AnswerList();
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
@@ -158,7 +195,7 @@ public class TestCaseExecutionFileDAO implements ITestCaseExecutionFileDAO {
             searchSQL.append(" )");
         }
 
-        if (!(id <= 0)) {
+        if (!(exeId <= 0)) {
             searchSQL.append(" and (exf.`exeid` = ? )");
         }
         if (level != null) {
@@ -179,6 +216,8 @@ public class TestCaseExecutionFileDAO implements ITestCaseExecutionFileDAO {
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query.toString());
+            LOG.debug("SQL.param.exeid : " + exeId);
+            LOG.debug("SQL.param.level : " + level);
         }
         Connection connection = this.databaseSpring.connect();
         try {
@@ -194,8 +233,8 @@ public class TestCaseExecutionFileDAO implements ITestCaseExecutionFileDAO {
                 for (String individualColumnSearchValue : individalColumnSearchValues) {
                     preStat.setString(i++, individualColumnSearchValue);
                 }
-                if (!(id <= 0)) {
-                    preStat.setLong(i++, id);
+                if (!(exeId <= 0)) {
+                    preStat.setLong(i++, exeId);
                 }
                 if (level != null) {
                     preStat.setString(i++, level);

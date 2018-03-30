@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -55,16 +58,25 @@ function initPage() {
     var select = $('#selectApplication');
     select.append($('<option></option>').text("-- ALL --").val("ALL"));
     displayApplicationList("application", getUser().defaultSystem, urlApplication);
-    
+
     displayProjectList("project");
     displayUserList("releaseowner");
 
     var table = loadBCTable(urlBuild, urlRevision, urlApplication);
+    // React on table redraw
+    table.on(
+        'draw.dt',
+        function () {
+            // Un-check the select all checkbox
+            $('#selectAll')[0].checked = false;
+        }
+    );
 
     // handle the click for specific action buttons
     $("#addBrpButton").click(addEntryModalSaveHandler);
     $("#editBrpButton").click(editEntryModalSaveHandler);
-    $("#massActionBrpButton").click(massActionModalSaveHandler);
+    $("#massActionBrpButtonChangeBuildRevision").click(massActionModalSaveHandler_changeBuildRev);
+    $("#massActionBrpButtonDelete").click(massActionModalSaveHandler_delete);
 
     //clear the modals fields when closed
     $('#addBrpModal').on('hidden.bs.modal', addEntryModalCloseHandler);
@@ -173,7 +185,7 @@ function loadBCTable(selectBuild, selectRevision, selectApplication) {
 
     var configurations = new TableConfigurationsServerSide("buildrevisionparametersTable", contentUrl, "contentTable", aoColumnsFunc("buildrevisionparametersTable"), [12, 'desc']);
 
-    var table = createDataTableWithPermissions(configurations, renderOptionsForBrp, "#buildContentList");
+    var table = createDataTableWithPermissions(configurations, renderOptionsForBrp, "#buildContentList", undefined, true);
 
     // handle the click for specific action on the list.
     $("#selectAll").click(selectAll);
@@ -188,8 +200,8 @@ function renderOptionsForBrp(data) {
 
         if ($("#createBrpButton").length === 0) {
             var contentToAdd = "<div class='marginBottom10'>";
-            contentToAdd += "<button id='createBrpMassButton' type='button' class='btn btn-default'><span class='glyphicon glyphicon-th-list'></span> " + doc.getDocLabel("page_global", "button_massAction") + "</button>";
             contentToAdd += "<button id='createBrpButton' type='button' class='btn btn-default' ><span class='glyphicon glyphicon-plus-sign'></span> " + doc.getDocLabel("page_buildcontent", "button_create") + "</button>";
+            contentToAdd += "<button id='createBrpMassButton' type='button' class='btn btn-default'><span class='glyphicon glyphicon-th-list'></span> " + doc.getDocLabel("page_global", "button_massAction") + "</button>";
             contentToAdd += "</div>";
 
             $("#buildrevisionparametersTable_wrapper #buildrevisionparametersTable_length").before(contentToAdd);
@@ -241,7 +253,7 @@ function setLatest() {
             // We refresh the list.
             loadBCTable();
         } else {
-            showMessageMainPage(messageType, data.message);
+            showMessageMainPage(messageType, data.message, true);
         }
     }).fail(handleErrorAjaxAfterTimeout);
 
@@ -264,7 +276,7 @@ function deleteEntryHandlerClick() {
 
         }
         //show message in the main page
-        showMessageMainPage(messageType, data.message);
+        showMessageMainPage(messageType, data.message, false);
         //close confirmation window
         $('#confirmationModal').modal('hide');
     }).fail(handleErrorAjaxAfterTimeout);
@@ -279,7 +291,7 @@ function deleteEntryClick(id, build, revision, release, application) {
     messageComplete = messageComplete.replace("%REVISION%", revision);
     messageComplete = messageComplete.replace("%RELEASE%", release);
     messageComplete = messageComplete.replace("%APPLI%", application);
-    showModalConfirmation(deleteEntryHandlerClick, doc.getDocLabel("page_buildcontent", "button_delete"), messageComplete, id, "", "", "");
+    showModalConfirmation(deleteEntryHandlerClick, undefined, doc.getDocLabel("page_buildcontent", "button_delete"), messageComplete, id, "", "", "");
 }
 
 function addEntryModalSaveHandler() {
@@ -575,13 +587,14 @@ function appendNewInstallRow(build, revision, application, release, link, versio
 }
 
 function selectAll() {
-    if ($(this).prop("checked"))
+    if ($(this).prop("checked")) {
         $("[data-line='select']").prop("checked", true);
-    else
-        $("[data-line='select']").removeProp("checked");
+    } else {
+        $("[data-line='select']").prop("checked", false);
+    }
 }
 
-function massActionModalSaveHandler() {
+function massActionModalSaveHandler_changeBuildRev() {
     clearResponseMessage($('#massActionBrpModal'));
 
     var formNewValues = $('#massActionBrpModal #massActionBrpModalForm');
@@ -595,8 +608,7 @@ function massActionModalSaveHandler() {
         // unblock when remote call returns 
         hideLoaderInModal('#massActionBrpModal');
         if ((getAlertType(data.messageType) === "success") || (getAlertType(data.messageType) === "warning")) {
-            var oTable = $("#buildrevisionparametersTable").dataTable();
-            oTable.fnDraw(true);
+            refreshTable();
             $('#massActionBrpModal').modal('hide');
             showMessage(data);
         } else {
@@ -604,6 +616,29 @@ function massActionModalSaveHandler() {
         }
     }).fail(handleErrorAjaxAfterTimeout);
 }
+
+function massActionModalSaveHandler_delete() {
+    clearResponseMessage($('#massActionBrpModal'));
+
+    var formList = $('#massActionForm');
+    var paramSerialized = formList.serialize().replace(/=on/g, '').replace(/id-/g, 'id=');
+
+    showLoaderInModal('#massActionBrpModal');
+
+    var jqxhr = $.post("DeleteBuildRevisionParameters", paramSerialized, "json");
+    $.when(jqxhr).then(function (data) {
+        // unblock when remote call returns 
+        hideLoaderInModal('#massActionBrpModal');
+        if ((getAlertType(data.messageType) === "success") || (getAlertType(data.messageType) === "warning")) {
+            refreshTable();
+            $('#massActionBrpModal').modal('hide');
+            showMessage(data);
+        } else {
+            showMessage(data, $('#massActionBrpModal'));
+        }
+    }).fail(handleErrorAjaxAfterTimeout);
+}
+
 
 function massActionModalCloseHandler() {
     // reset form values
@@ -616,16 +651,19 @@ function massActionModalCloseHandler() {
 
 function massActionClick() {
     var doc = new Doc();
-    console.debug("Mass Action");
     clearResponseMessageMainPage();
     // When creating a new item, Define here the default value.
     var formList = $('#massActionForm');
     if (formList.serialize().indexOf("id-") === -1) {
-        var localMessage = new Message("danger", doc.getDocLabel("page_buildcontent", "message_massActionError1"));
+        var localMessage = new Message("danger", doc.getDocLabel("page_global", "message_massActionError"));
         showMessage(localMessage, null);
     } else {
         $('#massActionBrpModal').modal('show');
     }
+}
+
+function refreshTable() {
+    $('#buildrevisionparametersTable').DataTable().draw();
 }
 
 function aoColumnsFunc(tableId) {
@@ -698,14 +736,17 @@ function aoColumnsFunc(tableId) {
             "sWidth": "80px",
             "title": doc.getDocOnline("buildrevisionparameters", "project")},
         {"data": "ticketIdFixed",
+            "like":true,
             "sName": "ticketIdFixed",
             "sWidth": "80px",
             "title": doc.getDocOnline("buildrevisionparameters", "TicketIDFixed")},
         {"data": "bugIdFixed",
+            "like":true,
             "sName": "bugIdFixed",
             "sWidth": "80px",
             "title": doc.getDocOnline("buildrevisionparameters", "BugIDFixed")},
         {"data": "link",
+            "like":true,
             "sName": "link",
             "sWidth": "250px",
             "title": doc.getDocOnline("buildrevisionparameters", "Link"),
@@ -723,25 +764,31 @@ function aoColumnsFunc(tableId) {
             "title": doc.getDocOnline("buildrevisionparameters", "subject")},
         {"data": "datecre",
             "sName": "datecre",
+            "like":true,
             "sWidth": "150px",
             "title": doc.getDocOnline("buildrevisionparameters", "datecre")},
         {"data": "jenkinsBuildId",
+            "like":true,
             "sName": "jenkinsBuildId",
             "sWidth": "80px",
             "title": doc.getDocOnline("buildrevisionparameters", "jenkinsBuildId")},
         {"data": "mavenGroupId",
+            "like":true,
             "sName": "mavenGroupId",
             "sWidth": "80px",
             "title": doc.getDocOnline("buildrevisionparameters", "mavenGroupId")},
         {"data": "mavenArtifactId",
+            "like":true,	
             "sName": "mavenArtifactId",
             "sWidth": "80px",
             "title": doc.getDocOnline("buildrevisionparameters", "mavenArtifactId")},
         {"data": "mavenVersion",
+            "like":true,	
             "sName": "mavenVersion",
             "sWidth": "80px",
             "title": doc.getDocOnline("buildrevisionparameters", "mavenVersion")},
         {"data": "repositoryUrl",
+            "like":true,
             "sName": "repositoryUrl",
             "sWidth": "200px",
             "title": doc.getDocOnline("buildrevisionparameters", "repositoryUrl")}

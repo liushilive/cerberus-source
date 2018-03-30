@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,22 +30,19 @@ import org.springframework.stereotype.Service;
 public class FactoryTestCaseStepActionControl implements IFactoryTestCaseStepActionControl {
 
     @Override
-    public TestCaseStepActionControl create(String test, String testCase, int step, int sequence,
-                                            int controlSequence, String control, String value1, String value2, String fatal, String description) {
-        return create(test, testCase, step, sequence, controlSequence, controlSequence, control, value1, value2, fatal, description, null);
-    }
-
-    @Override
-    public TestCaseStepActionControl create(String test, String testCase, int step, int sequence, int controlSequence, int sort, String control, String value1, 
+    public TestCaseStepActionControl create(String test, String testCase, int step, int sequence, int controlSequence, int sort, String conditionOper, String conditionVal1, String conditionVal2, String control, String value1,
             String value2, String fatal, String description, String screenshotFilename) {
         TestCaseStepActionControl testCaseStepActionControl = new TestCaseStepActionControl();
         testCaseStepActionControl.setTest(test);
         testCaseStepActionControl.setTestCase(testCase);
-        testCaseStepActionControl.setControl(control);
         testCaseStepActionControl.setStep(step);
         testCaseStepActionControl.setSequence(sequence);
         testCaseStepActionControl.setControlSequence(controlSequence);
         testCaseStepActionControl.setSort(sort);
+        testCaseStepActionControl.setConditionOper(conditionOper);
+        testCaseStepActionControl.setConditionVal1(conditionVal1);
+        testCaseStepActionControl.setConditionVal2(conditionVal2);
+        testCaseStepActionControl.setControl(control);
         testCaseStepActionControl.setValue1(value1);
         testCaseStepActionControl.setValue2(value2);
         testCaseStepActionControl.setFatal(fatal);
@@ -53,7 +50,6 @@ public class FactoryTestCaseStepActionControl implements IFactoryTestCaseStepAct
         testCaseStepActionControl.setScreenshotFilename(screenshotFilename);
         return testCaseStepActionControl;
     }
-    
     
 
 }

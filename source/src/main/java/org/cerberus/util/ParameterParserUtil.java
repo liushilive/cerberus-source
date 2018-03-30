@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,6 +22,7 @@ package org.cerberus.util;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,8 +104,7 @@ public final class ParameterParserUtil {
     /**
      * @param inParam
      * @param defaultVal
-     * @return an empty string if the inParam is null. It returns
-     * inParam if OK.
+     * @return an empty string if the inParam is null. It returns inParam if OK.
      */
     public static String parseStringParam(String inParam, String defaultVal) {
         if (inParam != null) {
@@ -241,6 +241,25 @@ public final class ParameterParserUtil {
     }
 
     /**
+     * Parses and decode a list from the given inParams one by decoding each of
+     * them
+     *
+     * @param inParams
+     * @param defaultVal
+     * @param charset
+     * @return
+     */
+    public static List<String> parseListParamAndDecodeAndDeleteEmptyValue(String[] inParams, List<String> defaultVal, String charset) {
+        if (inParams == null) {
+            return null;
+        }
+        List<String> result = parseListParamAndDecode(inParams, defaultVal, charset);
+        result.removeAll(Collections.singleton(""));
+        result.removeAll(Collections.singleton(null));
+        return result;
+    }
+
+    /**
      * @param inParam
      * @return an empty string if the inParam is null. It returns inParam if OK.
      */
@@ -254,13 +273,32 @@ public final class ParameterParserUtil {
 
     /**
      * @param inParam
+     * @param defaultVal
      * @return 0 if the inParam is empty or null. It returns inParam converted
      * to Integer if OK.
      * @throws NumberFormatException if inParam isn't numeric
      */
     public static int parseIntegerParam(String inParam, int defaultVal) {
         if (inParam != null && inParam.compareTo("") != 0) {
-            return Integer.valueOf(inParam);
+            try {
+                return Integer.valueOf(inParam);
+            } catch (NumberFormatException nfe) {
+                return defaultVal;
+            }
+        }
+        return defaultVal;
+    }
+
+    /**
+     * @param inParam
+     * @param defaultVal
+     * @return 0 if the inParam is empty or null. It returns inParam converted
+     * to Integer if OK.
+     * @throws NumberFormatException if inParam isn't numeric
+     */
+    public static int parseIntegerParam(Integer inParam, int defaultVal) {
+        if (inParam != null) {
+            return inParam;
         }
         return defaultVal;
     }
@@ -276,7 +314,7 @@ public final class ParameterParserUtil {
      * @return
      */
     public static int parseIntegerParamAndDecode(String inParam, int defaultVal, String charset) {
-        if (inParam == null) {
+        if ((inParam == null) || (inParam.equals(""))) {
             return defaultVal;
         }
 

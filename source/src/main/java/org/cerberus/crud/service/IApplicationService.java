@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -110,10 +110,11 @@ public interface IApplicationService {
 
     /**
      *
+     * @param application
      * @param object
      * @return
      */
-    Answer update(Application object);
+    Answer update(String application, Application object);
 
     /**
      *
@@ -146,6 +147,7 @@ public interface IApplicationService {
 
     /**
      * 
+     * @param system
      * @param searchParameter
      * @param individualSearch
      * @param columnName

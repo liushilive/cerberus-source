@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -27,7 +29,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.ITestCaseCountryPropertiesDAO;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.dto.PropertyListDTO;
@@ -64,7 +67,7 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
     @Autowired
     private IFactoryTestCaseCountryProperties factoryTestCaseCountryProperties;
 
-    private static final Logger LOG = Logger.getLogger(TestCaseCountryPropertiesDAO.class);
+    private static final Logger LOG = LogManager.getLogger(TestCaseCountryPropertiesDAO.class);
 
     private final String OBJECT_NAME = "TestCaseCountryProperties";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -94,12 +97,71 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
                         String database = resultSet.getString("database");
                         String value1 = resultSet.getString("value1");
                         String value2 = resultSet.getString("value2");
-                        int length = resultSet.getInt("length");
+                        String length = resultSet.getString("length");
                         int rowLimit = resultSet.getInt("rowLimit");
                         String nature = resultSet.getString("nature");
                         int retryNb = resultSet.getInt("RetryNb");
                         int retryPeriod = resultSet.getInt("RetryPeriod");
-                        list.add(factoryTestCaseCountryProperties.create(test, testcase, country, property, description, type, database, value1, value2, length, rowLimit, nature, retryNb, retryPeriod));
+                        int cacheExpire = resultSet.getInt("CacheExpire");
+                        list.add(factoryTestCaseCountryProperties.create(test, testcase, country, property, description, type, database, value1, value2, length, rowLimit, nature, retryNb, retryPeriod, cacheExpire));
+
+                    }
+                } catch (SQLException exception) {
+                    LOG.error("Unable to execute query : " + exception.toString());
+                } finally {
+                    resultSet.close();
+                }
+            } catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+            } finally {
+                preStat.close();
+            }
+        } catch (SQLException exception) {
+            LOG.error("Unable to execute query : " + exception.toString());
+        } finally {
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException exception) {
+                LOG.warn(exception.toString());
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public List<TestCaseCountryProperties> findOnePropertyPerTestTestCase(String test, String testcase, String oneproperty) {
+        List<TestCaseCountryProperties> list = null;
+        final String query = "SELECT * FROM testcasecountryproperties WHERE test = ? AND testcase = ? AND property = ?";
+
+        Connection connection = this.databaseSpring.connect();
+        try {
+            PreparedStatement preStat = connection.prepareStatement(query);
+            try {
+                preStat.setString(1, test);
+                preStat.setString(2, testcase);
+                preStat.setString(3, oneproperty);
+
+                ResultSet resultSet = preStat.executeQuery();
+                try {
+                    list = new ArrayList<TestCaseCountryProperties>();
+
+                    while (resultSet.next()) {
+                        String country = resultSet.getString("country");
+                        String property = resultSet.getString("property");
+                        String description = resultSet.getString("description");
+                        String type = resultSet.getString("type");
+                        String database = resultSet.getString("database");
+                        String value1 = resultSet.getString("value1");
+                        String value2 = resultSet.getString("value2");
+                        String length = resultSet.getString("length");
+                        int rowLimit = resultSet.getInt("rowLimit");
+                        String nature = resultSet.getString("nature");
+                        int retryNb = resultSet.getInt("RetryNb");
+                        int retryPeriod = resultSet.getInt("RetryPeriod");
+                        int cacheExpire = resultSet.getInt("CacheExpire");
+                        list.add(factoryTestCaseCountryProperties.create(test, testcase, country, property, description, type, database, value1, value2, length, rowLimit, nature, retryNb, retryPeriod, cacheExpire));
 
                     }
                 } catch (SQLException exception) {
@@ -152,12 +214,13 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
                         String database = resultSet.getString("database");
                         String value1 = resultSet.getString("value1");
                         String value2 = resultSet.getString("value2");
-                        int length = resultSet.getInt("length");
+                        String length = resultSet.getString("length");
                         int rowLimit = resultSet.getInt("rowLimit");
                         String nature = resultSet.getString("nature");
                         int retryNb = resultSet.getInt("RetryNb");
                         int retryPeriod = resultSet.getInt("RetryPeriod");
-                        listProperties.add(factoryTestCaseCountryProperties.create(test, testcase, country, property, description, type, database, value1, value2, length, rowLimit, nature, retryNb, retryPeriod));
+                        int cacheExpire = resultSet.getInt("CacheExpire");
+                        listProperties.add(factoryTestCaseCountryProperties.create(test, testcase, country, property, description, type, database, value1, value2, length, rowLimit, nature, retryNb, retryPeriod, cacheExpire));
 
                     }
                 } catch (SQLException exception) {
@@ -279,12 +342,13 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
                         String database = resultSet.getString("database");
                         String value1 = resultSet.getString("value1");
                         String value2 = resultSet.getString("value2");
-                        int length = resultSet.getInt("length");
+                        String length = resultSet.getString("length");
                         int rowLimit = resultSet.getInt("rowLimit");
                         String nature = resultSet.getString("nature");
                         int retryNb = resultSet.getInt("RetryNb");
                         int retryPeriod = resultSet.getInt("RetryPeriod");
-                        list.add(factoryTestCaseCountryProperties.create(test, testcase, country, property, description, type, database, value1, value2, length, rowLimit, nature, retryNb, retryPeriod));
+                        int cacheExpire = resultSet.getInt("CacheExpire");
+                        list.add(factoryTestCaseCountryProperties.create(test, testcase, country, property, description, type, database, value1, value2, length, rowLimit, nature, retryNb, retryPeriod, cacheExpire));
                     }
                 } catch (SQLException exception) {
                     LOG.error("Unable to execute query : " + exception.toString());
@@ -333,12 +397,13 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
                         String database = resultSet.getString("database");
                         String value1 = resultSet.getString("value1");
                         String value2 = resultSet.getString("value2");
-                        int length = resultSet.getInt("length");
+                        String length = resultSet.getString("length");
                         int rowLimit = resultSet.getInt("rowLimit");
                         String nature = resultSet.getString("nature");
                         int retryNb = resultSet.getInt("RetryNb");
                         int retryPeriod = resultSet.getInt("RetryPeriod");
-                        result = factoryTestCaseCountryProperties.create(test, testcase, country, property, description, type, database, value1, value2, length, rowLimit, nature, retryNb, retryPeriod);
+                        int cacheExpire = resultSet.getInt("CacheExpire");
+                        result = factoryTestCaseCountryProperties.create(test, testcase, country, property, description, type, database, value1, value2, length, rowLimit, nature, retryNb, retryPeriod, cacheExpire);
                     } else {
                         throwException = true;
                     }
@@ -392,7 +457,7 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
                 preStat.setString(7, testCaseCountryProperties.getDatabase());
                 preStat.setBytes(8, testCaseCountryProperties.getValue1().getBytes("UTF-8"));
                 preStat.setBytes(9, testCaseCountryProperties.getValue2().getBytes("UTF-8"));
-                preStat.setInt(10, testCaseCountryProperties.getLength());
+                preStat.setString(10, testCaseCountryProperties.getLength());
                 preStat.setInt(11, testCaseCountryProperties.getRowLimit());
                 preStat.setString(12, testCaseCountryProperties.getNature());
                 preStat.setInt(13, testCaseCountryProperties.getRetryNb());
@@ -441,7 +506,7 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
                 preStat.setString(3, testCaseCountryProperties.getDatabase());
                 preStat.setBytes(4, testCaseCountryProperties.getValue1().getBytes("UTF-8"));
                 preStat.setBytes(5, testCaseCountryProperties.getValue2().getBytes("UTF-8"));
-                preStat.setInt(6, testCaseCountryProperties.getLength());
+                preStat.setString(6, testCaseCountryProperties.getLength());
                 preStat.setInt(7, testCaseCountryProperties.getRowLimit());
                 preStat.setString(8, testCaseCountryProperties.getNature());
                 preStat.setInt(9, testCaseCountryProperties.getRetryNb());
@@ -726,7 +791,7 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
                     preStat.setString(7, prop.getDatabase());
                     preStat.setString(8, prop.getValue1());
                     preStat.setString(9, prop.getValue2());
-                    preStat.setInt(10, prop.getLength());
+                    preStat.setString(10, prop.getLength());
                     preStat.setInt(11, prop.getRowLimit());
                     preStat.setString(12, prop.getNature());
                     preStat.setInt(13, prop.getRetryNb());
@@ -786,8 +851,8 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
         MessageEvent msg = null;
         StringBuilder query = new StringBuilder();
         query.append("INSERT INTO testcasecountryproperties (`Test`,`TestCase`,`Country`,`Property`,`Description`,`Type`");
-        query.append(",`Database`,`Value1`,`Value2`,`Length`,`RowLimit`,`Nature`,`RetryNb`,`RetryPeriod`) ");
-        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        query.append(",`Database`,`Value1`,`Value2`,`Length`,`RowLimit`,`Nature`,`RetryNb`,`RetryPeriod`,`CacheExpire`) ");
+        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -807,11 +872,12 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
                 preStat.setString(7, object.getDatabase());
                 preStat.setString(8, object.getValue1());
                 preStat.setString(9, object.getValue2());
-                preStat.setInt(10, object.getLength());
+                preStat.setString(10, object.getLength());
                 preStat.setInt(11, object.getRowLimit());
                 preStat.setString(12, object.getNature());
                 preStat.setInt(13, object.getRetryNb());
                 preStat.setInt(14, object.getRetryPeriod());
+                preStat.setInt(15, object.getCacheExpire());
 
                 preStat.executeUpdate();
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -893,7 +959,7 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
     @Override
     public Answer update(TestCaseCountryProperties object) {
         MessageEvent msg = null;
-        final String query = "UPDATE testcasecountryproperties SET `Description` = ?, `Type` = ? ,`Database` = ? ,Value1 = ?,Value2 = ?,`Length` = ?,  RowLimit = ?,  `Nature` = ?,  `RetryNb` = ?,  `RetryPeriod` = ? WHERE Test = ? AND TestCase = ? AND Country = ? AND hex(`Property`) like hex(?)";
+        final String query = "UPDATE testcasecountryproperties SET `Description` = ?, `Type` = ? ,`Database` = ? ,Value1 = ?,Value2 = ?,`Length` = ?,  RowLimit = ?,  `Nature` = ?,  `RetryNb` = ?,  `RetryPeriod` = ? ,  `CacheExpire` = ? WHERE Test = ? AND TestCase = ? AND Country = ? AND hex(`Property`) like hex(?)";
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -908,15 +974,16 @@ public class TestCaseCountryPropertiesDAO implements ITestCaseCountryPropertiesD
                 preStat.setString(3, object.getDatabase());
                 preStat.setString(4, object.getValue1());
                 preStat.setString(5, object.getValue2());
-                preStat.setInt(6, object.getLength());
+                preStat.setString(6, object.getLength());
                 preStat.setInt(7, object.getRowLimit());
                 preStat.setString(8, object.getNature());
                 preStat.setInt(9, object.getRetryNb());
                 preStat.setInt(10, object.getRetryPeriod());
-                preStat.setString(11, object.getTest());
-                preStat.setString(12, object.getTestCase());
-                preStat.setString(13, object.getCountry());
-                preStat.setString(14, object.getProperty());
+                preStat.setInt(11, object.getCacheExpire());
+                preStat.setString(12, object.getTest());
+                preStat.setString(13, object.getTestCase());
+                preStat.setString(14, object.getCountry());
+                preStat.setString(15, object.getProperty());
 
                 preStat.executeUpdate();
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);

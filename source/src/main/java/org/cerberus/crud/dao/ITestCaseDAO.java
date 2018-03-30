@@ -1,4 +1,5 @@
-/*
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,7 +23,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-
 import org.cerberus.crud.entity.TestCase;
 import org.cerberus.crud.factory.impl.FactoryTestCase;
 import org.cerberus.exception.CerberusException;
@@ -49,6 +49,8 @@ public interface ITestCaseDAO {
 
     boolean createTestCase(TestCase testCase);
 
+    List<TestCase> findTestCaseByApplication(String application);
+
     List<TestCase> findTestCaseByCriteria(String test, String application, String country, String active);
 
     /**
@@ -69,44 +71,26 @@ public interface ITestCaseDAO {
     boolean deleteTestCase(TestCase testCase);
 
     /**
-     * @param tc
-     * @param columnName Name of the column to update
-     * @param value      New value of the field columnName for the key name
-     */
-    void updateTestCaseField(TestCase tc, String columnName, String value);
-
-    /**
-     * @param tCase
-     * @param system
-     * @return
-     * @since 1.0.2
-     */
-    List<TestCase> findTestCaseByGroupInCriteria(TestCase tCase, String system);
-
-    /**
      * @param campaign the campaign name
-     * @return the list of TCase used in the campaign
-     * @since 1.0.2
-     */
-    List<TestCase> findTestCaseByCampaignName(String campaign);
-
-    /**
-     * @param campaign  the campaign name
      * @param countries arrays of country
+     * @param withLabelOrBattery
+     * @param status status of test case
+     * @param system of test case
+     * @param application of test case
+     * @param priority of test case
+     * @param maxReturn
      * @return the list of TCase used in the campaign
      * @since 1.0.2
      */
-    List<TestCase> findTestCaseByCampaignNameAndCountries(String campaign, String[] countries);
+    AnswerItem<List<TestCase>> findTestCaseByCampaignNameAndCountries(String campaign, String[] countries, boolean withLabelOrBattery, String[] status, String[] system, String[] application, String[] priority, String[] group, Integer maxReturn);
 
     public void updateTestCase(TestCase tc) throws CerberusException;
-
-    List<TestCase> findTestCaseByTestSystems(String test, List<String> systems);
 
     String getMaxNumberTestCase(String test);
 
     public List<TestCase> findTestCaseByTestSystem(String test, String system);
 
-    List<TestCase> findTestCaseByCriteria(String[] test, String[] project, String[] app, String[] active, String[] priority, String[] status, String[] group, String[] targetBuild, String[] targetRev, String[] creator, String[] implementer, String[] function, String[] campaign, String[] battery);
+    List<TestCase> findTestCaseByCriteria(String[] test, String[] project, String[] app, String[] active, String[] priority, String[] status, String[] group, String[] targetBuild, String[] targetRev, String[] creator, String[] implementer, String[] function, String[] campaign);
 
     public String findSystemOfTestCase(String test, String testcase) throws CerberusException;
 
@@ -114,17 +98,50 @@ public interface ITestCaseDAO {
 
     public AnswerList readByTestByCriteria(String system, String test, int start, int amount, String sortInformation, String searchTerm, Map<String, List<String>> individualSearch);
 
-    public AnswerList readByVariousCriteria(String[] test, String[] idProject, String[] app, String[] creator, String[] implementer, String[] system,
-                                            String[] testBattery, String[] campaign, String[] priority, String[] group, String[] status, int length);
+    /**
+     *
+     * @param test
+     * @param idProject
+     * @param app
+     * @param creator
+     * @param implementer
+     * @param system
+     * @param campaign
+     * @param labelid
+     * @param priority
+     * @param group
+     * @param status
+     * @param length
+     * @return
+     */
+    public AnswerList<List<TestCase>> readByVarious(String[] test, String[] idProject, String[] app, String[] creator, String[] implementer, String[] system,
+            String[] campaign, String[] labelid, String[] priority, String[] group, String[] status, int length);
 
     public AnswerItem readByKey(String test, String testCase);
 
     public AnswerList<List<String>> readDistinctValuesByCriteria(String system, String test, String searchParameter, Map<String, List<String>> individualSearch, String columnName);
 
-    public Answer update(TestCase testCase);
+    /**
+     *
+     * @param keyTest
+     * @param keyTestCase
+     * @param testCase target object value.
+     * @return
+     */
+    public Answer update(String keyTest, String keyTestCase, TestCase testCase);
 
+    /**
+     *
+     * @param testCase
+     * @return
+     */
     public Answer create(TestCase testCase);
 
+    /**
+     *
+     * @param testCase
+     * @return
+     */
     public Answer delete(TestCase testCase);
 
     /**
@@ -133,8 +150,24 @@ public interface ITestCaseDAO {
      * @param resultSet ResultSet relative to select from table TestCase
      * @return object {@link TestCase}
      * @throws SQLException when trying to get value from
-     *                      {@link java.sql.ResultSet#getString(String)}
+     * {@link java.sql.ResultSet#getString(String)}
      * @see FactoryTestCase
      */
     public TestCase loadFromResultSet(ResultSet resultSet) throws SQLException;
+    
+    /**
+     * 
+     * @param service
+     * @return
+     */
+    public AnswerList findTestCaseByService(String service);
+    
+    /**
+     * 
+     * @param service
+     * @return
+     */
+    public AnswerList findTestCaseByServiceByDataLib(String service);
+    
+    
 }

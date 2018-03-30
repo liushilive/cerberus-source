@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -39,7 +39,16 @@ public interface ITestCaseLabelService {
      * @param id
      * @return
      */
-    AnswerItem readByKey(Integer id);
+    AnswerItem readByKeyTech(Integer id);
+
+    /**
+     *
+     * @param test
+     * @param testCase
+     * @param id
+     * @return
+     */
+    AnswerItem readByKey(String test, String testCase, Integer id);
 
     /**
      *

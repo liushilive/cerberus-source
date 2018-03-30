@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -52,6 +54,8 @@ public class MessageEvent {
     private boolean doScreenshot;
     private boolean getPageSource;
     private MessageGeneralEnum message;
+    
+    private MessageEventEnum source;
 
     public MessageEvent(MessageEventEnum tempMessage) {
         this.code = tempMessage.getCode();
@@ -61,6 +65,7 @@ public class MessageEvent {
         this.doScreenshot = tempMessage.isDoScreenshot();
         this.message = tempMessage.getMessage();
         this.getPageSource = tempMessage.isGetPageSource();
+        this.source = tempMessage;
     }
 
     public MessageEvent(MessageEventEnum tempMessage, boolean pageSource, boolean doScreenshot) {
@@ -71,7 +76,15 @@ public class MessageEvent {
         this.doScreenshot = doScreenshot;
         this.message = tempMessage.getMessage();
         this.getPageSource = pageSource;
+        this.source = tempMessage;
     }
+
+    public MessageEvent(String codeString, String description) {
+        this.code=0;
+        this.codeString=codeString;
+        this.description=description;
+    }
+
 
     public int getCode() {
         return this.code;
@@ -119,6 +132,10 @@ public class MessageEvent {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public MessageEventEnum getSource() {
+        return source;
     }
 
     @Override

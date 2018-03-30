@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,29 +19,26 @@
  */
 package org.cerberus.crud.service.impl;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import org.apache.log4j.Logger;
-import org.apache.xmlbeans.impl.tool.Extension;
+import javax.servlet.http.HttpServletRequest;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.IParameterDAO;
-import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.Parameter;
+import org.cerberus.crud.service.IParameterService;
+import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.crud.service.IParameterService;
+import org.cerberus.util.StringUtil;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
 import org.cerberus.util.answer.AnswerUtil;
-import org.cerberus.version.Infos;
+import org.cerberus.util.observe.ObservableEngine;
+import org.cerberus.util.observe.Observer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
 
 /**
  * @author bcivel
@@ -52,13 +49,13 @@ public class ParameterService implements IParameterService {
     @Autowired
     private IParameterDAO parameterDao;
 
-    private Map<String, Set<ParameterAware>> propertyRegistration;
+    @Autowired
+    private ObservableEngine<String, Parameter> observableEngine;
 
-    private static final Logger LOG = Logger.getLogger(ParameterService.class);
+    private static final Logger LOG = LogManager.getLogger(ParameterService.class);
 
     @Override
     public Parameter findParameterByKey(String key, String system) throws CerberusException {
-        String logPrefix = Infos.getInstance().getProjectNameAndVersion() + " - ";
         Parameter myParameter;
         /**
          * We try to get the parameter using the system parameter but if it does
@@ -66,13 +63,13 @@ public class ParameterService implements IParameterService {
          * default global Cerberus Parameter.
          */
         try {
-            LOG.debug(logPrefix + "Trying to retrieve parameter : " + key + " - [" + system + "]");
+            LOG.debug("Trying to retrieve parameter : " + key + " - [" + system + "]");
             myParameter = parameterDao.findParameterByKey(system, key);
             if (myParameter != null && myParameter.getValue().equalsIgnoreCase("")) {
                 myParameter = parameterDao.findParameterByKey("", key);
             }
         } catch (CerberusException ex) {
-            LOG.debug(logPrefix + "Trying to retrieve parameter : " + key + " - []");
+            LOG.debug("Trying to retrieve parameter (default value) : " + key + " - []");
             myParameter = parameterDao.findParameterByKey("", key);
             return myParameter;
         }
@@ -80,15 +77,72 @@ public class ParameterService implements IParameterService {
     }
 
     @Override
-    public Integer getParameterByKey(String key, String system, Integer defaultValue) {
+    public boolean getParameterBooleanByKey(String key, String system, boolean defaultValue) {
+        Parameter myParameter;
+        boolean outPutResult = defaultValue;
+        try {
+            myParameter = this.findParameterByKey(key, system);
+            outPutResult = StringUtil.parseBoolean(myParameter.getValue());
+        } catch (CerberusException | NumberFormatException ex) {
+            LOG.error("Error when trying to retreive parameter : '" + key + "' for system : '" + system + "'. Default value returned : '" + defaultValue + "'. Trace : " + ex);
+        }
+        LOG.debug("Success loading parameter : '" + key + "' for system : '" + system + "'. Value returned : '" + outPutResult + "'");
+        return outPutResult;
+    }
+
+    @Override
+    public Integer getParameterIntegerByKey(String key, String system, Integer defaultValue) {
         Parameter myParameter;
         Integer outPutResult = defaultValue;
         try {
             myParameter = this.findParameterByKey(key, system);
             outPutResult = Integer.valueOf(myParameter.getValue());
         } catch (CerberusException | NumberFormatException ex) {
-            LOG.error(ex);
+            LOG.error("Error when trying to retreive parameter : '" + key + "' for system : '" + system + "'. Default value returned : '" + defaultValue + "'. Trace : " + ex);
         }
+        LOG.debug("Success loading parameter : '" + key + "' for system : '" + system + "'. Value returned : '" + outPutResult + "'");
+        return outPutResult;
+    }
+
+    @Override
+    public long getParameterLongByKey(String key, String system, long defaultValue) {
+        Parameter myParameter;
+        long outPutResult = defaultValue;
+        try {
+            myParameter = this.findParameterByKey(key, system);
+            outPutResult = Long.parseLong(myParameter.getValue());
+        } catch (CerberusException | NumberFormatException ex) {
+            LOG.error("Error when trying to retreive parameter : '" + key + "' for system : '" + system + "'. Default value returned : '" + defaultValue + "'. Trace : " + ex);
+        }
+        LOG.debug("Success loading parameter : '" + key + "' for system : '" + system + "'. Value returned : '" + outPutResult + "'");
+        return outPutResult;
+    }
+
+    @Override
+    public float getParameterFloatByKey(String key, String system, float defaultValue) {
+        Parameter myParameter;
+        float outPutResult = defaultValue;
+        try {
+            myParameter = this.findParameterByKey(key, system);
+            outPutResult = Float.valueOf(myParameter.getValue());
+        } catch (CerberusException | NumberFormatException ex) {
+            LOG.error("Error when trying to retreive parameter : '" + key + "' for system : '" + system + "'. Default value returned : '" + defaultValue + "'. Trace : " + ex);
+        }
+        LOG.debug("Success loading parameter : '" + key + "' for system : '" + system + "'. Value returned : '" + outPutResult + "'");
+        return outPutResult;
+    }
+
+    @Override
+    public String getParameterStringByKey(String key, String system, String defaultValue) {
+        Parameter myParameter;
+        String outPutResult = defaultValue;
+        try {
+            myParameter = this.findParameterByKey(key, system);
+            outPutResult = myParameter.getValue();
+        } catch (CerberusException ex) {
+            LOG.error("Error when trying to retreive parameter : '" + key + "' for system : '" + system + "'. Default value returned : '" + defaultValue + "'. Trace : " + ex);
+        }
+        LOG.debug("Success loading parameter : '" + key + "' for system : '" + system + "'. Value returned : '" + outPutResult + "'");
         return outPutResult;
     }
 
@@ -100,13 +154,13 @@ public class ParameterService implements IParameterService {
     @Override
     public void updateParameter(Parameter parameter) throws CerberusException {
         parameterDao.updateParameter(parameter);
-        firePropertyChange(parameter);
+        fireUpdate(parameter.getParam(), parameter);
     }
 
     @Override
     public void insertParameter(Parameter parameter) throws CerberusException {
         parameterDao.insertParameter(parameter);
-        firePropertyChange(parameter);
+        fireCreate(parameter.getParam(), parameter);
     }
 
     @Override
@@ -125,45 +179,6 @@ public class ParameterService implements IParameterService {
             insertParameter(parameter);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Parameter Inserted");
-            }
-        }
-    }
-
-    @Override
-    public void register(String key, ParameterAware parameterAware) {
-        synchronized (propertyRegistration) {
-            Set<ParameterAware> existingRegistration = propertyRegistration.get(key);
-            if (existingRegistration == null) {
-                existingRegistration = new HashSet<>();
-            }
-            existingRegistration.add(parameterAware);
-            propertyRegistration.put(key, existingRegistration);
-        }
-    }
-
-    @Override
-    public void unregister(String key, ParameterAware parameterAware) {
-        synchronized (propertyRegistration) {
-            Set<ParameterAware> existingRegistration = propertyRegistration.get(key);
-            if (existingRegistration != null) {
-                existingRegistration.remove(parameterAware);
-            }
-        }
-    }
-
-    @PostConstruct
-    private void init() {
-        propertyRegistration = new HashMap<>();
-    }
-
-    private void firePropertyChange(Parameter parameter) {
-        Set<ParameterAware> existingRegistration;
-        synchronized (propertyRegistration) {
-            existingRegistration = propertyRegistration.get(parameter.getParam());
-        }
-        if (existingRegistration != null) {
-            for (ParameterAware parameterAware : existingRegistration) {
-                parameterAware.parameterChanged(parameter);
             }
         }
     }
@@ -195,40 +210,179 @@ public class ParameterService implements IParameterService {
 
     @Override
     public Answer create(Parameter object) {
-        return parameterDao.create(object);
+        Answer answer = parameterDao.create(object);
+        if (MessageEventEnum.DATA_OPERATION_OK.equals(answer.getResultMessage().getSource())) {
+            fireCreate(object.getParam(), object);
+        }
+        return answer;
     }
 
     @Override
     public Answer update(Parameter object) {
-        return parameterDao.update(object);
+        Answer answer = parameterDao.update(object);
+        if (MessageEventEnum.DATA_OPERATION_OK.equals(answer.getResultMessage().getSource())) {
+            fireUpdate(object.getParam(), object);
+        }
+        return answer;
     }
 
     @Override
     public Answer delete(Parameter object) {
-        return parameterDao.delete(object);
+        Answer answer = parameterDao.delete(object);
+        if (MessageEventEnum.DATA_OPERATION_OK.equals(answer.getResultMessage().getCode())) {
+            fireDelete(object.getParam(), object);
+        }
+        return answer;
     }
 
     @Override
     public Answer save(Parameter object) {
         Answer finalAnswer = new Answer();
         AnswerItem resp = readByKey(object.getSystem(), object.getParam());
-        if (!resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+        if (!MessageEventEnum.DATA_OPERATION_OK.equals(resp.getResultMessage().getSource())) {
             /**
              * Object could not be found. We stop here and report the error.
              */
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) resp);
         } else if (resp.getItem() == null) {
             finalAnswer = create(object);
+        } else if (!((object.getValue()).equals(((Parameter) resp.getItem()).getValue()))) {
+            finalAnswer = update(object);
         } else {
-            if(!((object.getValue()).equals(((Parameter)resp.getItem()).getValue()))) {
-                finalAnswer = update(object);
-            }else{
-                /**
-                 * Nothing is done but everything went OK
-                 */
-                finalAnswer = new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED));
-            }
+            /**
+             * Nothing is done but everything went OK
+             */
+            finalAnswer = new Answer(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED));
         }
         return finalAnswer;
     }
+
+    @Override
+    public boolean hasPermissionsRead(Parameter testCase, HttpServletRequest request) {
+        // Access right calculation.
+        return true;
+    }
+
+    @Override
+    public boolean hasPermissionsUpdate(Parameter testCase, HttpServletRequest request) {
+        // Access right calculation.
+        return request.isUserInRole("Administrator");
+    }
+
+    @Override
+    public boolean hasPermissionsUpdate(String testCase, HttpServletRequest request) {
+        return this.hasPermissionsUpdate((Parameter) null, request);
+    }
+
+    @Override
+    public boolean hasPermissionsCreate(Parameter testCase, HttpServletRequest request) {
+        // Access right calculation.
+        return false;
+    }
+
+    @Override
+    public boolean hasPermissionsDelete(Parameter testCase, HttpServletRequest request) {
+        // Access right calculation.
+        return false;
+    }
+
+    @Override
+    public Parameter secureParameter(Parameter parameter) {
+        if (isToSecureParameter(parameter)) {
+            parameter.setValue("XXXXXXXXXX");
+        }
+        return parameter;
+    }
+
+    @Override
+    public boolean isToSecureParameter(Parameter parameter) {
+        if (parameter.getParam().equals("cerberus_accountcreation_defaultpassword")
+                || parameter.getParam().equals("cerberus_proxyauthentification_password")
+                || parameter.getParam().equals("cerberus_jenkinsadmin_password")
+                || parameter.getParam().equals("cerberus_smtp_password")) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isSystemManaged(Parameter parameter) {
+        switch (parameter.getParam()) {
+            // parameters that can be managed at system level.
+            case "cerberus_actionexecutesqlstoredprocedure_timeout":
+            case "cerberus_actionexecutesqlupdate_timeout":
+            case "cerberus_action_wait_default":
+            case "cerberus_appium_wait_element":
+            case "cerberus_selenium_wait_element":
+            case "cerberus_selenium_action_click_timeout":
+            case "cerberus_selenium_implicitlyWait":
+            case "cerberus_selenium_pageLoadTimeout":
+            case "cerberus_selenium_setScriptTimeout":
+            case "cerberus_callservice_enablehttpheadertoken":
+            case "cerberus_callservice_timeoutms":
+            case "cerberus_notinuse_timeout":
+            case "cerberus_proxyauthentification_active":
+            case "cerberus_proxyauthentification_password":
+            case "cerberus_proxyauthentification_user":
+            case "cerberus_proxy_active":
+            case "cerberus_proxy_host":
+            case "cerberus_proxy_nonproxyhosts":
+            case "cerberus_proxy_port":
+            case "cerberus_propertyexternalsql_timeout":
+            case "cerberus_testdatalib_fetchmax":
+            case "cerberus_notification_disableenvironment_body":
+            case "cerberus_notification_disableenvironment_cc":
+            case "cerberus_notification_disableenvironment_subject":
+            case "cerberus_notification_disableenvironment_to":
+            case "cerberus_notification_newbuildrevision_body":
+            case "cerberus_notification_newbuildrevision_cc":
+            case "cerberus_notification_newbuildrevision_subject":
+            case "cerberus_notification_newbuildrevision_to":
+            case "cerberus_notification_newchain_body":
+            case "cerberus_notification_newchain_cc":
+            case "cerberus_notification_newchain_subject":
+            case "cerberus_notification_newchain_to":
+            case "cerberus_loopstep_max":
+                return true;
+            // any other parameters are not managed at system level.
+            default:
+                return false;
+        }
+    }
+
+    @Override
+    public boolean register(Observer<String, Parameter> observer) {
+        return observableEngine.register(observer);
+    }
+
+    @Override
+    public boolean register(String topic, Observer<String, Parameter> observer) {
+        return observableEngine.register(topic, observer);
+    }
+
+    @Override
+    public boolean unregister(String topic, Observer<String, Parameter> observer) {
+        return observableEngine.unregister(topic, observer);
+    }
+
+    @Override
+    public boolean unregister(Observer<String, Parameter> observer) {
+        return observableEngine.unregister(observer);
+    }
+
+    @Override
+    public void fireCreate(String topic, Parameter parameter) {
+        observableEngine.fireCreate(topic, parameter);
+    }
+
+    @Override
+    public void fireUpdate(String topic, Parameter parameter) {
+        observableEngine.fireUpdate(topic, parameter);
+    }
+
+    @Override
+    public void fireDelete(String topic, Parameter parameter) {
+        observableEngine.fireDelete(topic, parameter);
+    }
+
 }

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -35,7 +35,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author cerberus
@@ -46,7 +48,7 @@ public class CampaignParameterService implements ICampaignParameterService {
     @Autowired
     ICampaignParameterDAO campaignParameterDAO;
 
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(CampaignParameterService.class);
+    private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger(CampaignParameterService.class);
 
     @Override
     public AnswerList readByCampaignByCriteria(String campaign, int startPosition, int length, String columnName, String sort, String searchParameter, String string) {
@@ -56,6 +58,22 @@ public class CampaignParameterService implements ICampaignParameterService {
     @Override
     public AnswerList readByCampaign(String campaign) {
         return campaignParameterDAO.readByCampaign(campaign);
+    }
+
+    @Override
+    public AnswerItem<Map<String, List<String>>> parseParametersByCampaign(final String campaignName) {
+        final AnswerList<CampaignParameter> campaignParameters = readByCampaign(campaignName);
+        if (!campaignParameters.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+            return new AnswerItem<>(campaignParameters.getResultMessage());
+        }
+        final Map<String, List<String>> sortedCampaignParameters = new HashMap<>();
+        for (final CampaignParameter campaignParameter : campaignParameters.getDataList()) {
+            if (!sortedCampaignParameters.containsKey(campaignParameter.getParameter())) {
+                sortedCampaignParameters.put(campaignParameter.getParameter(), new ArrayList<String>());
+            }
+            sortedCampaignParameters.get(campaignParameter.getParameter()).add(campaignParameter.getValue());
+        }
+        return new AnswerItem<>(sortedCampaignParameters, new MessageEvent(MessageEventEnum.DATA_OPERATION_OK));
     }
 
     @Override
@@ -128,11 +146,7 @@ public class CampaignParameterService implements ICampaignParameterService {
                 }
             }
         }
-        if (!listToUpdateOrInsert.isEmpty()) {
-            ans = this.createList(listToUpdateOrInsert);
-            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
-        }
-
+        
         /**
          * Iterate on (TestCaseStep From Database - TestCaseStep From Page). If
          * TestCaseStep in Page has same key : remove from the list. Then delete
@@ -151,6 +165,12 @@ public class CampaignParameterService implements ICampaignParameterService {
         }
         if (!listToDelete.isEmpty()) {
             ans = this.deleteList(listToDelete);
+            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
+        }
+
+        // We insert only at the end (after deletion of all potencial enreg - linked with #1281)
+        if (!listToUpdateOrInsert.isEmpty()) {
+            ans = this.createList(listToUpdateOrInsert);
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
         }
         return finalAnswer;

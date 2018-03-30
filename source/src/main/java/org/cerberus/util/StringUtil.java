@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,13 +20,13 @@
 package org.cerberus.util;
 
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
 import org.springframework.web.util.HtmlUtils;
@@ -47,7 +47,7 @@ public final class StringUtil {
 
     private static final Pattern urlMatch = Pattern.compile("(.*[<>' \"^]+)([a-zA-Z]+://[^<>[:space:]]+[[:alnum:]/]*)([$<> ' \"].*)");
 
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(StringUtil.class);
+    private static final Logger LOG = LogManager.getLogger(StringUtil.class);
 
     /**
      * To avoid instanciation of utility class
@@ -71,13 +71,37 @@ public final class StringUtil {
      * @param str
      * @return true if str is a numeric value, else false
      */
-    public static boolean isNumeric(String str) {
+    public static boolean isInteger(String str) {
         try {
             Integer.parseInt(str);
         } catch (NumberFormatException nfe) {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Check for boolean data type
+     *
+     * @param str
+     * @return true if str is "true" or "false"
+     */
+    public static boolean isBoolean(String str) {
+        return (str.equalsIgnoreCase("false") || str.equalsIgnoreCase("true"));
+    }
+
+    /**
+     * This method just reformat a string in order to increase the change it can
+     * get converted to float. For ex, it replace , with .
+     *
+     * @param str
+     * @return
+     */
+    public static String prepareToNumeric(String str) {
+        if (str.contains(",")) {
+            return str.replace(",", ".");
+        }
+        return str;
     }
 
     /**
@@ -179,11 +203,21 @@ public final class StringUtil {
         return textIn.replaceAll("\"", "\"\"");
     }
 
+    /**
+     *
+     * @param inputString
+     * @return
+     */
     public static String sanitize(String inputString) {
         PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
         return policy.sanitize(inputString);
     }
 
+    /**
+     *
+     * @param text
+     * @return
+     */
     public static String replaceUrlByLinkInString(String text) {
         if (text != null && !text.isEmpty()) {
             Matcher matcher = urlMatch.matcher(text);
@@ -194,6 +228,23 @@ public final class StringUtil {
         return text;
     }
 
+    /**
+     *
+     * @param text
+     * @return
+     */
+    public static String replaceInvisibleCharbyString(String text) {
+        if (text != null && !text.isEmpty()) {
+            return text.replace("\n", "\\n");
+        }
+        return text;
+    }
+
+    /**
+     *
+     * @param text
+     * @return
+     */
     public static String textToHtmlConvertingURLsToLinks(String text) {
         if (text == null) {
             return text;
@@ -230,7 +281,7 @@ public final class StringUtil {
             stringToEncode = stringToEncode.replace("%2523", "%23");
             stringToEncode = stringToEncode.replace("%252B", "%2B");
         } catch (ScriptException ex) {
-            Logger.getLogger(StringUtil.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
         return stringToEncode;
     }
@@ -283,15 +334,104 @@ public final class StringUtil {
      * @return true is URL looks OK and false on any other cases.
      */
     public static boolean isURL(String url) {
-        return url.startsWith("http://") || url.startsWith("https://");
-
+        return url.startsWith("http://")
+                || url.startsWith("https://")
+                // File scheme can have no authority component, then only one slash is necessary
+                || url.startsWith("file:/");
     }
 
+    /**
+     *
+     * This method is used to build an URL from host, contextroot and uri by
+     * managing the /.<br>
+     * For Ex : host = www.laredoute.fr/, contextroot = /fr/, uri = /toto.jsp
+     * will provide the result : www.laredoute.fr/fr/toto.jsp<br>
+     * in stead of www.laredoute.fr//fr//toto.jsp<br>
+     * host = www.laredoute.fr, contextroot = fr, uri = toto.jsp will provide
+     * the result : www.laredoute.fr/fr/toto.jsp<br>
+     *
+     * in stead of www.laredoute.frfrtoto.jsp<br>
+     * Protocol will be added in case host did not already have the protocol.
+     *
+     * @param host
+     * @param contextRoot
+     * @param uri
+     * @param protocol
+     * @return URL correctly formated.
+     */
+    public static String getURLFromString(String host, String contextRoot, String uri, String protocol) {
+        String result = "";
+        if (!isNullOrEmpty(host)) {
+            result += StringUtil.addSuffixIfNotAlready(host, "/");
+        }
+        if (!isNullOrEmpty(contextRoot)) {
+            if (contextRoot.startsWith("/")) {
+                contextRoot = contextRoot.substring(1);
+            }
+            result += StringUtil.addSuffixIfNotAlready(contextRoot, "/");
+        }
+        if (!isNullOrEmpty(uri)) {
+            if (uri.startsWith("/")) {
+                uri = uri.substring(1);
+            }
+            result += uri;
+        }
+        if (!(StringUtil.isURL(result))) { // If still does not look lke an URL, we add protocol string ( ex : http://) by default.
+            result = protocol + result;
+        }
+        return result;
+    }
+
+    public static String addQueryString(String URL, String queryString) {
+        String result = "";
+        URL = URL.trim();
+        if (URL.endsWith("?")) {
+            result = URL + queryString;
+        } else if (URL.contains("?")) {
+            result = URL + "&" + queryString;
+        } else {
+            result = URL + "?" + queryString;
+        }
+        return result;
+    }
+
+    public static String formatURLCredential(String user, String pass) {
+        String credential = "";
+        if (!StringUtil.isNullOrEmpty(user)) {
+            if (!StringUtil.isNullOrEmpty(pass)) {
+                credential = user + ":" + pass + "@";
+            } else {
+                credential = user + "@";
+            }
+        }
+        return credential;
+    }
+
+    /**
+     *
+     * @param text
+     * @param suffix
+     * @return
+     */
     public static String addSuffixIfNotAlready(String text, String suffix) {
         if (text.toUpperCase().endsWith(suffix.toUpperCase())) {
             return text;
         } else {
             return text + suffix;
+        }
+    }
+
+    /**
+     *
+     * @param text
+     * @param prefix
+     * @return
+     */
+    public static String addPrefixIfNotAlready(String text, String prefix) {
+        if (text.toUpperCase().startsWith((prefix.toUpperCase()))) {
+            return text;
+        } else {
+            return prefix + text;
         }
     }
 

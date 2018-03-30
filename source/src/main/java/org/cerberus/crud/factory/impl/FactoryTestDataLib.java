@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -34,7 +34,7 @@ public class FactoryTestDataLib implements IFactoryTestDataLib {
     @Override
     public TestDataLib create(Integer testDataLibID, String name, String system, String environment,
             String country, String group, String type, String database,
-            String script, String databaseUrl, String servicePath, String method,
+            String script, String databaseUrl, String service, String servicePath, String method,
             String envelope, String databaseCsv, String csvUrl, String separator, String description, String creator, Timestamp created,
             String LastModifier, Timestamp lastModified, String subDataValue, String subDataColumn, String subDataParsingAnswer, String subDataColumnPosition) {
 
@@ -52,6 +52,7 @@ public class FactoryTestDataLib implements IFactoryTestDataLib {
         newData.setScript(script);
         newData.setDatabaseUrl(databaseUrl);
         newData.setServicePath(servicePath);
+        newData.setService(service);
         newData.setMethod(method);
         newData.setEnvelope(envelope);
         newData.setDatabaseCsv(databaseCsv);

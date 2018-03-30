@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -21,11 +23,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.IBuildRevisionInvariantDAO;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.crud.entity.BuildRevisionInvariant;
@@ -50,7 +54,7 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
     @Autowired
     private IFactoryBuildRevisionInvariant factoryBuildRevisionInvariant;
 
-    private static final Logger LOG = Logger.getLogger(BuildRevisionInvariantDAO.class);
+    private static final Logger LOG = LogManager.getLogger(BuildRevisionInvariantDAO.class);
 
     private final String OBJECT_NAME = "BuildRevisionInvariant";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -411,9 +415,9 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
     }
 
     @Override
-    public Answer update(BuildRevisionInvariant buildRevisionInvariant) {
+    public Answer update(String system, Integer level, Integer seq, BuildRevisionInvariant buildRevisionInvariant) {
         MessageEvent msg = null;
-        final String query = "UPDATE buildrevisioninvariant SET versionname = ?  WHERE system = ? and level = ? and seq = ? ";
+        final String query = "UPDATE buildrevisioninvariant SET  system = ?, level = ?, seq = ?, versionname = ?  WHERE system = ? and level = ? and seq = ? ";
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -423,10 +427,14 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
         try {
             PreparedStatement preStat = connection.prepareStatement(query);
             try {
-                preStat.setString(1, buildRevisionInvariant.getVersionName());
-                preStat.setString(2, buildRevisionInvariant.getSystem());
-                preStat.setInt(3, buildRevisionInvariant.getLevel());
-                preStat.setInt(4, buildRevisionInvariant.getSeq());
+                int i=1;
+                preStat.setString(i++, buildRevisionInvariant.getSystem());
+                preStat.setInt(i++, buildRevisionInvariant.getLevel());
+                preStat.setInt(i++, buildRevisionInvariant.getSeq());
+                preStat.setString(i++, buildRevisionInvariant.getVersionName());
+                preStat.setString(i++, system);
+                preStat.setInt(i++, level);
+                preStat.setInt(i++, seq);
 
                 preStat.executeUpdate();
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -507,7 +515,8 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
             LOG.debug("SQL : " + query.toString());
         }
         try (Connection connection = databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+                PreparedStatement preStat = connection.prepareStatement(query.toString());
+        		Statement stm = connection.createStatement();) {
 
             int i = 1;
             if (!StringUtil.isNullOrEmpty(system)) {
@@ -522,33 +531,37 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
                 preStat.setString(i++, individualColumnSearchValue);
             }
 
-            ResultSet resultSet = preStat.executeQuery();
+            try( ResultSet resultSet = preStat.executeQuery();
+            		ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");){
+            	//gets the data
+                while (resultSet.next()) {
+                    distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
+                }
 
-            //gets the data
-            while (resultSet.next()) {
-                distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
-            }
+                int nrTotalRows = 0;
 
-            //get the total number of rows
-            resultSet = preStat.executeQuery("SELECT FOUND_ROWS()");
-            int nrTotalRows = 0;
+                if (rowSet != null && rowSet.next()) {
+                    nrTotalRows = rowSet.getInt(1);
+                }
 
-            if (resultSet != null && resultSet.next()) {
-                nrTotalRows = resultSet.getInt(1);
-            }
+                if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
+                    LOG.error("Partial Result in the query.");
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else if (distinctValues.size() <= 0) {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                }
+            }catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
 
-            if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
-                LOG.error("Partial Result in the query.");
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else if (distinctValues.size() <= 0) {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                answer = new AnswerList(distinctValues, nrTotalRows);
             }
         } catch (Exception e) {
             LOG.warn("Unable to execute query : " + e.toString());

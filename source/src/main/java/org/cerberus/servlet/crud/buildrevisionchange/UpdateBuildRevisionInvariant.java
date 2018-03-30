@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,13 +20,13 @@
 package org.cerberus.servlet.crud.buildrevisionchange;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.BuildRevisionInvariant;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
@@ -53,6 +53,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "UpdateBuildRevisionInvariant1", urlPatterns = {"/UpdateBuildRevisionInvariant1"})
 public class UpdateBuildRevisionInvariant extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(UpdateBuildRevisionInvariant.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -153,14 +155,14 @@ public class UpdateBuildRevisionInvariant extends HttpServlet {
                 buildRevisionInvariantData.setLevel(level);
                 buildRevisionInvariantData.setSeq(seq);
                 buildRevisionInvariantData.setVersionName(versionName);
-                ans = buildRevisionInvariantService.update(buildRevisionInvariantData);
+                ans = buildRevisionInvariantService.update(buildRevisionInvariantData.getSystem(), buildRevisionInvariantData.getLevel(), buildRevisionInvariantData.getSeq(), buildRevisionInvariantData);
 
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     /**
-                     * Update was succesfull. Adding Log entry.
+                     * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/UpdateBuildRevisionInvariant", "UPDATE", "Updated BuildRevisionInvariant : ['" + system + "'|'" + level + "'|'" + seq + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateBuildRevisionInvariant", "UPDATE", "Updated BuildRevisionInvariant : ['" + system + "'|'" + level + "'|'" + seq + "']", request);
                 }
             }
         }
@@ -191,10 +193,9 @@ public class UpdateBuildRevisionInvariant extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateBuildRevisionInvariant.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateBuildRevisionInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -213,10 +214,9 @@ public class UpdateBuildRevisionInvariant extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(UpdateBuildRevisionInvariant.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(UpdateBuildRevisionInvariant.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

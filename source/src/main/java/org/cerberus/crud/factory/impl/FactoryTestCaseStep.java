@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,18 +30,16 @@ import org.springframework.stereotype.Service;
 public class FactoryTestCaseStep implements IFactoryTestCaseStep {
 
     @Override
-    public TestCaseStep create(String test, String testCase, int step, String description, String useStep,
-            String useStepTest, String useStepTestCase, Integer useStepStep, String inLibrary) {
-        return create(test, testCase, step, step, description, useStep, useStepTest, useStepTestCase, useStepStep, inLibrary);
-    }
-    
-    @Override
-    public TestCaseStep create(String test, String testCase, int step, int sort, String description, String useStep,
+    public TestCaseStep create(String test, String testCase, int step, int sort, String loop, String conditionOper, String conditionVal1, String conditionVal2, String description, String useStep,
             String useStepTest, String useStepTestCase, Integer useStepStep, String inLibrary) {
         TestCaseStep testCaseStep = new TestCaseStep();
         testCaseStep.setDescription(description);
         testCaseStep.setStep(step);
         testCaseStep.setSort(sort);
+        testCaseStep.setLoop(loop);
+        testCaseStep.setConditionOper(conditionOper);
+        testCaseStep.setConditionVal1(conditionVal1);
+        testCaseStep.setConditionVal2(conditionVal2);
         testCaseStep.setTest(test);
         testCaseStep.setTestCase(testCase);
         testCaseStep.setUseStep(useStep);
@@ -51,5 +49,5 @@ public class FactoryTestCaseStep implements IFactoryTestCaseStep {
         testCaseStep.setInLibrary(inLibrary);
         return testCaseStep;
     }
-    
+
 }

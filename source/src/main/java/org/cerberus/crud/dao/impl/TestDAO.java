@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -22,11 +24,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.ITestDAO;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.database.DatabaseSpring;
@@ -36,7 +39,6 @@ import org.cerberus.crud.entity.Test;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.crud.factory.IFactoryTest;
 import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.log.MyLogger;
 import org.cerberus.util.DateUtil;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.SqlUtil;
@@ -65,7 +67,7 @@ public class TestDAO implements ITestDAO {
     @Autowired
     private IFactoryTest factoryTest;
 
-    private static final Logger LOG = Logger.getLogger(TestDAO.class);
+    private static final Logger LOG = LogManager.getLogger(TestDAO.class);
 
     private final String OBJECT_NAME = "Test";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -183,7 +185,7 @@ public class TestDAO implements ITestDAO {
                 query.append(whereClause);
             }
 
-            MyLogger.log(TestDAO.class.getName(), Level.DEBUG, "Query : Test.findTestByCriteria : " + query.toString());
+            LOG.debug("Query : Test.findTestByCriteria : " + query.toString());
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             if (parameters.size() > 0) {
                 int index = 0;
@@ -203,24 +205,24 @@ public class TestDAO implements ITestDAO {
                         }
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(TestDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return result;
@@ -243,7 +245,7 @@ public class TestDAO implements ITestDAO {
 
                 res = preStat.executeUpdate() > 0;
             } catch (SQLException exception) {
-                MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
                 MessageGeneral mes = new MessageGeneral(MessageGeneralEnum.GUI_ERROR_INSERTING_DATA);
                 mes.setDescription(mes.getDescription().replace("%DETAILS%", exception.toString()));
                 throw new CerberusException(mes);
@@ -251,7 +253,7 @@ public class TestDAO implements ITestDAO {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
             MessageGeneral mes = new MessageGeneral(MessageGeneralEnum.GUI_ERROR_INSERTING_DATA);
             mes.setDescription(mes.getDescription().replace("%DETAILS%", exception.toString()));
             throw new CerberusException(mes);
@@ -261,7 +263,7 @@ public class TestDAO implements ITestDAO {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(TestDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
 
@@ -318,38 +320,6 @@ public class TestDAO implements ITestDAO {
     }
 
     @Override
-    public boolean deleteTest(Test test) {
-        boolean res = false;
-        final String sql = "DELETE FROM test where Test = ?";
-
-        Connection connection = this.databaseSpring.connect();
-        try {
-            PreparedStatement preStat = connection.prepareStatement(sql);
-            try {
-                preStat.setString(1, test.getTest());
-
-                res = preStat.executeUpdate() > 0;
-            } catch (SQLException exception) {
-                MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
-            } finally {
-                preStat.close();
-            }
-        } catch (SQLException exception) {
-            MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
-        } finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                MyLogger.log(TestDAO.class.getName(), Level.WARN, e.toString());
-            }
-        }
-
-        return res;
-    }
-
-    @Override
     public Answer delete(Test test) {
         MessageEvent msg = null;
         final String query = "DELETE FROM test WHERE test = ? ";
@@ -387,18 +357,27 @@ public class TestDAO implements ITestDAO {
     }
 
     @Override
-    public Answer update(Test test) {
+    public Answer update(String keyTest, Test test) {
         MessageEvent msg = null;
-        final String query = "UPDATE test SET description = ?, active = ?, automated = ? WHERE test = ?";
+        final String query = "UPDATE test SET test = ?, description = ?, active = ?, automated = ? WHERE test = ?";
+
+        // Debug message on SQL.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL : " + query);
+            LOG.debug("SQL.param.test : " + keyTest);
+        }
+
 
         Connection connection = this.databaseSpring.connect();
         try {
             PreparedStatement preStat = connection.prepareStatement(query);
             try {
-                preStat.setString(1, test.getDescription());
-                preStat.setString(2, test.getActive());
-                preStat.setString(3, test.getAutomated());
-                preStat.setString(4, test.getTest());
+                int i = 1;
+                preStat.setString(i++, test.getTest());
+                preStat.setString(i++, test.getDescription());
+                preStat.setString(i++, test.getActive());
+                preStat.setString(i++, test.getAutomated());
+                preStat.setString(i++, keyTest);
 
                 preStat.executeUpdate();
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -440,7 +419,7 @@ public class TestDAO implements ITestDAO {
         try {
             tcactive = resultSet.getString("tdatecrea") == null ? "" : resultSet.getString("tdatecrea");
         } catch (java.sql.SQLException e) {
-            MyLogger.log(TestDAO.class.getName(), Level.WARN, e.toString());
+            LOG.warn(e.toString());
             tcactive = DateUtil.getMySQLTimestampTodayDeltaMinutes(0);
         }
 
@@ -466,24 +445,24 @@ public class TestDAO implements ITestDAO {
                     }
 
                 } catch (SQLException exception) {
-                    MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(TestDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return result;
@@ -497,46 +476,31 @@ public class TestDAO implements ITestDAO {
         query.append("JOIN application a ON tc.application=a.application ");
         query.append("WHERE a.system IN (");
 
-        Connection connection = this.databaseSpring.connect();
-        try {
-            for (int a = 0; a < systems.size(); a++) {
-                if (a != systems.size() - 1) {
-                    query.append(" ? , ");
-                }
-                query.append("? ) GROUP BY t.test");
+        
+        for (int a = 0; a < systems.size(); a++) {
+            if (a != systems.size() - 1) {
+                query.append(" ? , ");
             }
-            PreparedStatement preStat = connection.prepareStatement(query.toString());
+            query.append("? ) GROUP BY t.test");
+        }
+        try(Connection connection = this.databaseSpring.connect();
+        		PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+            
+            
             for (int a = 0; a < systems.size(); a++) {
                 preStat.setString(a + 1, ParameterParserUtil.wildcardIfEmpty(systems.get(a)));
             }
-            try {
-                ResultSet resultSet = preStat.executeQuery();
+            try(ResultSet resultSet = preStat.executeQuery();) {
                 result = new ArrayList<Test>();
-                try {
-                    while (resultSet.next()) {
-                        result.add(this.loadFromResultSet(resultSet));
-                    }
-                } catch (SQLException exception) {
-                    MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
-                } finally {
-                    resultSet.close();
+                while (resultSet.next()) {
+                    result.add(this.loadFromResultSet(resultSet));
                 }
             } catch (SQLException exception) {
-                MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
-            } finally {
-                preStat.close();
-            }
+                LOG.warn("Unable to execute query : " + exception.toString());
+            } 
         } catch (SQLException exception) {
-            MyLogger.log(TestDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
-        } finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException e) {
-                MyLogger.log(TestDAO.class.getName(), Level.WARN, e.toString());
-            }
-        }
+            LOG.warn("Unable to execute query : " + exception.toString());
+        } 
         return result;
     }
 
@@ -580,9 +544,9 @@ public class TestDAO implements ITestDAO {
                         msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
                         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
                         response = new AnswerList(testList, nrTotalRows);
-                    } else if (testList.size() <= 0) {                      
+                    } else if (testList.size() <= 0) {
                         msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                        response = new AnswerList(testList, nrTotalRows);  
+                        response = new AnswerList(testList, nrTotalRows);
                     } else {
                         msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
                         msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
@@ -629,7 +593,7 @@ public class TestDAO implements ITestDAO {
         response.setResultMessage(msg);
         return response;
     }
-    
+
     @Override
     public AnswerList readByCriteria(int start, int amount, String colName, String dir, String searchTerm, Map<String, List<String>> individualSearch) {
         AnswerList response = new AnswerList();
@@ -672,7 +636,7 @@ public class TestDAO implements ITestDAO {
         } else {
             query.append(" limit ").append(start).append(" , ").append(amount);
         }
-
+        
         Connection connection = this.databaseSpring.connect();
         try {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
@@ -709,9 +673,9 @@ public class TestDAO implements ITestDAO {
                         msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
                         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
                         response = new AnswerList(testList, nrTotalRows);
-                    } else if (testList.size() <= 0) {                      
+                    } else if (testList.size() <= 0) {
                         msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                        response = new AnswerList(testList, nrTotalRows);  
+                        response = new AnswerList(testList, nrTotalRows);
                     } else {
                         msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
                         msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
@@ -758,7 +722,7 @@ public class TestDAO implements ITestDAO {
         response.setResultMessage(msg);
         return response;
     }
-    
+
     @Override
     public AnswerList<List<String>> readDistinctValuesByCriteria(String searchTerm, Map<String, List<String>> individualSearch, String columnName) {
         AnswerList answer = new AnswerList();
@@ -800,7 +764,8 @@ public class TestDAO implements ITestDAO {
             LOG.debug("SQL : " + query.toString());
         }
         try (Connection connection = databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+                PreparedStatement preStat = connection.prepareStatement(query.toString());
+        		Statement stm = connection.createStatement();) {
 
             int i = 1;
             if (!Strings.isNullOrEmpty(searchTerm)) {
@@ -814,33 +779,38 @@ public class TestDAO implements ITestDAO {
                 preStat.setString(i++, individualColumnSearchValue);
             }
 
-            ResultSet resultSet = preStat.executeQuery();
+            try(ResultSet resultSet = preStat.executeQuery();
+            		ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");){
+            	//gets the data
+                while (resultSet.next()) {
+                    distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
+                }
 
-            //gets the data
-            while (resultSet.next()) {
-                distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
-            }
+                //get the total number of rows
+                
+                int nrTotalRows = 0;
 
-            //get the total number of rows
-            resultSet = preStat.executeQuery("SELECT FOUND_ROWS()");
-            int nrTotalRows = 0;
+                if (rowSet != null && rowSet.next()) {
+                    nrTotalRows = rowSet.getInt(1);
+                }
 
-            if (resultSet != null && resultSet.next()) {
-                nrTotalRows = resultSet.getInt(1);
-            }
-
-            if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
-                LOG.error("Partial Result in the query.");
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else if (distinctValues.size() <= 0) {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                answer = new AnswerList(distinctValues, nrTotalRows);
+                if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
+                    LOG.error("Partial Result in the query.");
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else if (distinctValues.size() <= 0) {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                }
+            }catch (Exception e) {
+                LOG.warn("Unable to execute query : " + e.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
+                        e.toString());
             }
         } catch (Exception e) {
             LOG.warn("Unable to execute query : " + e.toString());

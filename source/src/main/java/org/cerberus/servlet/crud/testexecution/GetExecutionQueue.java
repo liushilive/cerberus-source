@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,39 +20,36 @@
 package org.cerberus.servlet.crud.testexecution;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.cerberus.crud.entity.Application;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.engine.entity.MessageGeneral;
-import org.cerberus.crud.entity.Parameter;
 import org.cerberus.crud.entity.TestCase;
 import org.cerberus.crud.entity.TestCaseExecution;
-import org.cerberus.crud.entity.TestCaseExecutionInQueue;
-import org.cerberus.crud.factory.IFactoryTestCaseExecutionInQueue;
+import org.cerberus.crud.entity.TestCaseExecutionQueue;
 import org.cerberus.crud.service.IApplicationService;
 import org.cerberus.crud.service.ICountryEnvParamService;
 import org.cerberus.crud.service.IInvariantService;
 import org.cerberus.crud.service.IParameterService;
-import org.cerberus.crud.service.ITestCaseExecutionInQueueService;
 import org.cerberus.crud.service.ITestCaseExecutionService;
 import org.cerberus.crud.service.ITestCaseService;
 import org.cerberus.crud.service.ITestService;
 import org.cerberus.dto.ExecutionValidator;
+import org.cerberus.engine.threadpool.IExecutionThreadPoolService;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.enums.MessageGeneralEnum;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.exception.FactoryCreationException;
 import org.cerberus.engine.execution.IExecutionCheckService;
-import org.cerberus.engine.threadpool.ExecutionThreadPoolService;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.StringUtil;
 import org.cerberus.util.answer.AnswerItem;
@@ -61,6 +58,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
+import org.cerberus.crud.factory.IFactoryTestCaseExecutionQueue;
+import org.cerberus.crud.service.ITagService;
+import org.cerberus.crud.service.ITestCaseExecutionQueueService;
 
 /**
  *
@@ -75,37 +75,35 @@ public class GetExecutionQueue extends HttpServlet {
     private static final String PARAMETER_BROWSER = "Browser";
     private static final String PARAMETER_BROWSER_VERSION = "BrowserVersion";
     private static final String PARAMETER_PLATFORM = "Platform";
+    private static final String PARAMETER_SCREENSIZE = "screenSize";
 
     private static final String PARAMETER_TAG = "Tag";
-    private static final String PARAMETER_OUTPUT_FORMAT = "OutputFormat";
     private static final String PARAMETER_SCREENSHOT = "Screenshot";
     private static final String PARAMETER_VERBOSE = "Verbose";
     private static final String PARAMETER_TIMEOUT = "timeout";
-    private static final String PARAMETER_SYNCHRONEOUS = "Synchroneous";
     private static final String PARAMETER_PAGE_SOURCE = "PageSource";
     private static final String PARAMETER_SELENIUM_LOG = "SeleniumLog";
     private static final String PARAMETER_RETRIES = "retries";
     private static final String PARAMETER_MANUAL_EXECUTION = "manualExecution";
-
-    private static final String DEFAULT_VALUE_OUTPUT_FORMAT = "compact";
-    private static final int DEFAULT_VALUE_SCREENSHOT = 0;
-    private static final boolean DEFAULT_VALUE_MANUAL_URL = false;
-    private static final int DEFAULT_VALUE_VERBOSE = 0;
-    private static final long DEFAULT_VALUE_TIMEOUT = 300;
-    private static final boolean DEFAULT_VALUE_SYNCHRONEOUS = true;
-    private static final int DEFAULT_VALUE_PAGE_SOURCE = 1;
-    private static final int DEFAULT_VALUE_SELENIUM_LOG = 1;
-    private static final int DEFAULT_VALUE_RETRIES = 0;
-    private static final boolean DEFAULT_VALUE_MANUAL_EXECUTION = false;
 
     private static final String PARAMETER_MANUAL_HOST = "ManualHost";
     private static final String PARAMETER_MANUAL_CONTEXT_ROOT = "ManualContextRoot";
     private static final String PARAMETER_MANUAL_LOGIN_RELATIVE_URL = "ManualLoginRelativeURL";
     private static final String PARAMETER_MANUAL_ENV_DATA = "ManualEnvData";
 
+    private static final String DEFAULT_VALUE_BROWSER = "firefox";
+    private static final int DEFAULT_VALUE_SCREENSHOT = 0;
+    private static final int DEFAULT_VALUE_VERBOSE = 0;
+    private static final long DEFAULT_VALUE_TIMEOUT = 0;
+    private static final int DEFAULT_VALUE_PAGE_SOURCE = 1;
+    private static final int DEFAULT_VALUE_SELENIUM_LOG = 1;
+    private static final int DEFAULT_VALUE_RETRIES = 0;
+    private static final String DEFAULT_VALUE_MANUAL_EXECUTION = "N";
+    private static final boolean DEFAULT_VALUE_MANUAL_URL = false;
+
     private ITestCaseExecutionService testCaseExecutionService;
 
-    private static final Logger LOG = Logger.getLogger(GetExecutionQueue.class);
+    private static final Logger LOG = LogManager.getLogger(GetExecutionQueue.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -135,7 +133,7 @@ public class GetExecutionQueue extends HttpServlet {
             ICountryEnvParamService cepService = appContext.getBean(ICountryEnvParamService.class);
             IParameterService parameterService = appContext.getBean(IParameterService.class);
             testCaseExecutionService = appContext.getBean(ITestCaseExecutionService.class);
-            List<ExecutionValidator> inQueue = new ArrayList<ExecutionValidator>();
+            List<ExecutionValidator> inQueue = new ArrayList<>();
 
             JSONArray testCaseList = new JSONArray(request.getParameter("testcase"));
             JSONArray environmentList = new JSONArray(request.getParameter("environment"));
@@ -144,9 +142,9 @@ public class GetExecutionQueue extends HttpServlet {
             /**
              * Creating all the list from the JSON to call the services
              */
-            List<TestCase> TCList = new ArrayList<TestCase>();
-            List<String> envList = new ArrayList<String>();
-            List<String> countries = new ArrayList<String>();
+            List<TestCase> TCList = new ArrayList<>();
+            List<String> envList = new ArrayList<>();
+            List<String> countries = new ArrayList<>();
 
             for (int index = 0; index < testCaseList.length(); index++) {
                 JSONObject testCaseJson = testCaseList.getJSONObject(index);
@@ -159,7 +157,6 @@ public class GetExecutionQueue extends HttpServlet {
 
             for (int index = 0; index < environmentList.length(); index++) {
                 String environment = environmentList.getString(index);
-
                 envList.add(environment);
             }
 
@@ -222,7 +219,7 @@ public class GetExecutionQueue extends HttpServlet {
                 }
 
                 try {
-                    execution.setEnvironmentDataObj(invariantService.findInvariantByIdValue("ENVIRONMENT", execution.getEnvironmentData()));
+                    execution.setEnvironmentDataObj(invariantService.convert(invariantService.readByKey("ENVIRONMENT", execution.getEnvironmentData())));
                 } catch (CerberusException ex) {
                     MessageGeneral mes = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_ENVIRONMENT_DOESNOTEXIST);
                     mes.setDescription(mes.getDescription().replace("%ENV%", execution.getEnvironmentData()));
@@ -231,7 +228,17 @@ public class GetExecutionQueue extends HttpServlet {
                     exception = true;
                 }
 
-                execution.setBrowser("firefox");
+                String browser = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_BROWSER), DEFAULT_VALUE_BROWSER);
+                if (!(StringUtil.isNullOrEmpty(browser))) {
+                    // if application is not GUI, we force browser to empty value.
+                    if (execution.getApplicationObj() != null && execution.getApplicationObj().getType() != null && !(execution.getApplicationObj().getType().equalsIgnoreCase(Application.TYPE_GUI))) {
+                        execution.setBrowser("");
+                    }
+                } else {
+                    execution.setBrowser(browser);
+                }
+                String manualExecution = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_MANUAL_EXECUTION), DEFAULT_VALUE_MANUAL_EXECUTION);
+                execution.setManualExecution(manualExecution);
 
                 if (exception == false) {
                     /**
@@ -244,7 +251,7 @@ public class GetExecutionQueue extends HttpServlet {
                         validator.setMessage(message.getDescription());
                     } else {
                         validator.setValid(true);
-                        validator.setMessage(message.getDescription());
+                        validator.setMessage("Valid Execution.");
                     }
                 }
                 validator.setExecution(execution);
@@ -259,6 +266,7 @@ public class GetExecutionQueue extends HttpServlet {
                 exec.put("testcase", tce.getExecution().getTestCase());
                 exec.put("env", tce.getExecution().getEnvironment());
                 exec.put("country", tce.getExecution().getCountry());
+                exec.put("appType", tce.getExecution().getApplicationObj().getType());
                 exec.put("isValid", tce.isValid());
                 exec.put("message", tce.getMessage());
                 dataArray.put(exec);
@@ -267,10 +275,10 @@ public class GetExecutionQueue extends HttpServlet {
         }
 
         if (push) {
-            ExecutionThreadPoolService executionThreadService = appContext.getBean(ExecutionThreadPoolService.class);
+            IExecutionThreadPoolService executionThreadService = appContext.getBean(IExecutionThreadPoolService.class);
             IParameterService parameterService = appContext.getBean(IParameterService.class);
-            IFactoryTestCaseExecutionInQueue inQueueFactoryService = appContext.getBean(IFactoryTestCaseExecutionInQueue.class);
-            ITestCaseExecutionInQueueService inQueueService = appContext.getBean(ITestCaseExecutionInQueueService.class);
+            IFactoryTestCaseExecutionQueue inQueueFactoryService = appContext.getBean(IFactoryTestCaseExecutionQueue.class);
+            ITestCaseExecutionQueueService inQueueService = appContext.getBean(ITestCaseExecutionQueueService.class);
             int addedToQueue = 0;
             JSONArray toAddList = new JSONArray(request.getParameter("toAddList"));
             JSONArray browsers = new JSONArray(request.getParameter("browsers"));
@@ -284,7 +292,7 @@ public class GetExecutionQueue extends HttpServlet {
             String robotPort = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_ROBOT_PORT), null);
             String browserVersion = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_BROWSER_VERSION), null);
             String platform = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_PLATFORM), null);
-            String outputFormat = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_OUTPUT_FORMAT), DEFAULT_VALUE_OUTPUT_FORMAT);
+            String screenSize = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_SCREENSIZE), null);
             /**
              * RETRIEVING EXECUTION SETTINGS *
              */
@@ -292,11 +300,10 @@ public class GetExecutionQueue extends HttpServlet {
             int screenshot = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_SCREENSHOT), DEFAULT_VALUE_SCREENSHOT);
             int verbose = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_VERBOSE), DEFAULT_VALUE_VERBOSE);
             String timeout = request.getParameter(PARAMETER_TIMEOUT);
-            boolean synchroneous = ParameterParserUtil.parseBooleanParam(request.getParameter(PARAMETER_SYNCHRONEOUS), DEFAULT_VALUE_SYNCHRONEOUS);
             int pageSource = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_PAGE_SOURCE), DEFAULT_VALUE_PAGE_SOURCE);
             int seleniumLog = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_SELENIUM_LOG), DEFAULT_VALUE_SELENIUM_LOG);
             int retries = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_RETRIES), DEFAULT_VALUE_RETRIES);
-            boolean manualExecution = ParameterParserUtil.parseBooleanParam(request.getParameter(PARAMETER_MANUAL_EXECUTION), DEFAULT_VALUE_MANUAL_EXECUTION);
+            String manualExecution = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_MANUAL_EXECUTION), DEFAULT_VALUE_MANUAL_EXECUTION);
             /**
              * RETRIEVING MANUAL ENVIRONMENT SETTINGS *
              */
@@ -305,84 +312,90 @@ public class GetExecutionQueue extends HttpServlet {
             String manualLoginRelativeURL = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_MANUAL_LOGIN_RELATIVE_URL), null);
             String manualEnvData = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_MANUAL_ENV_DATA), null);
 
+            // Create Tag when exist.
+            if (!StringUtil.isNullOrEmpty(tag)) {
+                // We create or update it.
+                ITagService tagService = appContext.getBean(ITagService.class);
+                tagService.createAuto(tag, "", request.getRemoteUser());
+            }
+
             for (int index = 0; index < toAddList.length(); index++) {
                 JSONObject toAdd = toAddList.getJSONObject(index);
-                boolean manualURL = false;
+                int manualURL = 0;
                 if (toAdd.getString("env").equals("MANUAL")) {
-                    manualURL = true;
+                    manualURL = 1;
                 }
-                /**
-                 * Creating executions for each browser
-                 */
-                for (int iterBrowser = 0; iterBrowser < browsers.length(); iterBrowser++) {
-                    String browser = browsers.getString(iterBrowser);
 
-                    try {
-                        TestCaseExecutionInQueue tceiq = inQueueFactoryService.create(toAdd.getString("test"),
-                                toAdd.getString("testcase"),
-                                toAdd.getString("country"),
-                                toAdd.getString("env"),
-                                robot,
-                                robotIP,
-                                robotPort,
-                                browser,
-                                browserVersion,
-                                platform,
-                                manualURL,
-                                manualHost,
-                                manualContextRoot,
-                                manualLoginRelativeURL,
-                                manualEnvData,
-                                tag,
-                                outputFormat,
-                                screenshot,
-                                verbose,
-                                timeout,
-                                synchroneous,
-                                pageSource,
-                                seleniumLog,
-                                requestDate,
-                                retries,
-                                manualExecution);
-                        /**
-                         * Insert the Execution in the Queue
-                         */
-                        inQueueService.insert(tceiq);
+                try {
+                    // Create the template
+                    TestCaseExecutionQueue tceiq = inQueueFactoryService.create(
+                            toAdd.getString("test"),
+                            toAdd.getString("testcase"),
+                            toAdd.getString("country"),
+                            toAdd.getString("env"),
+                            robot,
+                            robotIP,
+                            robotPort,
+                            "",
+                            browserVersion,
+                            platform,
+                            screenSize,
+                            manualURL,
+                            manualHost,
+                            manualContextRoot,
+                            manualLoginRelativeURL,
+                            manualEnvData,
+                            tag,
+                            screenshot,
+                            verbose,
+                            timeout,
+                            pageSource,
+                            seleniumLog,
+                            0,
+                            retries,
+                            manualExecution,
+                            1000,
+                            request.getRemoteUser(),
+                            null, null, null);
+
+                    // Then fill it with either no browser
+                    if ((browsers.length() == 0)
+                            || ((toAdd.getString("appType") != null) && (!toAdd.getString("appType").equalsIgnoreCase(Application.TYPE_GUI)))) {
+                        inQueueService.convert(inQueueService.create(tceiq));
                         addedToQueue++;
-                    } catch (FactoryCreationException ex) {
-                        String errorMessage = "Unable to feed the execution queue due to " + ex.getMessage();
-                        LOG.error("Unable to create TestCaseExecutionInQueue : " + ex.toString());
-                        answer.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED));
-                        answer.getResultMessage().setDescription(errorMessage);
+                    } // Or with required browsers
+                    else {
+                        for (int iterBrowser = 0; iterBrowser < browsers.length(); iterBrowser++) {
+                            tceiq.setBrowser(browsers.getString(iterBrowser));
+                            try {
+                                inQueueService.convert(inQueueService.create(tceiq));
+                                addedToQueue++;
+                            } catch (CerberusException e) {
+                                LOG.warn("Unable to insert execution in queue " + tceiq, e);
+                            }
+                        }
                     }
+                } catch (FactoryCreationException e) {
+                    LOG.warn("Unable to create the execution queue template", e);
                 }
             }
 
-            /**
-             * Trigger the execution
-             */
-            try {
-                executionThreadService.searchExecutionInQueueTableAndTriggerExecution();
-            } catch (CerberusException ex) {
-                String errorMessage = "Unable to feed the execution queue due to " + ex.getMessage();
-                LOG.warn(errorMessage);
-                answer.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED));
-                answer.getResultMessage().setDescription(errorMessage);
-            } catch (UnsupportedEncodingException ex) {
-                String errorMessage = "Unable to feed the execution queue due to " + ex.getMessage();
-                LOG.warn(errorMessage);
-                answer.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED));
-                answer.getResultMessage().setDescription(errorMessage);
-            } catch (InterruptedException ex) {
-                String errorMessage = "Unable to feed the execution queue due to " + ex.getMessage();
-                LOG.warn(errorMessage);
-                answer.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED));
-                answer.getResultMessage().setDescription(errorMessage);
+            // Trigger execution if necessary
+            if (addedToQueue > 0) {
+                try {
+                    executionThreadService.executeNextInQueueAsynchroneously(false);
+                } catch (CerberusException ex) {
+                    String errorMessage = "Unable to feed the execution queue due to " + ex.getMessage();
+                    LOG.warn(errorMessage);
+                    answer.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED));
+                    answer.getResultMessage().setDescription(errorMessage);
+                }
+
+                jsonResponse.put("messageType", answer.getResultMessage().getMessage().getCodeString());
+                jsonResponse.put("message", answer.getResultMessage().getDescription());
+                jsonResponse.put("addedToQueue", addedToQueue);
+                jsonResponse.put("redirect", "ReportingExecutionByTag.jsp?Tag=" + StringUtil.encodeAsJavaScriptURIComponent(tag));
             }
-            jsonResponse.put("messageType", answer.getResultMessage().getMessage().getCodeString());
-            jsonResponse.put("message", answer.getResultMessage().getDescription());
-            jsonResponse.put("addedToQueue", addedToQueue);
-            jsonResponse.put("redirect", "ReportingExecutionByTag.jsp?Tag=" + StringUtil.encodeAsJavaScriptURIComponent(tag));
         }
 
         response.setContentType("application/json");
@@ -404,9 +417,9 @@ public class GetExecutionQueue extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (JSONException ex) {
-            java.util.logging.Logger.getLogger(GetExecutionQueue.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (CerberusException ex) {
-            java.util.logging.Logger.getLogger(GetExecutionQueue.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -424,9 +437,9 @@ public class GetExecutionQueue extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (JSONException ex) {
-            java.util.logging.Logger.getLogger(GetExecutionQueue.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (CerberusException ex) {
-            java.util.logging.Logger.getLogger(GetExecutionQueue.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

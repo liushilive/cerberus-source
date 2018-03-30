@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,16 +20,11 @@
 package org.cerberus.crud.service.impl;
 
 import org.apache.commons.fileupload.FileItem;
-import org.apache.log4j.Logger;
-import org.cerberus.crud.dao.IApplicationDAO;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.IApplicationObjectDAO;
-import org.cerberus.crud.entity.Application;
 import org.cerberus.crud.entity.ApplicationObject;
 import org.cerberus.crud.service.IApplicationObjectService;
-import org.cerberus.crud.service.IApplicationService;
-import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.enums.MessageGeneralEnum;
-import org.cerberus.exception.CerberusException;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
@@ -50,13 +45,13 @@ public class ApplicationObjectService implements IApplicationObjectService {
     @Autowired
     private IApplicationObjectDAO ApplicationObjectDAO;
 
-    private static final Logger LOG = Logger.getLogger("ApplicationObjectService");
+    private static final Logger LOG = LogManager.getLogger("ApplicationObjectService");
 
     private final String OBJECT_NAME = "ApplicationObject";
 
     @Override
-    public AnswerItem readByKey(int id) {
-        return ApplicationObjectDAO.readByKey(id);
+    public AnswerItem readByKeyTech(int id) {
+        return ApplicationObjectDAO.readByKeyTech(id);
     }
 
     @Override
@@ -100,8 +95,8 @@ public class ApplicationObjectService implements IApplicationObjectService {
     }
 
     @Override
-    public Answer update(ApplicationObject object) {
-        return ApplicationObjectDAO.update(object);
+    public Answer update(String application, String appObject, ApplicationObject object) {
+        return ApplicationObjectDAO.update(application, appObject, object);
     }
 
     @Override

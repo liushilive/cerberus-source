@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,9 +19,11 @@
  */
 package org.cerberus.crud.service.impl;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import org.cerberus.crud.dao.ITestCaseExecutionFileDAO;
 import org.cerberus.engine.entity.MessageGeneral;
@@ -49,7 +51,7 @@ public class TestCaseExecutionFileService implements ITestCaseExecutionFileServi
     @Autowired
     private IFactoryTestCaseExecutionFile testCaseExecutionFileFactory;
 
-    private static final Logger LOG = Logger.getLogger("TestCaseExecutionFileService");
+    private static final Logger LOG = LogManager.getLogger("TestCaseExecutionFileService");
 
     private final String OBJECT_NAME = "TestCaseExecutionFile";
 
@@ -59,20 +61,25 @@ public class TestCaseExecutionFileService implements ITestCaseExecutionFileServi
     }
 
     @Override
-    public AnswerList<List<TestCaseExecutionFile>> readByVariousByCriteria(long id, String level, int startPosition, int length, String columnName, String sort, String searchParameter, Map<String, List<String>> individualSearch) {
-        return testCaseExecutionFileDAO.readByVariousByCriteria(id, level, length, length, columnName, sort, searchParameter, individualSearch);
+    public AnswerItem<TestCaseExecutionFile> readByKey(long exeId, String level, String fileDesc) {
+        return testCaseExecutionFileDAO.readByKey(exeId, level, fileDesc);
     }
 
     @Override
-    public AnswerList<List<TestCaseExecutionFile>> readByVarious(long id, String level) {
-        return testCaseExecutionFileDAO.readByVariousByCriteria(id, level, 0, 0, null, null, null, null);
+    public AnswerList<List<TestCaseExecutionFile>> readByVariousByCriteria(long exeId, String level, int startPosition, int length, String columnName, String sort, String searchParameter, Map<String, List<String>> individualSearch) {
+        return testCaseExecutionFileDAO.readByVariousByCriteria(exeId, level, length, length, columnName, sort, searchParameter, individualSearch);
     }
 
     @Override
-    public Answer create(long exeid, String level, String fileDesc, String fileName, String fileType, String usrCreated) {
+    public AnswerList<List<TestCaseExecutionFile>> readByVarious(long ExeId, String level) {
+        return testCaseExecutionFileDAO.readByVariousByCriteria(ExeId, level, 0, 0, null, null, null, null);
+    }
+
+    @Override
+    public Answer save(long exeId, String level, String fileDesc, String fileName, String fileType, String usrCreated) {
         TestCaseExecutionFile object = null;
-        object = testCaseExecutionFileFactory.create(0, exeid, level, fileDesc, fileName, fileType, usrCreated, null, "", null);
-        return testCaseExecutionFileDAO.create(object);
+        object = testCaseExecutionFileFactory.create(0, exeId, level, fileDesc, fileName, fileType, usrCreated, null, "", null);
+        return this.save(object);
     }
 
     @Override
@@ -81,6 +88,18 @@ public class TestCaseExecutionFileService implements ITestCaseExecutionFileServi
         return (objectAnswer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) && (objectAnswer.getItem() != null); // Call was successfull and object was found.
     }
 
+    @Override
+    public boolean exist(long exeId, String level, String fileDesc) {
+        AnswerItem objectAnswer = readByKey(exeId, level, fileDesc);
+        return (objectAnswer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) && (objectAnswer.getItem() != null); // Call was successfull and object was found.
+    }
+    
+    @Override
+    public boolean exist(long exeId, String level) {
+        AnswerItem objectAnswer = readByKey(exeId, level, null);
+        return (objectAnswer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) && (objectAnswer.getItem() != null); // Call was successfull and object was found.
+    }
+    
     @Override
     public Answer create(TestCaseExecutionFile object) {
         return testCaseExecutionFileDAO.create(object);
@@ -96,6 +115,78 @@ public class TestCaseExecutionFileService implements ITestCaseExecutionFileServi
         return testCaseExecutionFileDAO.update(object);
     }
 
+    @Override
+    public Answer save(TestCaseExecutionFile object) {
+        if (this.exist(object.getExeId(), object.getLevel(), object.getFileDesc())) {
+            return update(object);
+        } else {
+            return create(object);
+        }
+    }
+    @Override
+    public void deleteFile(String root, String fileName) {
+    	File currentFile = new File(root + File.separator +fileName);
+    	currentFile.delete();
+    }
+    
+    @Override
+    public Answer saveManual(TestCaseExecutionFile object) {
+    	if(this.exist(object.getId())) {
+    		return update(object);
+    	}else {
+    		return create(object);
+    	}
+    }
+    
+    /**
+     * this function allow to check if extension exist in invariants table
+     */
+    
+    @Override
+    public String checkExtension(String fileName, String extension) {
+		if(extension.isEmpty() || extension != fileName.substring(fileName.lastIndexOf('.')+1, fileName.length())) {
+			if(fileName.contains(".")) {
+				extension = fileName.substring(fileName.lastIndexOf('.')+1, fileName.length());
+				extension = extension.trim().toUpperCase();
+			}else {
+				extension = "BIN";
+			}
+			
+			switch(extension) {
+				case TestCaseExecutionFile.FILETYPE_JPG:
+					extension = "JPG";
+					break;
+				case TestCaseExecutionFile.FILETYPE_PNG:
+					extension = "PNG";
+					break;
+				case TestCaseExecutionFile.FILETYPE_JPEG:
+					extension = "JPG";
+					break;
+				case TestCaseExecutionFile.FILETYPE_PDF:
+					extension = "PDF";
+					break;
+				case TestCaseExecutionFile.FILETYPE_JSON:
+					extension = "JSON";
+					break;
+				case TestCaseExecutionFile.FILETYPE_XML:
+					extension = "XML";
+					break;
+				case TestCaseExecutionFile.FILETYPE_TXT:
+					extension = "TXT";
+					break;
+				case TestCaseExecutionFile.FILETYPE_BIN:
+					extension = "BIN";
+					break;
+				default:
+					extension = "BIN";
+					break;
+			}
+        }
+		
+		return extension;
+    }
+    
+    
     @Override
     public TestCaseExecutionFile convert(AnswerItem answerItem) throws CerberusException {
         if (answerItem.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {

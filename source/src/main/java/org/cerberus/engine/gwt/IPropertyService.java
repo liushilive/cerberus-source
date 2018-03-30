@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,8 +19,12 @@
  */
 package org.cerberus.engine.gwt;
 
+import org.cerberus.crud.entity.TestCaseCountryProperties;
+import org.cerberus.crud.entity.TestCaseExecution;
+import org.cerberus.crud.entity.TestCaseExecutionData;
 import org.cerberus.crud.entity.TestCaseStepActionExecution;
 import org.cerberus.exception.CerberusEventException;
+import org.cerberus.util.answer.AnswerItem;
 
 /**
  * {Insert class description here}
@@ -31,6 +35,26 @@ import org.cerberus.exception.CerberusEventException;
  */
 public interface IPropertyService {
 
-    String decodeValueWithExistingProperties(String stringToDecode, TestCaseStepActionExecution testCaseStepActionExecution, boolean forceCalculation) throws CerberusEventException;
-
+    /**
+     *
+     * @param stringToDecode
+     * @param testCaseExecution
+     * @param testCaseStepActionExecution
+     * @param forceCalculation
+     * @return
+     * @throws CerberusEventException
+     */
+    AnswerItem<String> decodeStringWithExistingProperties(String stringToDecode, TestCaseExecution testCaseExecution,
+            TestCaseStepActionExecution testCaseStepActionExecution, boolean forceCalculation) throws CerberusEventException;
+    
+    /**
+     *
+     * @param testCaseExecutionData
+     * @param tCExecution
+     * @param testCaseStepActionExecution
+     * @param testCaseCountryProperty
+     * @param forceRecalculation
+     */
+    void calculateProperty(TestCaseExecutionData testCaseExecutionData, TestCaseExecution tCExecution, TestCaseStepActionExecution testCaseStepActionExecution,
+            TestCaseCountryProperties testCaseCountryProperty, boolean forceRecalculation);
 }

@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -27,13 +29,58 @@ public class Label {
     private Integer id;
     private String system;
     private String label;
+    private String type;
     private String color;
     private String parentLabel;
+    private String reqType;
+    private String reqStatus;
+    private String reqCriticity;
     private String description;
+    private String longDesc;
     private String usrCreated;
     private Timestamp dateCreated;
     private String usrModif;
     private Timestamp dateModif;
+
+
+    /**
+     * Invariant PROPERTY TYPE String.
+     */
+    public static final String TYPE_STICKER = "STICKER";
+    public static final String TYPE_BATTERY = "BATTERY";
+    public static final String TYPE_REQUIREMENT = "REQUIREMENT";
+
+    public String getReqType() {
+        return reqType;
+    }
+
+    public void setReqType(String reqType) {
+        this.reqType = reqType;
+    }
+
+    public String getReqStatus() {
+        return reqStatus;
+    }
+
+    public void setReqStatus(String reqStatus) {
+        this.reqStatus = reqStatus;
+    }
+
+    public String getReqCriticity() {
+        return reqCriticity;
+    }
+
+    public void setReqCriticity(String reqCriticity) {
+        this.reqCriticity = reqCriticity;
+    }
+
+    public String getLongDesc() {
+        return longDesc;
+    }
+
+    public void setLongDesc(String longDesc) {
+        this.longDesc = longDesc;
+    }
 
     public Integer getId() {
         return id;
@@ -41,6 +88,14 @@ public class Label {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getSystem() {
@@ -114,7 +169,5 @@ public class Label {
     public void setDescription(String description) {
         this.description = description;
     }
-    
-    
 
 }

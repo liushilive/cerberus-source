@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -23,7 +25,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.ITestDataLibDataDAO;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.TestDataLibData;
@@ -50,7 +53,7 @@ public class TestDataLibDataDAO implements ITestDataLibDataDAO {
     @Autowired
     private IFactoryTestDataLibData factoryTestDataLibData;
 
-    private static final Logger LOG = Logger.getLogger(TestDataLibDataDAO.class);
+    private static final Logger LOG = LogManager.getLogger(TestDataLibDataDAO.class);
 
     private final String OBJECT_NAME = "Test Data Library - Sub data";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -221,7 +224,7 @@ public class TestDataLibDataDAO implements ITestDataLibDataDAO {
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query);
-            LOG.debug("SQL.param.application : " + testDataLibID);
+            LOG.debug("SQL.param.testDataLibID : " + testDataLibID);
         }
 
         Connection connection = this.databaseSpring.connect();
@@ -630,7 +633,6 @@ public class TestDataLibDataDAO implements ITestDataLibDataDAO {
     public Answer update(TestDataLibData object) {
         MessageEvent msg = null;
         final String query = "UPDATE testdatalibdata SET `value`= ? , `column`= ? , `parsinganswer`= ? , `columnPosition`= ? , `description`= ? WHERE `testdatalibdataid`= ? ";
-
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query);

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -89,8 +89,8 @@ public class BuildRevisionInvariantService implements IBuildRevisionInvariantSer
     }
 
     @Override
-    public Answer update(BuildRevisionInvariant buildRevisionInvariant) {
-        return BuildRevisionInvariantDAO.update(buildRevisionInvariant);
+    public Answer update(String system, Integer level, Integer seq, BuildRevisionInvariant buildRevisionInvariant) {
+        return BuildRevisionInvariantDAO.update(system, level, seq, buildRevisionInvariant);
     }
 
     @Override

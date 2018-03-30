@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,14 +27,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Application;
 import org.cerberus.crud.entity.BuildRevisionParameters;
 import org.cerberus.crud.entity.CountryEnvDeployType;
@@ -67,11 +67,10 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "ReadBuildRevisionParameters", urlPatterns = {"/ReadBuildRevisionParameters"})
 public class ReadBuildRevisionParameters extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(ReadBuildRevisionParameters.class);
     private IBuildRevisionParametersService brpService;
     private IApplicationService appService;
     private ICountryEnvDeployTypeService cedtService;
-
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(ReadBuildRevisionParameters.class);
 
     private final String OBJECT_NAME = "BuildRevisionParameters";
 
@@ -154,7 +153,7 @@ public class ReadBuildRevisionParameters extends HttpServlet {
             response.getWriter().print(jsonResponse.toString());
 
         } catch (JSONException e) {
-            org.apache.log4j.Logger.getLogger(ReadBuildRevisionParameters.class.getName()).log(org.apache.log4j.Level.ERROR, null, e);
+            LOG.warn(e);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }
@@ -175,7 +174,7 @@ public class ReadBuildRevisionParameters extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadBuildRevisionParameters.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -193,7 +192,7 @@ public class ReadBuildRevisionParameters extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadBuildRevisionParameters.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -223,12 +222,17 @@ public class ReadBuildRevisionParameters extends HttpServlet {
         String columnToSort[] = sColumns.split(",");
         String columnName = columnToSort[columnToSortParameter];
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
         
         Map<String, List<String>> individualSearch = new HashMap<String, List<String>>();
         for (int a = 0; a < columnToSort.length; a++) {
             if (null!=request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
                 List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+                if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                }            
             }
         }
         
@@ -331,7 +335,7 @@ public class ReadBuildRevisionParameters extends HttpServlet {
                         newSubObj.append("install", newSubObjContent);
                     }
                 } catch (CerberusException ex) {
-                    Logger.getLogger(ReadBuildRevisionParameters.class.getName()).log(Level.SEVERE, null, ex);
+                    LOG.warn(ex);
                 }
                 jsonArray.put(newSubObj);
             }
@@ -393,11 +397,17 @@ public class ReadBuildRevisionParameters extends HttpServlet {
         String sColumns = ParameterParserUtil.parseStringParam(request.getParameter("sColumns"), "ID,Build,Revision,Release,Application,Project,TicketIDFixed,BugIDFixed,Link,ReleaseOwner,Subject,datecre,jenkinsbuildid,mavengroupid,mavenartifactid,mavenversion");
         String columnToSort[] = sColumns.split(",");
 
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
+
         Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
-            if (null!=request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
-                List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+            if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
+            	List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
+            	if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                } 
             }
         }
 

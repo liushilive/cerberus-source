@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,10 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -35,9 +39,12 @@ function initPage() {
     $('#editSqlLibraryModal').on('hidden.bs.modal', editEntryModalCloseHandler);
     $('#addSqlLibraryModal').on('hidden.bs.modal', addEntryModalCloseHandler);
 
+    // Invariant Combo loading.
+    displayInvariantList("database", "PROPERTYDATABASE", false, "", "");
+
     //configure and create the dataTable
     var configurations = new TableConfigurationsServerSide("sqlLibrarysTable", "ReadSqlLibrary", "contentTable", aoColumnsFunc("sqlLibrarysTable"), [1, 'asc']);
-    createDataTableWithPermissions(configurations, renderOptionsForSqlLibrary, "#sqlLibraryList");
+    createDataTableWithPermissions(configurations, renderOptionsForSqlLibrary, "#sqlLibraryList", undefined, true);
 }
 
 /**
@@ -45,8 +52,20 @@ function initPage() {
  * @returns {undefined}
  */
 function afterTableLoad() {
-    $.each($("code[name='scriptField']"), function (i, e) {
-        Prism.highlightElement($(e).get(0));
+    $.each($("pre[name='scriptField']"), function (i, e) {
+        //Highlight envelop on modal loading
+        var editor = ace.edit($(e).get(0));
+        editor.setTheme("ace/theme/chrome");
+        editor.getSession().setMode("ace/mode/sql");
+        editor.setOptions({
+            maxLines: 1,
+            showLineNumbers: false,
+            showGutter: false,
+            highlightActiveLine: false,
+            highlightGutterLine: false,
+            readOnly: true
+        });
+        editor.renderer.$cursorLayer.element.style.opacity = 0;
     });
 }
 
@@ -98,11 +117,24 @@ function editEntryClick(name) {
         method: "GET",
         success: function (data) {
             if (data.messageType === "OK") {
+
+                //Destroy the previous Ace object.
+                ace.edit($("#editSqlLibraryModalForm #script")[0]).destroy();
+
                 formEdit.find("#name").prop("value", data.name);
                 formEdit.find("#type").prop("value", $('<div/>').html(data.type).text());
                 formEdit.find("#script").text(data.script);
                 formEdit.find("#description").prop("value", $('<div/>').html(data.description).text());
-                formEdit.find("#database").find("option[value='" + data.database + "']").attr("selected", "selected");
+                formEdit.find("#database").val(data.database);
+
+                //Highlight envelop on modal loading
+                var editor = ace.edit($("#editSqlLibraryModalForm #script")[0]);
+                editor.setTheme("ace/theme/chrome");
+                editor.getSession().setMode("ace/mode/sql");
+                editor.setOptions({
+                    maxLines: Infinity
+                });
+
                 if (!(data["hasPermissions"])) { // If readonly, we only readonly all fields
                     formEdit.find("#name").prop("readonly", "readonly");
                     formEdit.find("#type").prop("readonly", "readonly");
@@ -113,19 +145,6 @@ function editEntryClick(name) {
                     $('#editSqlLibraryButton').attr('class', '');
                     $('#editSqlLibraryButton').attr('hidden', 'hidden');
                 }
-
-                //Highlight envelop on modal loading
-                Prism.highlightElement($("#script")[0]);
-
-                /**
-                 * On edition, get the caret position, refresh the envelope to have 
-                 * syntax coloration in real time, then set the caret position.
-                 */
-                $('#editSqlLibraryModal #script').on("keyup", function (e) {
-                    var pos = $(this).caret('pos');
-                    Prism.highlightElement($("#editSqlLibraryModal #script")[0]);
-                    $(this).caret('pos', pos);
-                });
 
                 formEdit.modal('show');
             } else {
@@ -142,12 +161,13 @@ function editEntryModalSaveHandler() {
 
     // Get the header data from the form.
     var data = convertSerialToJSONObject(formEdit.serialize());
-    //Add envelope and script, not in the form
-    data.script = encodeURI($("#editSqlLibraryModalForm #script").text());
-    
+    //Add script, not in the form
+    var editor = ace.edit($("#editSqlLibraryModalForm #script")[0]);
+    data.script = encodeURIComponent(editor.getSession().getDocument().getValue());
+
     showLoaderInModal('#editSqlLibraryModal');
     $.ajax({
-        url: "UpdateSqlLibrary2",
+        url: "UpdateSqlLibrary",
         async: true,
         method: "POST",
         data: {
@@ -192,15 +212,12 @@ function addEntryClick() {
     $("#addSqlLibraryModal #idname").empty();
     $('#addSqlLibraryModal #envelope').empty();
 
-    /**
-     * On edition, get the caret position, refresh the envelope to have 
-     * syntax coloration in real time, then set the caret position.
-     */
-
-    $('#addSqlLibraryModal #script').on("keyup", function (e) {
-        var pos = $(this).caret('pos');
-        Prism.highlightElement($("#addSqlLibraryModal #script")[0]);
-        $(this).caret('pos', pos);
+    //Highlight envelop on modal loading
+    var editor = ace.edit($("#addSqlLibraryModalForm #script")[0]);
+    editor.setTheme("ace/theme/chrome");
+    editor.getSession().setMode("ace/mode/sql");
+    editor.setOptions({
+        maxLines: Infinity
     });
 
 
@@ -213,12 +230,13 @@ function addEntryModalSaveHandler() {
 
     // Get the header data from the form.
     var data = convertSerialToJSONObject(formEdit.serialize());
-    //Add envelope and script, not in the form
-    data.script = encodeURI($("#addSqlLibraryModalForm #script").text());
-    
+    //Add script, not in the form
+    var editor = ace.edit($("#addSqlLibraryModalForm #script")[0]);
+    data.script = encodeURIComponent(editor.getSession().getDocument().getValue());
+
     showLoaderInModal('#addSqlLibraryModal');
     $.ajax({
-        url: "CreateSqlLibrary2",
+        url: "CreateSqlLibrary",
         async: true,
         method: "POST",
         data: {
@@ -254,26 +272,36 @@ function addEntryModalCloseHandler() {
     clearResponseMessage($('#addSqlLibraryModal'));
 }
 
-function removeEntryClick(name) {
-    var doc = new Doc();
-    showModalConfirmation(function (ev) {
-        var name = $('#confirmationModal #hiddenField1').prop("value");
-        $.ajax({
-            url: "DeleteSqlLibrary2?name=" + name,
-            async: true,
-            method: "GET",
-            success: function (data) {
-                hideLoaderInModal('#removeSqlLibraryModal');
-                var oTable = $("#sqlLibrarysTable").dataTable();
-                oTable.fnDraw(true);
-                $('#removeSqlLibraryModal').modal('hide');
-                showMessage(data);
-            },
-            error: showUnexpectedError
-        });
+function removeEntryClickHandler() {
+    var name = $('#confirmationModal #hiddenField1').prop("value");
+    var jqxhr = $.post("DeleteSqlLibrary", {name: name}, "json");
+    $.when(jqxhr).then(function (data) {
+        var messageType = getAlertType(data.messageType);
+        if (messageType === "success") {
+            //redraw the datatable
+            var oTable = $("#sqlLibrarysTable").dataTable();
+            oTable.fnDraw(true);
+            var info = oTable.fnGetData().length;
 
+            if (info === 1) {//page has only one row, then returns to the previous page
+                oTable.fnPageChange('previous');
+            }
+
+        }
+        //show message in the main page
+        showMessageMainPage(messageType, data.message, false);
+        //close confirmation window
         $('#confirmationModal').modal('hide');
-    }, doc.getDocLabel("page_sqlLibrary", "title_remove"), doc.getDocLabel("page_sqlLibrary", "message_remove"), name, undefined, undefined, undefined);
+    }).fail(handleErrorAjaxAfterTimeout);
+
+}
+
+function removeEntryClick(name) {
+    clearResponseMessageMainPage();
+    var doc = new Doc();
+    var messageComplete = doc.getDocLabel("page_sqlLibrary", "message_remove");
+    messageComplete = messageComplete.replace("%ENTRY%", name);
+    showModalConfirmation(removeEntryClickHandler, undefined, doc.getDocLabel("page_sqlLibrary", "title_remove"), messageComplete, name, "", "", "");
 }
 
 function aoColumnsFunc(tableId) {
@@ -283,6 +311,7 @@ function aoColumnsFunc(tableId) {
             "data": null,
             "bSortable": false,
             "bSearchable": false,
+            "sWidth": "50px",
             "title": doc.getDocLabel("page_sqlLibrary", "button_col"),
             "mRender": function (data, type, obj) {
                 var hasPermissions = $("#" + tableId).attr("hasPermissions");
@@ -305,17 +334,41 @@ function aoColumnsFunc(tableId) {
                 }
                 return '<div class="center btn-group width150">' + viewSqlLibrary + '</div>';
 
-            },
-            "width": "50px"
+            }
         },
-        {"data": "name", "sName": "Name", "title": doc.getDocLabel("page_sqlLibrary", "sqlLibrary_col")},
-        {"data": "type", "sName": "Type", "title": doc.getDocLabel("page_sqlLibrary", "type_col")},
-        {"data": "database", "sName": "Database", "title": doc.getDocLabel("page_sqlLibrary", "database_col")},
-        {"data": "script", "sName": "Script", "sWidth": "450px", "title": doc.getDocLabel("page_sqlLibrary", "script_col"),
+        {
+            "data": "name",
+            "sName": "Name",
+            "sWidth": "50px",
+            "title": doc.getDocLabel("page_sqlLibrary", "sqlLibrary_col")
+        },
+        {
+            "data": "type",
+            "sName": "Type",
+            "sWidth": "50px",
+            "title": doc.getDocLabel("page_sqlLibrary", "type_col")},
+        {
+            "data": "database",
+            "sName": "Database",
+            "sWidth": "50px",
+            "title": doc.getDocLabel("page_sqlLibrary", "database_col")},
+        {
+            "data": "script",
+            "like":true,
+            "sName": "Script",
+            "sWidth": "150px",
+            "title": doc.getDocLabel("page_sqlLibrary", "script_col"),
             "mRender": function (data, type, obj) {
-                return $("<div></div>").append($("<pre style='height:20px; overflow:hidden; text-overflow:clip; border: 0px; padding:0; margin:0'></pre>").append($("<code name='scriptField' class='language-sql'></code>").text(obj['script']))).html();
-            }},
-        {"data": "description", "sName": "Description", "title": doc.getDocLabel("page_sqlLibrary", "description_col")}
+                return $("<div></div>").append($("<pre name='scriptField' style='height:20px; overflow:hidden; text-overflow:clip; border: 0px; padding:0; margin:0'></pre>").text(obj['script'])).html();
+            }
+        },
+        {
+            "data": "description",
+            "like":true,
+            "sName": "Description",
+            "sWidth": "100px",
+            "title": doc.getDocLabel("page_sqlLibrary", "description_col")
+        }
     ];
     return aoColumns;
 }

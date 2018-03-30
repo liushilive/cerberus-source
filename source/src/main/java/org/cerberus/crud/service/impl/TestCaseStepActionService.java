@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,11 +21,14 @@ package org.cerberus.crud.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.cerberus.crud.dao.ITestCaseStepActionDAO;
 import org.cerberus.crud.entity.TestCaseStepAction;
+import org.cerberus.crud.service.ITestCaseStepActionControlService;
+import org.cerberus.engine.entity.MessageEvent;
+import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.exception.CerberusException;
 import org.cerberus.crud.service.ITestCaseStepActionService;
 import org.cerberus.util.answer.Answer;
@@ -40,8 +43,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class TestCaseStepActionService implements ITestCaseStepActionService {
 
+    private static final Logger LOG = LogManager.getLogger(TestCaseStepActionService.class);
+    
     @Autowired
     private ITestCaseStepActionDAO testCaseStepActionDAO;
+    @Autowired
+    private ITestCaseStepActionControlService testCaseStepActionControlService;
 
     @Override
     public TestCaseStepAction findTestCaseStepActionbyKey(String test, String testCase, int step, int sequence) {
@@ -64,7 +71,7 @@ public class TestCaseStepActionService implements ITestCaseStepActionService {
             try {
                 insertTestCaseStepAction(tcsa);
             } catch (CerberusException ex) {
-                Logger.getLogger(TestCaseStepActionService.class.getName()).log(Level.SEVERE, null, ex);
+                LOG.warn(ex);
                 return false;
             }
         }
@@ -81,7 +88,7 @@ public class TestCaseStepActionService implements ITestCaseStepActionService {
         try {
             testCaseStepActionDAO.update(tcsa);
         } catch (CerberusException ex) {
-            Logger.getLogger(TestCaseStepActionService.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
             return false;
         }
         return true;
@@ -125,7 +132,6 @@ public class TestCaseStepActionService implements ITestCaseStepActionService {
                 }
             }
         }
-        this.insertListTestCaseStepAction(tcsaToUpdateOrInsert);
 
         /**
          * Iterate on (TestCaseStepAction From Database - TestCaseStepAction
@@ -146,18 +152,36 @@ public class TestCaseStepActionService implements ITestCaseStepActionService {
             }
             this.deleteListTestCaseStepAction(tcsaToDelete);
         }
+
+        // We insert only at the end (after deletion of all potencial enreg - linked with #1281)
+        this.insertListTestCaseStepAction(tcsaToUpdateOrInsert);
     }
-    
+
     @Override
-    public AnswerList  readByTestTestCase(String test, String testcase) {
-       return testCaseStepActionDAO.readByTestTestCase(test, testcase);
+    public AnswerList readByTestTestCase(String test, String testcase) {
+        return testCaseStepActionDAO.readByTestTestCase(test, testcase);
     }
-    
+
+    @Override
+    public AnswerList readByVarious1WithDependency(String test, String testcase, int step) {
+        AnswerList actions = testCaseStepActionDAO.readByVarious1(test, testcase, step);
+        AnswerList response = null;
+        List<TestCaseStepAction> tcseList = new ArrayList();
+        for (Object action : actions.getDataList()) {
+            TestCaseStepAction tces = (TestCaseStepAction) action;
+            AnswerList controls = testCaseStepActionControlService.readByVarious1(test, testcase, step, tces.getSequence());
+            tces.setTestCaseStepActionControl(controls.getDataList());
+            tcseList.add(tces);
+        }
+        response = new AnswerList(tcseList, actions.getTotalRows(), new MessageEvent(MessageEventEnum.DATA_OPERATION_OK));
+        return response;
+    }
+
     @Override
     public Answer create(TestCaseStepAction object) {
         return testCaseStepActionDAO.create(object);
     }
-    
+
     @Override
     public Answer createList(List<TestCaseStepAction> objectList) {
         Answer ans = new Answer(null);

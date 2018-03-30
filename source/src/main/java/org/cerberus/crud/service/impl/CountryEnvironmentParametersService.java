@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -43,15 +43,13 @@ import org.cerberus.util.answer.AnswerUtil;
 @Service
 public class CountryEnvironmentParametersService implements ICountryEnvironmentParametersService {
 
+    private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger(CountryEnvironmentParametersService.class);
+
     @Autowired
-    ICountryEnvironmentParametersDAO countryEnvironmentParametersDao;
-
-    private final String OBJECT_NAME = "CountryEnvironmentParameters";
-
-    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(CountryEnvironmentParametersService.class);
+    private ICountryEnvironmentParametersDAO countryEnvironmentParametersDao;
 
     @Override
-    public AnswerItem readByKey(String system, String country, String environment, String application) {
+    public AnswerItem<CountryEnvironmentParameters> readByKey(String system, String country, String environment, String application) {
         return countryEnvironmentParametersDao.readByKey(system, country, environment, application);
     }
 
@@ -72,17 +70,20 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
 
     @Override
     public Answer update(CountryEnvironmentParameters object) {
-        return countryEnvironmentParametersDao.update(object);
+        Answer answer = countryEnvironmentParametersDao.update(object);
+        return answer;
     }
 
     @Override
     public Answer delete(CountryEnvironmentParameters object) {
-        return countryEnvironmentParametersDao.delete(object);
+        Answer answer = countryEnvironmentParametersDao.delete(object);
+        return answer;
     }
 
     @Override
     public Answer create(CountryEnvironmentParameters object) {
-        return countryEnvironmentParametersDao.create(object);
+        Answer answer = countryEnvironmentParametersDao.create(object);
+        return answer;
     }
 
     @Override
@@ -133,10 +134,6 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
                 }
             }
         }
-        if (!listToUpdateOrInsert.isEmpty()) {
-            ans = this.createList(listToUpdateOrInsert);
-            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
-        }
 
         /**
          * Delete all objects database Objects that do not exist from newList
@@ -154,6 +151,12 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
         }
         if (!listToDelete.isEmpty()) {
             ans = this.deleteList(listToDelete);
+            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
+        }
+
+        // We insert only at the end (after deletion of all potencial enreg - linked with #1281)
+        if (!listToUpdateOrInsert.isEmpty()) {
+            ans = this.createList(listToUpdateOrInsert);
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
         }
         return finalAnswer;
@@ -189,10 +192,6 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
                 }
             }
         }
-        if (!listToUpdateOrInsert.isEmpty()) {
-            ans = this.createList(listToUpdateOrInsert);
-            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
-        }
 
         /**
          * Delete all objects database Objects that do not exist from newList
@@ -210,6 +209,12 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
         }
         if (!listToDelete.isEmpty()) {
             ans = this.deleteList(listToDelete);
+            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
+        }
+
+        // We insert only at the end (after deletion of all potencial enreg - linked with #1281)
+        if (!listToUpdateOrInsert.isEmpty()) {
+            ans = this.createList(listToUpdateOrInsert);
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
         }
         return finalAnswer;
@@ -241,5 +246,4 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
         }
         throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR));
     }
-
 }

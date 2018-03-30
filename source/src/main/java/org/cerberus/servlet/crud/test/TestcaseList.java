@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -34,9 +34,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.database.DatabaseSpring;
-import org.cerberus.log.MyLogger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -46,6 +46,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "TestcaseList", urlPatterns = {"/TestcaseList"})
 public class TestcaseList extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(TestcaseList.class);
+    
     /**
      * Processes requests for both HTTP
      * <code>GET</code> and
@@ -62,10 +64,8 @@ public class TestcaseList extends HttpServlet {
         PrintWriter out = response.getWriter();
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
         DatabaseSpring db = appContext.getBean(DatabaseSpring.class);
-        Connection conn = db.connect();
         PreparedStatement stmt_testlist = null;
-        try {
-
+        try(Connection conn = db.connect();){
             String application = request.getParameter("application");
             String app = "";
             String test = request.getParameter("test");
@@ -83,25 +83,22 @@ public class TestcaseList extends HttpServlet {
             } else {
                 tes = "";
             }
-
             if (StringUtils.isNotBlank(url)) {
                 stmt_testlist = conn.prepareStatement("SELECT concat(?) AS list FROM testcase "
                         + " WHERE TcActive = 'Y'  AND `Group` = 'AUTOMATED' ? ? ORDER BY test,testcase");
                 stmt_testlist.setString(1, url);
                 stmt_testlist.setString(2, app);
                 stmt_testlist.setString(3, tes);
-                ResultSet rs_testlist = stmt_testlist.executeQuery();
-                int id = 0;
-
-                if (rs_testlist.first()) {
-                    do {
-
-                        out.println(rs_testlist.getString("list"));
-
-                    } while (rs_testlist.next());
-
+                try(ResultSet rs_testlist = stmt_testlist.executeQuery();){
+                	int id = 0;
+                    if (rs_testlist.first()) {
+                        do {
+                            out.println(rs_testlist.getString("list"));
+                        } while (rs_testlist.next());
+                    }
+                }catch (SQLException ex) {
+                    LOG.warn(ex.toString());
                 }
-                rs_testlist.close();
                 stmt_testlist.close();
             }
         } catch (Exception e) {
@@ -109,19 +106,13 @@ public class TestcaseList extends HttpServlet {
         } finally {
             out.close();
             try {
-                conn.close();
-            } catch (Exception ex) {
-                MyLogger.log(TestcaseList.class.getName(), Level.INFO, "Exception closing ResultSet: " + ex.toString());
-            }
-            try {
                 if (stmt_testlist != null) {
                     stmt_testlist.close();
                 }
             } catch (SQLException ex) {
-                MyLogger.log(TestcaseList.class.getName(), Level.INFO, "Exception closing PreparedStatement: " + ex.toString());
+                LOG.warn("Exception closing PreparedStatement: " + ex.toString());
             }
         }
-
     }
 
     // <editor-fold defaultstate="collapsed"

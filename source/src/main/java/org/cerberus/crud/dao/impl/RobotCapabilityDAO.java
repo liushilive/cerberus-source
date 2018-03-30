@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2016  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -26,7 +26,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.IRobotCapabilityDAO;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.Robot;
@@ -79,7 +80,7 @@ public class RobotCapabilityDAO implements IRobotCapabilityDAO {
     /**
      * The associated {@link Logger} to this class
      */
-    private static final Logger LOG = Logger.getLogger(RobotCapabilityDAO.class);
+    private static final Logger LOG = LogManager.getLogger(RobotCapabilityDAO.class);
 
     /**
      * The associated entity name to this DAO
@@ -97,20 +98,22 @@ public class RobotCapabilityDAO implements IRobotCapabilityDAO {
         AnswerList<RobotCapability> ans = new AnswerList<>();
         MessageEvent msg = null;
 
+        LOG.debug(Query.READ_BY_ROBOT);
         try (Connection connection = databaseSpring.connect();
                 PreparedStatement preStat = connection.prepareStatement(Query.READ_BY_ROBOT)) {
+
             // Prepare and execute query
             preStat.setString(1, robot);
-            ResultSet resultSet = preStat.executeQuery();
-
-            // Parse query
-            List<RobotCapability> result = new ArrayList<>();
-            while (resultSet.next()) {
-                result.add(loadFromResultSet(resultSet));
+            try(ResultSet resultSet = preStat.executeQuery();) {
+            	// Parse query
+                List<RobotCapability> result = new ArrayList<>();
+                while (resultSet.next()) {
+                    result.add(loadFromResultSet(resultSet));
+                }
+                ans.setDataList(result);
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK).resolveDescription("ITEM", OBJECT_NAME)
+                            .resolveDescription("OPERATION", "SELECT");
             }
-            ans.setDataList(result);
-            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK).resolveDescription("ITEM", OBJECT_NAME)
-                        .resolveDescription("OPERATION", "SELECT");
         } catch (Exception e) {
             LOG.warn("Unable to execute query : " + e.toString());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
@@ -127,6 +130,8 @@ public class RobotCapabilityDAO implements IRobotCapabilityDAO {
     public Answer create(RobotCapability capability) {
         Answer ans = new Answer();
         MessageEvent msg = null;
+
+        LOG.debug(Query.CREATE);
 
         try (Connection connection = databaseSpring.connect();
                 PreparedStatement preStat = connection.prepareStatement(Query.CREATE)) {
@@ -155,6 +160,8 @@ public class RobotCapabilityDAO implements IRobotCapabilityDAO {
         Answer ans = new Answer();
         MessageEvent msg = null;
 
+        LOG.debug(Query.UPDATE);
+
         try (Connection connection = databaseSpring.connect();
                 PreparedStatement preStat = connection.prepareStatement(Query.UPDATE)) {
             // Prepare and execute query
@@ -181,6 +188,8 @@ public class RobotCapabilityDAO implements IRobotCapabilityDAO {
     public Answer delete(RobotCapability capability) {
         Answer ans = new Answer();
         MessageEvent msg = null;
+
+        LOG.debug(Query.DELETE);
 
         try (Connection connection = databaseSpring.connect();
                 PreparedStatement preStat = connection.prepareStatement(Query.DELETE)) {

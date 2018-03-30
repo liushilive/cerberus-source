@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -24,17 +24,23 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.IRobotDAO;
+import org.cerberus.crud.utils.RequestDbUtils;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.Robot;
+import org.cerberus.engine.entity.MessageGeneral;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.crud.factory.IFactoryRobot;
 import org.cerberus.crud.factory.impl.FactoryRobot;
+import org.cerberus.enums.MessageGeneralEnum;
+import org.cerberus.exception.CerberusException;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.SqlUtil;
 import org.cerberus.util.StringUtil;
@@ -57,7 +63,7 @@ public class RobotDAO implements IRobotDAO {
     @Autowired
     private IFactoryRobot factoryRobot;
 
-    private static final Logger LOG = Logger.getLogger(RobotDAO.class);
+    private static final Logger LOG = LogManager.getLogger(RobotDAO.class);
 
     private final String OBJECT_NAME = "Robot";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -75,47 +81,24 @@ public class RobotDAO implements IRobotDAO {
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query);
         }
-        Connection connection = this.databaseSpring.connect();
-        try {
-            PreparedStatement preStat = connection.prepareStatement(query);
-            try {
-                preStat.setInt(1, robotid);
-                ResultSet resultSet = preStat.executeQuery();
-                try {
-                    if (resultSet.first()) {
-                        result = loadFromResultSet(resultSet);
-                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                        msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                        ans.setItem(result);
-                    } else {
-                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                    }
-                } catch (SQLException exception) {
-                    LOG.error("Unable to execute query : " + exception.toString());
-                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-                } finally {
-                    resultSet.close();
+        try (Connection connection = this.databaseSpring.connect();
+                PreparedStatement preStat = connection.prepareStatement(query);) {
+            preStat.setInt(1, robotid);
+
+            try (ResultSet resultSet = preStat.executeQuery()) {
+                if (resultSet.first()) {
+                    result = loadFromResultSet(resultSet);
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    ans.setItem(result);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
                 }
-            } catch (SQLException exception) {
-                LOG.error("Unable to execute query : " + exception.toString());
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-            } finally {
-                preStat.close();
             }
         } catch (SQLException exception) {
             LOG.error("Unable to execute query : " + exception.toString());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
             msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-        } finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException exception) {
-                LOG.warn("Unable to close connection : " + exception.toString());
-            }
         }
 
         //sets the message
@@ -124,63 +107,32 @@ public class RobotDAO implements IRobotDAO {
     }
 
     @Override
-    public AnswerItem<Robot> readByKey(String robot) {
-        AnswerItem<Robot> ans = new AnswerItem<>();
-        Robot result = null;
+    public Robot readByKey(String robot) throws CerberusException {
+        Robot result;
         final String query = "SELECT * FROM `robot` WHERE `robot` = ?";
-        MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-        msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query);
         }
-        Connection connection = this.databaseSpring.connect();
+
         try {
-            PreparedStatement preStat = connection.prepareStatement(query);
-            try {
-                preStat.setString(1, robot);
-                ResultSet resultSet = preStat.executeQuery();
-                try {
-                    if (resultSet.first()) {
-                        result = loadFromResultSet(resultSet);
-                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                        msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                        ans.setItem(result);
-                    } else {
-                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+            result = RequestDbUtils.executeQuery(databaseSpring, query,
+                    ps -> {
+                        ps.setString(1, robot);
+                    },
+                    rs -> {
+                        return loadFromResultSet(rs);
                     }
-                } catch (SQLException exception) {
-                    LOG.error("Unable to execute query : " + exception.toString());
-                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-                } finally {
-                    resultSet.close();
-                }
-            } catch (SQLException exception) {
-                LOG.error("Unable to execute query : " + exception.toString());
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-            } finally {
-                preStat.close();
-            }
+            );
+
         } catch (SQLException exception) {
             LOG.error("Unable to execute query : " + exception.toString());
-            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-            msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
-        } finally {
-            try {
-                if (connection != null) {
-                    connection.close();
-                }
-            } catch (SQLException exception) {
-                LOG.warn("Unable to close connection : " + exception.toString());
-            }
+            throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR), exception);
         }
 
         //sets the message
-        ans.setResultMessage(msg);
-        return ans;
+        return result;
     }
 
     @Override
@@ -207,6 +159,8 @@ public class RobotDAO implements IRobotDAO {
             searchSQL.append(" or `robot` like ?");
             searchSQL.append(" or `browser` like ?");
             searchSQL.append(" or `useragent` like ?");
+            searchSQL.append(" or `screensize` like ?");
+            searchSQL.append(" or `robotdecli` like ?");
             searchSQL.append(" or `version` like ?)");
         }
         if (individualSearch != null && !individualSearch.isEmpty()) {
@@ -240,6 +194,8 @@ public class RobotDAO implements IRobotDAO {
             try {
                 int i = 1;
                 if (!Strings.isNullOrEmpty(searchTerm)) {
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
@@ -327,8 +283,9 @@ public class RobotDAO implements IRobotDAO {
     public Answer create(Robot robot) {
         MessageEvent msg = null;
         StringBuilder query = new StringBuilder();
-        query.append("INSERT INTO robot (`robot`, `host`, `port`, `platform`,`browser`, `version`,`active` , `description`, `useragent`) ");
-        query.append("VALUES (?,?,?,?,?,?,?,?,?)");
+        query.append("INSERT INTO robot (`robot`, `host`, `port`, `platform`,`browser`, `version`,`active` , `description`, `useragent`, `screensize`, `host_user`, `host_password`, `robotdecli`) ");
+
+        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -338,15 +295,20 @@ public class RobotDAO implements IRobotDAO {
         try {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
-                preStat.setString(1, robot.getRobot());
-                preStat.setString(2, robot.getHost());
-                preStat.setString(3, robot.getPort());
-                preStat.setString(4, robot.getPlatform());
-                preStat.setString(5, robot.getBrowser());
-                preStat.setString(6, robot.getVersion());
-                preStat.setString(7, robot.getActive());
-                preStat.setString(8, robot.getDescription());
-                preStat.setString(9, robot.getUserAgent());
+                int i = 1;
+                preStat.setString(i++, robot.getRobot());
+                preStat.setString(i++, robot.getHost());
+                preStat.setString(i++, robot.getPort());
+                preStat.setString(i++, robot.getPlatform());
+                preStat.setString(i++, robot.getBrowser());
+                preStat.setString(i++, robot.getVersion());
+                preStat.setString(i++, robot.getActive());
+                preStat.setString(i++, robot.getDescription());
+                preStat.setString(i++, robot.getUserAgent());
+                preStat.setString(i++, robot.getScreenSize());
+                preStat.setString(i++, StringUtil.isNullOrEmpty(robot.getHostUser()) ? null : robot.getHostUser());
+                preStat.setString(i++, StringUtil.isNullOrEmpty(robot.getHostPassword()) ? null : robot.getHostPassword());
+                preStat.setString(i++, robot.getRobotDecli());
 
                 preStat.executeUpdate();
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -427,7 +389,14 @@ public class RobotDAO implements IRobotDAO {
         MessageEvent msg = null;
         StringBuilder query = new StringBuilder();
         query.append("UPDATE robot SET robot= ? , host = ? , port = ? ,");
-        query.append("platform = ?, browser = ? , version = ?, active=?, description = ?, useragent = ? WHERE robotID = ?");
+        query.append("platform = ?, browser = ? , version = ?, active=?, description = ?, useragent = ?, screensize = ?, robotdecli = ?");
+        if (robot.getHostUser() != null) {
+            query.append(", host_user = ?");
+        }
+        if (robot.getHostPassword() != null) {
+            query.append(", host_password = ?");
+        }
+        query.append("WHERE robotID = ?");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -437,16 +406,25 @@ public class RobotDAO implements IRobotDAO {
         try {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
-                preStat.setString(1, robot.getRobot());
-                preStat.setString(2, robot.getHost());
-                preStat.setString(3, robot.getPort());
-                preStat.setString(4, robot.getPlatform());
-                preStat.setString(5, robot.getBrowser());
-                preStat.setString(6, robot.getVersion());
-                preStat.setString(7, robot.getActive());
-                preStat.setString(8, robot.getDescription());
-                preStat.setString(9, robot.getUserAgent());
-                preStat.setInt(10, robot.getRobotID());
+                int cpt = 1;
+                preStat.setString(cpt++, robot.getRobot());
+                preStat.setString(cpt++, robot.getHost());
+                preStat.setString(cpt++, robot.getPort());
+                preStat.setString(cpt++, robot.getPlatform());
+                preStat.setString(cpt++, robot.getBrowser());
+                preStat.setString(cpt++, robot.getVersion());
+                preStat.setString(cpt++, robot.getActive());
+                preStat.setString(cpt++, robot.getDescription());
+                preStat.setString(cpt++, robot.getUserAgent());
+                preStat.setString(cpt++, robot.getScreenSize());
+                preStat.setString(cpt++, robot.getRobotDecli());
+                if (robot.getHostUser() != null) {
+                    preStat.setString(cpt++, robot.getHostUser());
+                }
+                if (robot.getHostPassword() != null) {
+                    preStat.setString(cpt++, robot.getHostPassword());
+                }
+                preStat.setInt(cpt++, robot.getRobotID());
 
                 preStat.executeUpdate();
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -486,9 +464,14 @@ public class RobotDAO implements IRobotDAO {
         String active = ParameterParserUtil.parseStringParam(rs.getString("active"), "");
         String description = ParameterParserUtil.parseStringParam(rs.getString("description"), "");
         String userAgent = ParameterParserUtil.parseStringParam(rs.getString("useragent"), "");
+        String screenSize = ParameterParserUtil.parseStringParam(rs.getString("screensize"), "");
+        String user = ParameterParserUtil.parseStringParam(rs.getString("host_user"), "");
+        String password = ParameterParserUtil.parseStringParam(rs.getString("host_password"), "");
+        String robotDecli = ParameterParserUtil.parseStringParam(rs.getString("robotdecli"), "");
+
         //TODO remove when working in test with mockito and autowired
         factoryRobot = new FactoryRobot();
-        return factoryRobot.create(robotID, robot, host, port, platform, browser, version, active, description, userAgent);
+        return factoryRobot.create(robotID, robot, host, port, platform, browser, version, active, description, userAgent, screenSize, user, password, robotDecli);
     }
 
     @Override
@@ -516,6 +499,8 @@ public class RobotDAO implements IRobotDAO {
             searchSQL.append(" or `robot` like ?");
             searchSQL.append(" or `browser` like ?");
             searchSQL.append(" or `useragent` like ?");
+            searchSQL.append(" or `screensize` like ?");
+            searchSQL.append(" or `robotdecli` like ?");
             searchSQL.append(" or `version` like ?)");
         }
         if (individualSearch != null && !individualSearch.isEmpty()) {
@@ -535,10 +520,13 @@ public class RobotDAO implements IRobotDAO {
             LOG.debug("SQL : " + query.toString());
         }
         try (Connection connection = databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+                PreparedStatement preStat = connection.prepareStatement(query.toString());
+        		Statement stm = connection.createStatement();) {
 
             int i = 1;
             if (!Strings.isNullOrEmpty(searchTerm)) {
+                preStat.setString(i++, "%" + searchTerm + "%");
+                preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -551,35 +539,38 @@ public class RobotDAO implements IRobotDAO {
             for (String individualColumnSearchValue : individalColumnSearchValues) {
                 preStat.setString(i++, individualColumnSearchValue);
             }
+            
+            try(ResultSet resultSet = preStat.executeQuery();
+            		ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");) {
+            	//gets the data
+                while (resultSet.next()) {
+                    distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
+                }
+                //get the total number of rows
+                int nrTotalRows = 0;
 
-            ResultSet resultSet = preStat.executeQuery();
+                if (rowSet != null && rowSet.next()) {
+                    nrTotalRows = rowSet.getInt(1);
+                }
 
-            //gets the data
-            while (resultSet.next()) {
-                distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
-            }
-
-            //get the total number of rows
-            resultSet = preStat.executeQuery("SELECT FOUND_ROWS()");
-            int nrTotalRows = 0;
-
-            if (resultSet != null && resultSet.next()) {
-                nrTotalRows = resultSet.getInt(1);
-            }
-
-            if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
-                LOG.error("Partial Result in the query.");
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else if (distinctValues.size() <= 0) {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            } else {
-                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
-                msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
-                answer = new AnswerList(distinctValues, nrTotalRows);
-            }
+                if (distinctValues.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
+                    LOG.error("Partial Result in the query.");
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else if (distinctValues.size() <= 0) {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                } else {
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                    answer = new AnswerList(distinctValues, nrTotalRows);
+                }
+            }catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+            } 
         } catch (Exception e) {
             LOG.warn("Unable to execute query : " + e.toString());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",

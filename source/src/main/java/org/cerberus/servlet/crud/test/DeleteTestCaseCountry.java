@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -18,13 +20,13 @@
 package org.cerberus.servlet.crud.test;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.TestCase;
 import org.cerberus.crud.entity.TestCaseCountry;
@@ -53,6 +55,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "DeleteTestCaseCountry", urlPatterns = {"/DeleteTestCaseCountry"})
 public class DeleteTestCaseCountry extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(DeleteTestCaseCountry.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -154,10 +158,10 @@ public class DeleteTestCaseCountry extends HttpServlet {
 
                     if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                         /**
-                         * Delete was succesfull. Adding Log entry.
+                         * Delete was successful. Adding Log entry.
                          */
                         ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                        logEventService.createPrivateCalls("/DeleteTestCaseCountry", "DELETE", "Delete TestCaseCountry : ['" + test + "'|'" + testcase + "'|'" + country + "']", request);
+                        logEventService.createForPrivateCalls("/DeleteTestCaseCountry", "DELETE", "Delete TestCaseCountry : ['" + test + "'|'" + testcase + "'|'" + country + "']", request);
                     }
                 }
             }
@@ -190,11 +194,9 @@ public class DeleteTestCaseCountry extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(DeleteTestCaseCountry.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(DeleteTestCaseCountry.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -213,11 +215,9 @@ public class DeleteTestCaseCountry extends HttpServlet {
             processRequest(request, response);
 
         } catch (CerberusException ex) {
-            Logger.getLogger(DeleteTestCaseCountry.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         } catch (JSONException ex) {
-            Logger.getLogger(DeleteTestCaseCountry.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 

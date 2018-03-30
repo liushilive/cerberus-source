@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,12 +22,12 @@ package org.cerberus.crud.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.ITestCaseLabelDAO;
 import org.cerberus.engine.entity.MessageEvent;
 
 import org.cerberus.engine.entity.MessageGeneral;
-import org.cerberus.crud.entity.TestCaseCountry;
 import org.cerberus.crud.entity.TestCaseLabel;
 import org.cerberus.crud.service.ITestCaseLabelService;
 import org.cerberus.enums.MessageEventEnum;
@@ -50,34 +50,38 @@ public class TestCaseLabelService implements ITestCaseLabelService {
     @Autowired
     private ITestCaseLabelDAO testCaseLabelDAO;
 
-    private static final Logger LOG = Logger.getLogger("TestCaseLabelService");
+    private static final Logger LOG = LogManager.getLogger("TestCaseLabelService");
 
     private final String OBJECT_NAME = "TestCaseLabel";
 
     @Override
-    public AnswerItem readByKey(Integer id) {
-        return testCaseLabelDAO.readByKey(id);
+    public AnswerItem readByKeyTech(Integer id) {
+        return testCaseLabelDAO.readByKeyTech(id);
+    }
+
+    @Override
+    public AnswerItem readByKey(String test, String testCase, Integer id) {
+        return testCaseLabelDAO.readByKey(test, testCase, id);
     }
 
     @Override
     public AnswerList readByCriteria(int startPosition, int length, String columnName, String sort, String searchParameter, Map<String, List<String>> individualSearch) {
         return testCaseLabelDAO.readByCriteria(startPosition, length, columnName, sort, searchParameter, individualSearch);
     }
-    
+
     @Override
     public AnswerList readByTestTestCase(String test, String testCase) {
         return testCaseLabelDAO.readByTestTestCase(test, testCase);
     }
-    
+
     @Override
     public AnswerList readAll() {
-        return readByCriteria( 0, 0, "sort", "asc", null, null);
+        return readByCriteria(0, 0, "sort", "asc", null, null);
     }
-
 
     @Override
     public boolean exist(Integer id) {
-        AnswerItem objectAnswer = readByKey(id);
+        AnswerItem objectAnswer = readByKeyTech(id);
         return (objectAnswer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) && (objectAnswer.getItem() != null); // Call was successfull and object was found.
     }
 
@@ -85,7 +89,7 @@ public class TestCaseLabelService implements ITestCaseLabelService {
     public Answer create(TestCaseLabel object) {
         return testCaseLabelDAO.create(object);
     }
-    
+
     @Override
     public Answer createList(List<TestCaseLabel> objectList) {
         Answer ans = new Answer(null);
@@ -99,7 +103,7 @@ public class TestCaseLabelService implements ITestCaseLabelService {
     public Answer delete(TestCaseLabel object) {
         return testCaseLabelDAO.delete(object);
     }
-    
+
     @Override
     public Answer deleteList(List<TestCaseLabel> objectList) {
         Answer ans = new Answer(null);
@@ -113,7 +117,7 @@ public class TestCaseLabelService implements ITestCaseLabelService {
     public Answer update(TestCaseLabel object) {
         return testCaseLabelDAO.update(object);
     }
-    
+
     @Override
     public TestCaseLabel convert(AnswerItem answerItem) throws CerberusException {
         if (answerItem.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
@@ -140,7 +144,7 @@ public class TestCaseLabelService implements ITestCaseLabelService {
         }
         throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR));
     }
-    
+
     @Override
     public Answer compareListAndUpdateInsertDeleteElements(String test, String testCase, List<TestCaseLabel> newList) {
         Answer ans = new Answer(null);
@@ -154,8 +158,7 @@ public class TestCaseLabelService implements ITestCaseLabelService {
         } catch (CerberusException ex) {
             LOG.error(ex);
         }
-        LOG.debug("Size before : " + newList.size());
-        LOG.debug("Before : " + newList);
+
         /**
          * Update and Create all objects database Objects from newList
          */
@@ -171,13 +174,6 @@ public class TestCaseLabelService implements ITestCaseLabelService {
                     listToUpdateOrInsert.remove(objectDifference);
                 }
             }
-        }
-        if (!listToUpdateOrInsert.isEmpty()) {
-                    LOG.debug("Create Size before : " + listToUpdateOrInsert.size());
-        LOG.debug("Create Before : " + listToUpdateOrInsert);
-
-            ans = this.createList(listToUpdateOrInsert);
-            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
         }
 
         /**
@@ -198,6 +194,12 @@ public class TestCaseLabelService implements ITestCaseLabelService {
             ans = this.deleteList(listToDelete);
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
         }
+
+        // We insert only at the end (after deletion of all potencial enreg - linked with #1281)
+        if (!listToUpdateOrInsert.isEmpty()) {
+            ans = this.createList(listToUpdateOrInsert);
+            finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, (Answer) ans);
+        }
         return finalAnswer;
     }
 
@@ -213,5 +215,4 @@ public class TestCaseLabelService implements ITestCaseLabelService {
         return createList(listToCreate);
     }
 
-    
 }

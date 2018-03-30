@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,27 +19,36 @@
  */
 package org.cerberus.servlet.crud.testcampaign;
 
-import org.cerberus.engine.entity.MessageEvent;
 import com.google.common.base.*;
 import com.google.gson.Gson;
-
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.cerberus.crud.entity.*;
-import org.cerberus.crud.service.*;
-import org.cerberus.crud.service.impl.CampaignContentService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.cerberus.crud.entity.Campaign;
+import org.cerberus.crud.entity.CampaignLabel;
+import org.cerberus.crud.entity.CampaignParameter;
+import org.cerberus.crud.entity.TestCase;
+import org.cerberus.crud.service.ICampaignLabelService;
+import org.cerberus.crud.service.ICampaignParameterService;
+import org.cerberus.crud.service.ICampaignService;
+import org.cerberus.crud.service.ITestCaseService;
+import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
 import org.cerberus.util.answer.AnswerUtil;
+import org.cerberus.util.servlet.ServletUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -52,16 +61,17 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "ReadCampaign", urlPatterns = {"/ReadCampaign"})
 public class ReadCampaign extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(ReadCampaign.class);
     private ICampaignService campaignService;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -71,18 +81,24 @@ public class ReadCampaign extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("utf8");
 
+        // Calling Servlet Transversal Util.
+        ServletUtil.servletStart(request);
+
+        // Global boolean on the servlet that define if the user has permition to edit and delete object.
+        boolean userHasPermissions = request.isUserInRole("RunTest");
+
         try {
             JSONObject jsonResponse = new JSONObject();
             AnswerItem answer = new AnswerItem(new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED));
 
-            if (request.getParameter("param") == null && Strings.isNullOrEmpty(columnName)) {
-                answer = findCampaignList(appContext, request);
+            if (request.getParameter("campaign") == null && Strings.isNullOrEmpty(columnName)) {
+                answer = findCampaignList(userHasPermissions, appContext, request);
                 jsonResponse = (JSONObject) answer.getItem();
             } else if (!Strings.isNullOrEmpty(columnName)) {
                 answer = findDistinctValuesOfColumn(appContext, request, columnName);
                 jsonResponse = (JSONObject) answer.getItem();
             } else {
-                answer = findCampaignByKey(request.getParameter("param"), true, appContext, request);
+                answer = findCampaignByKey(request.getParameter("campaign"), userHasPermissions, appContext, request);
                 jsonResponse = (JSONObject) answer.getItem();
             }
 
@@ -91,21 +107,20 @@ public class ReadCampaign extends HttpServlet {
 
             response.getWriter().print(jsonResponse.toString());
         } catch (JSONException ex) {
-            org.apache.log4j.Logger.getLogger(ReadTestBattery.class.getName()).log(org.apache.log4j.Level.ERROR, null, ex);
+            LOG.warn(ex);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-
     /**
      * Handles the HTTP <code>GET</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -116,10 +131,10 @@ public class ReadCampaign extends HttpServlet {
     /**
      * Handles the HTTP <code>POST</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -137,7 +152,7 @@ public class ReadCampaign extends HttpServlet {
         return "Short description";
     }// </editor-fold>
 
-    private AnswerItem findCampaignList(ApplicationContext appContext, HttpServletRequest request) throws JSONException {
+    private AnswerItem findCampaignList(Boolean userHasPermissions, ApplicationContext appContext, HttpServletRequest request) throws JSONException {
         AnswerItem item = new AnswerItem();
         AnswerList answer = new AnswerList();
         JSONObject resp = new JSONObject();
@@ -151,6 +166,7 @@ public class ReadCampaign extends HttpServlet {
         String columnToSort[] = sColumns.split(",");
         String columnName = columnToSort[columnToSortParameter];
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
 
         campaignService = appContext.getBean(ICampaignService.class);
 
@@ -158,7 +174,11 @@ public class ReadCampaign extends HttpServlet {
         for (int a = 0; a < columnToSort.length; a++) {
             if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
                 List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+                if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                }  
             }
         }
 
@@ -173,7 +193,7 @@ public class ReadCampaign extends HttpServlet {
         }
 
         resp.put("contentTable", jsonArray);
-        resp.put("hasPermissions", true);
+        resp.put("hasPermissions", userHasPermissions);
         resp.put("iTotalRecords", answer.getTotalRows());
         resp.put("iTotalDisplayRecords", answer.getTotalRows());
 
@@ -189,15 +209,21 @@ public class ReadCampaign extends HttpServlet {
         return result;
     }
 
-    private JSONObject convertCampaignContenttoJSONObject(CampaignContent campaign) throws JSONException {
+    private JSONObject convertCampaignParametertoJSONObject(CampaignParameter campaign) throws JSONException {
         Gson gson = new Gson();
         JSONObject result = new JSONObject(gson.toJson(campaign));
         return result;
     }
 
-    private JSONObject convertCampaignParametertoJSONObject(CampaignParameter campaign) throws JSONException {
+    private JSONObject convertCampaignLabeltoJSONObject(CampaignLabel campaign) throws JSONException {
         Gson gson = new Gson();
         JSONObject result = new JSONObject(gson.toJson(campaign));
+        return result;
+    }
+    
+    private JSONObject convertTestCasetoJSONObject(TestCase testCase) throws JSONException {
+        Gson gson = new Gson();
+        JSONObject result = new JSONObject(gson.toJson(testCase));
         return result;
     }
 
@@ -213,19 +239,6 @@ public class ReadCampaign extends HttpServlet {
             p = (Campaign) answer.getItem();
             JSONObject response = convertCampaigntoJSONObject(p);
 
-            if (request.getParameter("battery") != null) {
-                ICampaignContentService campaignContentService = appContext.getBean(ICampaignContentService.class);
-                AnswerList resp = campaignContentService.readByCampaign(key);
-                if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
-                    JSONArray a = new JSONArray();
-                    for (Object c : resp.getDataList()) {
-                        CampaignContent cc = (CampaignContent) c;
-                        JSONObject ccJSON = convertCampaignContenttoJSONObject(cc);
-                        a.put(ccJSON);
-                    }
-                    response.put("battery", a);
-                }
-            }
             if (request.getParameter("parameter") != null) {
                 ICampaignParameterService campaignParameterService = appContext.getBean(ICampaignParameterService.class);
                 AnswerList resp = campaignParameterService.readByCampaign(key);
@@ -236,6 +249,32 @@ public class ReadCampaign extends HttpServlet {
                         a.put(convertCampaignParametertoJSONObject(cc));
                     }
                     response.put("parameter", a);
+                }
+            }
+            if (request.getParameter("label") != null) {
+                ICampaignLabelService campaignLabelService = appContext.getBean(ICampaignLabelService.class);
+                AnswerList resp = campaignLabelService.readByVarious(key);
+                if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
+                    JSONArray a = new JSONArray();
+                    for (Object c : resp.getDataList()) {
+                        CampaignLabel cc = (CampaignLabel) c;
+                        a.put(convertCampaignLabeltoJSONObject(cc));
+                    }
+                    response.put("label", a);
+                }
+            }
+            if (request.getParameter("testcase") != null) {
+                ITestCaseService testCaseService = appContext.getBean(ITestCaseService.class);
+                String[] campaignList = new String[1];
+                campaignList[0] = key;
+                AnswerItem<List<TestCase>> resp = testCaseService.findTestCaseByCampaignNameAndCountries(key, null);
+                if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
+                    JSONArray a = new JSONArray();
+                    for (Object c : resp.getItem()) {
+                        TestCase cc = (TestCase) c;
+                        a.put(convertTestCasetoJSONObject(cc));
+                    }
+                    response.put("testcase", a);
                 }
             }
             object.put("contentTable", response);
@@ -257,11 +296,17 @@ public class ReadCampaign extends HttpServlet {
         String sColumns = ParameterParserUtil.parseStringParam(request.getParameter("sColumns"), "para,valC,valS,descr");
         String columnToSort[] = sColumns.split(",");
 
-        Map<String, List<String>> individualSearch = new HashMap<String, List<String>>();
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
+
+        Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
             if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
-                List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+            	List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
+            	if(individualLike.contains(columnToSort[a])) {
+                	individualSearch.put(columnToSort[a]+":like", search);
+                }else {
+                	individualSearch.put(columnToSort[a], search);
+                } 
             }
         }
 

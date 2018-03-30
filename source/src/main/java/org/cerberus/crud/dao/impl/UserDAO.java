@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -25,18 +27,15 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.IUserDAO;
-import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.User;
 import org.cerberus.crud.factory.IFactoryUser;
 import org.cerberus.crud.factory.impl.FactoryUser;
 import org.cerberus.database.DatabaseSpring;
+import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.exception.CerberusException;
-import org.cerberus.log.MyLogger;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.SqlUtil;
 import org.cerberus.util.StringUtil;
@@ -62,7 +61,7 @@ public class UserDAO implements IUserDAO {
     @Autowired
     private IFactoryUser factoryUser;
 
-    private static final Logger LOG = Logger.getLogger(UserDAO.class);
+    private static final Logger LOG = LogManager.getLogger(UserDAO.class);
 
     private final String OBJECT_NAME = "User";
     private final String SQL_DUPLICATED_CODE = "23000";
@@ -71,7 +70,7 @@ public class UserDAO implements IUserDAO {
     @Override
     public User findUserByKey(String login) {
         User result = null;
-        final String query = "SELECT * FROM user u WHERE u.login = ? ";
+        final String query = "SELECT * FROM user usr WHERE usr.login = ? ";
 
         Connection connection = this.databaseSpring.connect();
         try {
@@ -85,24 +84,24 @@ public class UserDAO implements IUserDAO {
                         result = this.loadFromResultSet(resultSet);
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return result;
@@ -111,7 +110,7 @@ public class UserDAO implements IUserDAO {
     @Override
     public List<User> findAllUser() {
         List<User> list = null;
-        final String query = "SELECT * FROM user ORDER BY userid";
+        final String query = "SELECT * FROM user usr ORDER BY userid";
 
         Connection connection = this.databaseSpring.connect();
         try {
@@ -125,24 +124,24 @@ public class UserDAO implements IUserDAO {
                         list.add(user);
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return list;
@@ -176,24 +175,24 @@ public class UserDAO implements IUserDAO {
                         bool = true;
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return bool;
@@ -212,19 +211,19 @@ public class UserDAO implements IUserDAO {
 
                 bool = preStat.executeUpdate() > 0;
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return bool;
@@ -262,26 +261,26 @@ public class UserDAO implements IUserDAO {
 
                 bool = preStat.executeUpdate() > 0;
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return bool;
     }
 
     @Override
-    public AnswerItem<User> updateUserPassword(User user, String password, String requestNewPassword){
+    public AnswerItem<User> updateUserPassword(User user, String password, String requestNewPassword) {
         AnswerItem<User> answer = new AnswerItem<User>();
         MessageEvent msg;
         boolean res = false;
@@ -297,16 +296,16 @@ public class UserDAO implements IUserDAO {
 
                 res = preStat.executeUpdate() > 0;
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Update Password - Unable to execute query"));        
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Update Password - Unable to execute query"));
             } finally {
-                if(preStat != null){
+                if (preStat != null) {
                     preStat.close();
-                }                
+                }
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
             msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Update Password - Unable to execute query"));
         } finally {
@@ -315,7 +314,7 @@ public class UserDAO implements IUserDAO {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
 
@@ -328,13 +327,13 @@ public class UserDAO implements IUserDAO {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "User").
                     replace("%OPERATION%", "Update Password").replace("%REASON%", "Your password was not updated. "
-                            + "Please contact your Cerberus' administrator to learn more information."));
+                    + "Please contact your Cerberus' administrator to learn more information."));
         }
-        
+
         answer.setResultMessage(msg);
         return answer;
     }
-    
+
     @Override
     public Answer clearResetPasswordToken(User user) {
         Answer ans = new Answer();
@@ -378,30 +377,30 @@ public class UserDAO implements IUserDAO {
                         bool = rs.getString("Password").equals(rs.getString("currentPassword"));
                     }
                 } catch (SQLException ex) {
-                    MyLogger.log(UserDAO.class.getName(), Level.FATAL, ex.toString());
+                    LOG.warn(ex.toString());
                 } finally {
                     rs.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
 
         return bool;
     }
-    
+
     @Override
     public boolean verifyResetPasswordToken(User user, String resetPasswordToken) {
         boolean bool = false;
@@ -419,52 +418,28 @@ public class UserDAO implements IUserDAO {
                         bool = rs.getString("resetPasswordToken").equals(rs.getString("currentPassword"));
                     }
                 } catch (SQLException ex) {
-                    MyLogger.log(UserDAO.class.getName(), Level.FATAL, ex.toString());
+                    LOG.warn(ex.toString());
                 } finally {
                     rs.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
 
         return bool;
-    }
-
-    private User loadFromResultSet(ResultSet rs) throws SQLException {
-        int userID = ParameterParserUtil.parseIntegerParam(rs.getString("userid"), 0);
-        String login = ParameterParserUtil.parseStringParam(rs.getString("login"), "");
-        String password = ParameterParserUtil.parseStringParam(rs.getString("password"), "");
-        String resetPasswordToken = ParameterParserUtil.parseStringParam(rs.getString("resetPasswordToken"), "");
-        String request = ParameterParserUtil.parseStringParam(rs.getString("request"), "");
-        String name = ParameterParserUtil.parseStringParam(rs.getString("name"), "");
-        String team = ParameterParserUtil.parseStringParam(rs.getString("team"), "");
-        String language = ParameterParserUtil.parseStringParam(rs.getString("language"), "");
-        String reportingFavorite = ParameterParserUtil.parseStringParam(rs.getString("reportingFavorite"), "");
-        String robotHost = ParameterParserUtil.parseStringParam(rs.getString("robotHost"), "");
-        String defaultSystem = ParameterParserUtil.parseStringParam(rs.getString("defaultSystem"), "");
-        String email = ParameterParserUtil.parseStringParam(rs.getString("email"), "");
-        String robotPort = ParameterParserUtil.parseStringParam(rs.getString("robotPort"), "");
-        String robotPlatform = ParameterParserUtil.parseStringParam(rs.getString("robotPlatform"), "");
-        String robotBrowser = ParameterParserUtil.parseStringParam(rs.getString("robotBrowser"), "");
-        String robotVersion = ParameterParserUtil.parseStringParam(rs.getString("robotVersion"), "");
-        String robot = ParameterParserUtil.parseStringParam(rs.getString("robot"), "");
-        String userPreferences = ParameterParserUtil.parseStringParam(rs.getString("userPreferences"), "");
-        //TODO remove when working in test with mockito and autowired
-        factoryUser = new FactoryUser();
-        return factoryUser.create(userID, login, password,resetPasswordToken, request, name, team, language, reportingFavorite, robotHost, robotPort, robotPlatform, robotBrowser, robotVersion, robot, defaultSystem, email, userPreferences);
     }
 
     @Override
@@ -474,24 +449,24 @@ public class UserDAO implements IUserDAO {
         StringBuilder searchSQL = new StringBuilder();
 
         StringBuilder query = new StringBuilder();
-        query.append("SELECT * FROM user ");
+        query.append("SELECT * FROM user usr");
 
-        gSearch.append(" where (`login` like '%");
+        gSearch.append(" where (usr.`login` like '%");
         gSearch.append(searchTerm);
         gSearch.append("%'");
-        gSearch.append(" or `name` like '%");
+        gSearch.append(" or usr.`name` like '%");
         gSearch.append(searchTerm);
         gSearch.append("%'");
-        gSearch.append(" or `team` like '%");
+        gSearch.append(" or usr.`team` like '%");
         gSearch.append(searchTerm);
         gSearch.append("%'");
-        gSearch.append(" or `defaultSystem` like '%");
+        gSearch.append(" or usr.`defaultSystem` like '%");
         gSearch.append(searchTerm);
         gSearch.append("%'");
-        gSearch.append(" or `email` like '%");
+        gSearch.append(" or usr.`email` like '%");
         gSearch.append(searchTerm);
         gSearch.append("%'");
-        gSearch.append(" or `request` like '%");
+        gSearch.append(" or usr.`request` like '%");
         gSearch.append(searchTerm);
         gSearch.append("%')");
 
@@ -533,26 +508,26 @@ public class UserDAO implements IUserDAO {
                     }
 
                 } catch (SQLException exception) {
-                    MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
 
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
 
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, e.toString());
+                LOG.warn(e.toString());
             }
         }
 
@@ -609,26 +584,26 @@ public class UserDAO implements IUserDAO {
                     }
 
                 } catch (SQLException exception) {
-                    MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
 
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
 
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return result;
@@ -638,11 +613,11 @@ public class UserDAO implements IUserDAO {
     @Override
     public List<User> findAllUserBySystem(String system) {
         List<User> list = null;
-        final String query = "SELECT * " +
-                "FROM `user` u, usersystem us " +
-                "WHERE u.login = us.login " +
-                "AND us.system = ? " +
-                "ORDER BY u.login";
+        final String query = "SELECT * "
+                + "FROM `user` usr, usersystem us "
+                + "WHERE usr.login = us.login "
+                + "AND us.system = ? "
+                + "ORDER BY usr.login";
 
         Connection connection = this.databaseSpring.connect();
         try {
@@ -658,35 +633,34 @@ public class UserDAO implements IUserDAO {
                         list.add(user);
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(UserDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(UserDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return list;
     }
-    
-    
+
     @Override
     public AnswerItem readByKey(String login) {
         AnswerItem ans = new AnswerItem();
         User result;
-        final String query = "SELECT * FROM `user` WHERE `login` = ?";
+        final String query = "SELECT * FROM `user` usr WHERE usr.`login` = ?";
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
 
@@ -749,24 +723,24 @@ public class UserDAO implements IUserDAO {
         StringBuilder query = new StringBuilder();
         //SQL_CALC_FOUND_ROWS allows to retrieve the total number of columns by disrearding the limit clauses that 
         //were applied -- used for pagination p
-        query.append("SELECT SQL_CALC_FOUND_ROWS * FROM user ");
+        query.append("SELECT SQL_CALC_FOUND_ROWS * FROM user usr ");
 
         searchSQL.append(" where 1=1 ");
 
         if (!StringUtil.isNullOrEmpty(searchTerm)) {
-            searchSQL.append(" and (`login` like ?");
-            searchSQL.append(" or `name` like ?");
-            searchSQL.append(" or `team` like ?");
-            searchSQL.append(" or `language` like ?");
-            searchSQL.append(" or `ReportingFavorite` like ?");
-            searchSQL.append(" or `robotHost` like ?");
-            searchSQL.append(" or `robotPort` like ?");
-            searchSQL.append(" or `robotPlatform` like ?");
-            searchSQL.append(" or `robotBrowser` like ?");
-            searchSQL.append(" or `robotVersion` like ?");
-            searchSQL.append(" or `robot` like ?");
-            searchSQL.append(" or `DefaultSystem` like ?");
-            searchSQL.append(" or `Email` like ?)");
+            searchSQL.append(" and (usr.`login` like ?");
+            searchSQL.append(" or usr.`name` like ?");
+            searchSQL.append(" or usr.`team` like ?");
+            searchSQL.append(" or usr.`language` like ?");
+            searchSQL.append(" or usr.`ReportingFavorite` like ?");
+            searchSQL.append(" or usr.`robotHost` like ?");
+            searchSQL.append(" or usr.`robotPort` like ?");
+            searchSQL.append(" or usr.`robotPlatform` like ?");
+            searchSQL.append(" or usr.`robotBrowser` like ?");
+            searchSQL.append(" or usr.`robotVersion` like ?");
+            searchSQL.append(" or usr.`robot` like ?");
+            searchSQL.append(" or usr.`DefaultSystem` like ?");
+            searchSQL.append(" or usr.`Email` like ?)");
         }
         if (!StringUtil.isNullOrEmpty(individualSearch)) {
             searchSQL.append(" and (`").append(individualSearch).append("`)");
@@ -792,21 +766,21 @@ public class UserDAO implements IUserDAO {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
                 int i = 1;
-                 if (!StringUtil.isNullOrEmpty(searchTerm)) {
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                     preStat.setString(i++, "%" + searchTerm + "%");
-                 }
+                if (!StringUtil.isNullOrEmpty(searchTerm)) {
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                    preStat.setString(i++, "%" + searchTerm + "%");
+                }
                 ResultSet resultSet = preStat.executeQuery();
                 try {
                     //gets the data
@@ -887,24 +861,29 @@ public class UserDAO implements IUserDAO {
         StringBuilder query = new StringBuilder();
         //SQL_CALC_FOUND_ROWS allows to retrieve the total number of columns by disrearding the limit clauses that
         //were applied -- used for pagination p
-        query.append("SELECT SQL_CALC_FOUND_ROWS * FROM user ");
+        query.append("SELECT DISTINCT SQL_CALC_FOUND_ROWS usr.* FROM user usr ");
+
+        if (!StringUtil.isNullOrEmpty(searchTerm)) {
+            query.append("LEFT JOIN usergroup usg ON usg.`Login` = usr.`Login`");
+        }
 
         searchSQL.append(" where 1=1 ");
 
         if (!StringUtil.isNullOrEmpty(searchTerm)) {
-            searchSQL.append(" and (`login` like ?");
-            searchSQL.append(" or `name` like ?");
-            searchSQL.append(" or `team` like ?");
-            searchSQL.append(" or `language` like ?");
-            searchSQL.append(" or `ReportingFavorite` like ?");
-            searchSQL.append(" or `robotHost` like ?");
-            searchSQL.append(" or `robotPort` like ?");
-            searchSQL.append(" or `robotPlatform` like ?");
-            searchSQL.append(" or `robotBrowser` like ?");
-            searchSQL.append(" or `robotVersion` like ?");
-            searchSQL.append(" or `robot` like ?");
-            searchSQL.append(" or `DefaultSystem` like ?");
-            searchSQL.append(" or `Email` like ?)");
+            searchSQL.append(" and (usr.`login` like ?");
+            searchSQL.append(" or usr.`name` like ?");
+            searchSQL.append(" or usr.`team` like ?");
+            searchSQL.append(" or usr.`language` like ?");
+            searchSQL.append(" or usr.`ReportingFavorite` like ?");
+            searchSQL.append(" or usr.`robotHost` like ?");
+            searchSQL.append(" or usr.`robotPort` like ?");
+            searchSQL.append(" or usr.`robotPlatform` like ?");
+            searchSQL.append(" or usr.`robotBrowser` like ?");
+            searchSQL.append(" or usr.`robotVersion` like ?");
+            searchSQL.append(" or usr.`robot` like ?");
+            searchSQL.append(" or usr.`DefaultSystem` like ?");
+            searchSQL.append(" or usr.`Email` like ?");
+            searchSQL.append(" or usg.`GroupName` like ?)");
         }
         if (individualSearch != null && !individualSearch.isEmpty()) {
             searchSQL.append(" and ( 1=1 ");
@@ -937,6 +916,7 @@ public class UserDAO implements IUserDAO {
             try {
                 int i = 1;
                 if (!StringUtil.isNullOrEmpty(searchTerm)) {
+                    preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
@@ -1182,4 +1162,29 @@ public class UserDAO implements IUserDAO {
         }
         return new Answer(msg);
     }
+
+    private User loadFromResultSet(ResultSet rs) throws SQLException {
+        int userID = ParameterParserUtil.parseIntegerParam(rs.getString("usr.userid"), 0);
+        String login = ParameterParserUtil.parseStringParam(rs.getString("usr.login"), "");
+        String password = ParameterParserUtil.parseStringParam(rs.getString("usr.password"), "");
+        String resetPasswordToken = ParameterParserUtil.parseStringParam(rs.getString("usr.resetPasswordToken"), "");
+        String request = ParameterParserUtil.parseStringParam(rs.getString("usr.request"), "");
+        String name = ParameterParserUtil.parseStringParam(rs.getString("usr.name"), "");
+        String team = ParameterParserUtil.parseStringParam(rs.getString("usr.team"), "");
+        String language = ParameterParserUtil.parseStringParam(rs.getString("usr.language"), "");
+        String reportingFavorite = ParameterParserUtil.parseStringParam(rs.getString("usr.reportingFavorite"), "");
+        String robotHost = ParameterParserUtil.parseStringParam(rs.getString("usr.robotHost"), "");
+        String defaultSystem = ParameterParserUtil.parseStringParam(rs.getString("usr.defaultSystem"), "");
+        String email = ParameterParserUtil.parseStringParam(rs.getString("usr.email"), "");
+        String robotPort = ParameterParserUtil.parseStringParam(rs.getString("usr.robotPort"), "");
+        String robotPlatform = ParameterParserUtil.parseStringParam(rs.getString("usr.robotPlatform"), "");
+        String robotBrowser = ParameterParserUtil.parseStringParam(rs.getString("usr.robotBrowser"), "");
+        String robotVersion = ParameterParserUtil.parseStringParam(rs.getString("usr.robotVersion"), "");
+        String robot = ParameterParserUtil.parseStringParam(rs.getString("usr.robot"), "");
+        String userPreferences = ParameterParserUtil.parseStringParam(rs.getString("usr.userPreferences"), "");
+        //TODO remove when working in test with mockito and autowired
+        factoryUser = new FactoryUser();
+        return factoryUser.create(userID, login, password, resetPasswordToken, request, name, team, language, reportingFavorite, robotHost, robotPort, robotPlatform, robotBrowser, robotVersion, robot, defaultSystem, email, userPreferences);
+    }
+
 }

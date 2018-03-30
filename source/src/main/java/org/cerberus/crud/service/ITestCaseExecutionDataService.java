@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -58,10 +58,28 @@ public interface ITestCaseExecutionDataService {
 
     /**
      *
+     * @param system
+     * @param environment
+     * @param country
+     * @param property
+     * @param cacheExpire
+     * @return
+     */
+    public AnswerItem<TestCaseExecutionData> readLastCacheEntry(String system, String environment, String country, String property, int cacheExpire);
+
+    /**
+     *
      * @param id
      * @return
      */
     public AnswerList<TestCaseExecutionData> readById(long id);
+
+    /**
+     *
+     * @param id
+     * @return
+     */
+    public AnswerList<TestCaseExecutionData> readByIdWithDependency(long id);
 
     /**
      *

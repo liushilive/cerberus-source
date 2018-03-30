@@ -20,6 +20,17 @@
     Created on : 4 déc. 2015, 16:08:55
     Author     : cerberus
 */
+.action-group label {
+	display:block !important;
+}
+
+.many{
+	display:initial!important;
+}
+
+.col-lg-5 input{
+	width: 80% !important;
+}
 
 .separator-left {
     border-left: 1px solid #E3E3E3;
@@ -54,22 +65,50 @@
 }
 
 .step-list li:hover {
-    background-color: #337ab7;
-    color: #FFFFFF;
-    border-color: #337ab7;
+    border-color:#46b8da;
+    background-color:#5bc0de;
+    color:#fff;
     z-index: 2;
 }
 
 .step-list li .active {
-    background-color: #337ab7;
-    color: #FFFFFF;
-    border-color: #337ab7;
+    border-color:#46b8da;
+    background-color:#5bc0de;
+    color:#fff;
     z-index: 2;
 }
 
 .step-list li {
     width: 100%;
     cursor: pointer;
+}
+
+.property-list li {
+    width: 100%;
+    cursor: pointer;
+    padding: 0px;
+    margin-left: 0px;
+}
+
+.property-list li a{
+    padding: 10px 15px;
+    color: #333;
+    font-size: 14px;
+}
+
+.property-list li a:hover {
+    border-color:#eea236;
+    background-color:#f0ad4e;
+    color:#fff;
+    z-index: 2;
+    color: whitesmoke;
+}
+
+.property-list li a .active {
+    border-color:#eea236;
+    background-color:#f0ad4e;
+    color:#fff;
+    z-index: 2;
 }
 
 .step-header {
@@ -86,20 +125,50 @@
 }
 
 .action {
-    height: 80px;
     font-size: 12px;
     background-color: #fff;
     border: 1px solid #e5e5e5;
+    border-left: 8px solid #3498db;
     border-radius: 3px 3px 0 0;
 }
 
-.control {
-    height: 80px;
-    margin-left: 25px;
+.property {
+    padding: 5px;
     font-size: 12px;
-    background-color: #f8f8f8;
     border: 1px solid #e5e5e5;
+    border-left: 6px solid #f0ad4e;
+    border-radius: 3px 3px 0 0;
+}
+@media (min-width: 1200px) {
+    .propertyButtons {
+        margin-top:32px;
+    }
+}
+.control {
+    position:relative;
+    font-size: 11px;
+    background-color: #f8f8f8;
+    padding: 0px;
+    margin-left: -4px;
+    border: 1px solid #e5e5e5;
+    border-left: 8px solid #2ecc71;
     border-radius: 1px 1px 0 0;
+}
+
+.step {
+    font-size: 13px;
+    padding: 0px;
+    border: 0px solid #e5e5e5;
+    background-color: transparent;
+}
+
+.danger {
+    color: #a94442 !important;
+    background-color: #f2dede !important;
+}
+
+.well.list-group-item-danger{
+    background-color: #f2dede;
 }
 
 .no-border{
@@ -131,8 +200,38 @@
 .drag-step-action span {
     display: block;
     text-align: center;
-    margin-top: 45%;
+    margin-top: 17px;
     cursor: move;
+}
+
+.drag-step-action #labelDiv {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-top: -5px;
+}
+
+.drag-step-action #labelDiv span{
+    float: left;
+    margin-top: 0px;
+    margin-left: 2px;
+    margin-right: 2px;
+    cursor: default;
+    font-size: 14px;
+}
+
+@media (min-width: 1200px) {
+    .drag-step-action span {
+        margin-top: 60px;
+    }
+    .drag-step-action #labelDiv {
+        margin-top: 0px;
+    }
+    .drag-step-action #labelDiv span {
+         margin-top: 5px;
+    }
 }
 
 .step-action .content .description {
@@ -229,6 +328,10 @@ color: red !important;
     margin-left: 15px;
 }
 
+.sub-sub-item {
+    margin-left: 30px;
+}
+
 .step-list li.list-group-item-danger:hover {
     background-color: #e74c3c;
     color: #FFFFFF;
@@ -239,8 +342,67 @@ color: red !important;
     color: #FFFFFF;
 }
 
+.list-group-item-warning.active {
+    background-color: #f0ad4e;
+    color: #FFFFFF;
+    border-color: #eea236;
+}
+
+.list-group-item-warning.active:hover {
+    background-color: #f0ad4e;
+    color: #FFFFFF;
+    border-color: #eea236;
+}
+
+.list-group-item-calm.active {
+    border-color:#46b8da;
+    background-color:#5bc0de;
+    color:#fff;
+}
+
+.list-group-item-calm.active:hover {
+    border-color:#46b8da;
+    background-color:#5bc0de;
+    color:#fff;
+}
+
+.list-group-item:hover>.badge, .nav-pills>:hover>a>.badge {
+    color: #5bc0de;
+    background-color: #fff;
+}
+
+.list-group-item.active>.badge, .nav-pills>.active>a>.badge {
+     color: #5bc0de;
+     background-color: #fff;
+ }
+
+.list-group-item-calm>.badge {
+    color: #fff;
+    background-color: #5bc0de;
+}
+
 .add-btn {
-    margin-top: 45%;
+    margin: 1px;
+}
+
+.btn-default.btn-dark {
+    border-color: #1F1F1F;
+    background-color: #1d1d1d;
+    color:#fff;
+}
+
+.boutonGroup {
+    width:169px;
+    margin-right: auto;
+    margin-left: auto;
+    margin-bottom: 26px;
+}
+
+@media (min-width: 1200px) {
+    .boutonGroup {
+        width:85px;
+        margin-top: 26px;
+    }
 }
 
 .action-group.toDelete, 
@@ -257,4 +419,62 @@ color: red !important;
     background-color: #e74c3c;
 }
 
+.btn-purple {
+    background-color: #9b18c9;
+    border-color: #9b18c9;
+    color: white;
+}
+.btn-purple:hover,
+.btn-purple:focus,
+.btn-purple:active,
+.btn-purple.active {
+    background-color: #8915b2;
+    border-color: #78139b;
+    color: white;
+}
+.btn-purple.disabled:hover,
+.btn-purple.disabled:focus,
+.btn-purple.disabled:active,
+.btn-purple.disabled.active,
+.btn-purple[disabled]:hover,
+.btn-purple[disabled]:focus,
+.btn-purple[disabled]:active,
+.btn-purple[disabled].active,
+fieldset[disabled] .btn-purple:hover,
+fieldset[disabled] .btn-purple:focus,
+fieldset[disabled] .btn-purple:active,
+fieldset[disabled] .btn-purple.active {
+    background-color: #9b18c9;
+    border-color: #9b18c9;
+    color: white;
+}
 
+.btn-grey {
+    background-color: #a3a3a3;
+    border-color: #a3a3a3;
+    color: white;
+}
+.btn-grey:hover,
+.btn-grey:focus,
+.btn-grey:active,
+.btn-grey.active {
+    background-color: #969696;
+    border-color: #8a8a8a;
+    color: white;
+}
+.btn-grey.disabled:hover,
+.btn-grey.disabled:focus,
+.btn-grey.disabled:active,
+.btn-grey.disabled.active,
+.btn-grey[disabled]:hover,
+.btn-grey[disabled]:focus,
+.btn-grey[disabled]:active,
+.btn-grey[disabled].active,
+fieldset[disabled] .btn-grey:hover,
+fieldset[disabled] .btn-grey:focus,
+fieldset[disabled] .btn-grey:active,
+fieldset[disabled] .btn-grey.active {
+    background-color: #a3a3a3;
+    border-color: #a3a3a3;
+    color: white;
+}

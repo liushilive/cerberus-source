@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -52,7 +52,7 @@ public class TestCaseExecutionDataUtilTest {
     @Before
     public void setUp() {
         data = factoryTestCaseExecutionData.create(0, "property", 1, "description", "value", "type", "value1", "value2", "returnCode", "rMessage", START, START_LONG, END, END_LONG,
-                new MessageEvent(MessageEventEnum.PROPERTY_SUCCESS_TEXT), 0, 0, "", "", "", 0, 0, "");
+                new MessageEvent(MessageEventEnum.PROPERTY_SUCCESS_TEXT), 0, 0, "", "", "", "", "", 0, "", "", "", "", "", "", "N");
     }
 
     @Test

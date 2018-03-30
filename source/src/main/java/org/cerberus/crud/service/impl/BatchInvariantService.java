@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -67,8 +67,8 @@ public class BatchInvariantService implements IBatchInvariantService {
     }
 
     @Override
-    public Answer update(BatchInvariant object) {
-        return batchInvariantDAO.update(object);
+    public Answer update(String batch, BatchInvariant object) {
+        return batchInvariantDAO.update(batch, object);
     }
 
     @Override

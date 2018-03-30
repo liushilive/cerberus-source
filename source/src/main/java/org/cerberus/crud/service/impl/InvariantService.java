@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,21 +20,24 @@
 package org.cerberus.crud.service.impl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import javax.servlet.http.HttpServletRequest;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.IInvariantDAO;
 import org.cerberus.crud.entity.Invariant;
 import org.cerberus.crud.service.IInvariantService;
+import org.cerberus.engine.entity.MessageGeneral;
 import org.cerberus.enums.MessageEventEnum;
+import org.cerberus.enums.MessageGeneralEnum;
 import org.cerberus.exception.CerberusException;
+import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.SqlUtil;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
-import org.cerberus.util.answer.AnswerUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -47,9 +50,11 @@ public class InvariantService implements IInvariantService {
     @Autowired
     IInvariantDAO invariantDao;
 
+    private static final Logger LOG = LogManager.getLogger(InvariantService.class);
+
     @Override
-    public Invariant findInvariantByIdValue(String idName, String value) throws CerberusException {
-        return invariantDao.readByKey(idName, value);
+    public AnswerItem readByKey(String id, String value) {
+        return invariantDao.readByKey(id, value);
     }
 
     @Override
@@ -58,13 +63,37 @@ public class InvariantService implements IInvariantService {
     }
 
     @Override
-    public AnswerList findInvariantByIdGp1(String idName, String gp) {
+    public HashMap<String, Integer> readToHashMapGp1IntegerByIdname(String idName, Integer defaultValue) {
+        HashMap<String, Integer> result = new HashMap<String, Integer>();
+
+        AnswerList answer = readByIdname(idName); //TODO: handle if the response does not turn ok
+        for (Invariant inv : (List<Invariant>) answer.getDataList()) {
+            int gp1ToInt = ParameterParserUtil.parseIntegerParam(inv.getGp1(), defaultValue);
+            result.put(inv.getValue(), gp1ToInt);
+        }
+        return result;
+    }
+
+    @Override
+    public HashMap<String, String> readToHashMapGp1StringByIdname(String idName, String defaultValue) {
+        HashMap<String, String> result = new HashMap<String, String>();
+
+        AnswerList answer = readByIdname(idName); //TODO: handle if the response does not turn ok
+        for (Invariant inv : (List<Invariant>) answer.getDataList()) {
+            String gp1 = ParameterParserUtil.parseStringParam(inv.getGp1(), defaultValue);
+            result.put(inv.getValue(), gp1);
+        }
+        return result;
+    }
+
+    @Override
+    public AnswerList readByIdnameGp1(String idName, String gp) {
         return invariantDao.readByIdnameByGp1(idName, gp);
     }
 
     @Override
-    public AnswerList readInvariantCountryListEnvironmentLastChanges(String system, Integer nbDays) {
-        return invariantDao.readInvariantCountryListEnvironmentLastChanges(system, nbDays);
+    public AnswerList readCountryListEnvironmentLastChanges(String system, Integer nbDays) {
+        return invariantDao.readCountryListEnvironmentLastChanges(system, nbDays);
     }
 
     @Override
@@ -144,80 +173,30 @@ public class InvariantService implements IInvariantService {
     }
 
     @Override
-    public Integer getNumberOfPublicInvariant(String searchTerm) {
-        String searchSQL = this.getPublicPrivateFilter("INVARIANTPUBLIC");
-        try {
-            return invariantDao.getNumberOfInvariant(searchTerm, searchSQL);
-        } catch (CerberusException ex) {
-            Logger.getLogger(InvariantService.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return 0;
-    }
-
-    @Override
-    public Integer getNumberOfPrivateInvariant(String searchTerm) {
-        String searchSQL = this.getPublicPrivateFilter("INVARIANTPRIVATE");
-        try {
-            return invariantDao.getNumberOfInvariant(searchTerm, searchSQL);
-        } catch (CerberusException ex) {
-            Logger.getLogger(InvariantService.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return 0;
-    }
-
-    @Override
     public boolean isInvariantExist(String idName, String value) {
-        try {
-            findInvariantByIdValue(idName, value);
-            return true;
-        } catch (CerberusException e) {
-            return false;
-        }
+        AnswerItem objectAnswer = readByKey(idName, value);
+        return (objectAnswer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) && (objectAnswer.getItem() != null); // Call was successfull and object was found.
     }
 
     @Override
-    public AnswerItem isInvariantPublic(Invariant object) {
-        AnswerItem finalAnswer = new AnswerItem();
-        AnswerList resp = readByIdname("INVARIANTPUBLIC");
-
-        if (!(resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getDataList() != null)) {
-            /**
-             * Object could not be found. We stop here and report the error.
-             */
-            finalAnswer.setResultMessage(resp.getResultMessage());
-
-        } else {
-            boolean result = false;
-            for (Invariant myInvariant : (List<Invariant>) resp.getDataList()) {
-                if (object.getIdName().equals(myInvariant.getValue())) {
-                    result = true;
-                }
-            }
-            finalAnswer.setItem(result);
-            finalAnswer.setResultMessage(resp.getResultMessage());
-        }
-
-        return finalAnswer;
-    }
-
-    @Override
-    public AnswerItem readByKey(String id, String value) {
-        return invariantDao.readByKey2(id, value);
+    public boolean isInvariantPublic(Invariant object) {
+        AnswerItem objectAnswer = readByKey("INVARIANTPUBLIC", object.getIdName());
+        return (objectAnswer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) && (objectAnswer.getItem() != null); // Call was successfull and object was found.
     }
 
     @Override
     public Answer create(Invariant invariant) {
-        return invariantDao.create2(invariant);
+        return invariantDao.create(invariant);
     }
 
     @Override
     public Answer delete(Invariant invariant) {
-        return invariantDao.delete2(invariant);
+        return invariantDao.delete(invariant);
     }
 
     @Override
-    public Answer update(Invariant invariant) {
-        return invariantDao.update2(invariant);
+    public Answer update(String idname, String value, Invariant invariant) {
+        return invariantDao.update(idname, value, invariant);
     }
 
     @Override
@@ -235,5 +214,56 @@ public class InvariantService implements IInvariantService {
         searchSQL = SqlUtil.createWhereInClause("idname", idnameList, true);
 
         return searchSQL;
+    }
+
+    @Override
+    public boolean hasPermissionsRead(Invariant invariant, HttpServletRequest request) {
+        // Access right calculation.
+        return true;
+    }
+
+    @Override
+    public boolean hasPermissionsUpdate(Invariant invariant, HttpServletRequest request) {
+        // Access right calculation.
+        return (request.isUserInRole("Administrator") && isInvariantPublic(invariant));
+    }
+
+    @Override
+    public boolean hasPermissionsCreate(Invariant invariant, HttpServletRequest request) {
+        // Access right calculation.
+        return (request.isUserInRole("Administrator") && isInvariantPublic(invariant));
+    }
+
+    @Override
+    public boolean hasPermissionsDelete(Invariant invariant, HttpServletRequest request) {
+        // Access right calculation.
+        return (request.isUserInRole("Administrator") && isInvariantPublic(invariant));
+    }
+
+    @Override
+    public Invariant convert(AnswerItem answerItem) throws CerberusException {
+        if (answerItem.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+            //if the service returns an OK message then we can get the item
+            return (Invariant) answerItem.getItem();
+        }
+        throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR));
+    }
+
+    @Override
+    public List<Invariant> convert(AnswerList answerList) throws CerberusException {
+        if (answerList.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+            //if the service returns an OK message then we can get the item
+            return (List<Invariant>) answerList.getDataList();
+        }
+        throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR));
+    }
+
+    @Override
+    public void convert(Answer answer) throws CerberusException {
+        if (answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+            //if the service returns an OK message then we can get the item
+            return;
+        }
+        throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR));
     }
 }

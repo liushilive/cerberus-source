@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -26,11 +26,7 @@ import org.cerberus.crud.entity.TestCaseStep;
  */
 public interface IFactoryTestCaseStep {
 
-   @Deprecated
-   TestCaseStep create(String test, String testCase, int step, String description,
-           String useStep, String useStepTest,String useStepTestCase,Integer useStepStep, String inLibrary);
-   
-   TestCaseStep create(String test, String testCase, int step, int sort, String description,
-           String useStep, String useStepTest,String useStepTestCase,Integer useStepStep, String inLibrary);
-   
+    TestCaseStep create(String test, String testCase, int step, int sort, String loop, String conditionOper, String conditionVal1, String conditionVal2, String description,
+            String useStep, String useStepTest, String useStepTestCase, Integer useStepStep, String inLibrary);
+
 }

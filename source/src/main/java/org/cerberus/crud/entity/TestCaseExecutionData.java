@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -17,10 +19,16 @@
  */
 package org.cerberus.crud.entity;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.engine.entity.MessageGeneral;
 import org.cerberus.engine.entity.MessageEvent;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.List;
+import org.json.JSONArray;
 
 /**
  *
@@ -38,7 +46,14 @@ public class TestCaseExecutionData {
     private String value2Init;
     private String value1;
     private String value2;
-    private int length;
+    private String lengthInit;
+    private String length;
+    private String system;
+    private String environment;
+    private String country;
+    private String dataLib;
+    private String jsonResult;
+    private String fromCache;
     private int rowLimit;
     private String nature;
     private int retryNb;
@@ -53,12 +68,45 @@ public class TestCaseExecutionData {
     /**
      *
      */
+    private List<TestCaseExecutionFile> fileList; // Host the list of the files stored at control level
     private TestCaseExecution tCExecution;
     private MessageEvent propertyResultMessage;
     private MessageGeneral executionResultMessage;
     private boolean stopExecution;
     private TestCaseCountryProperties testCaseCountryProperties;
     private List<HashMap<String, String>> dataLibRawData; // Have the raw data of all subdata when comming from testDataLibrary
+
+    private static final Logger LOG = LogManager.getLogger(TestCaseExecutionData.class);
+
+    public String getFromCache() {
+        return fromCache;
+    }
+
+    public void setFromCache(String fromCache) {
+        this.fromCache = fromCache;
+    }
+
+    public List<TestCaseExecutionFile> getFileList() {
+        return fileList;
+    }
+
+    public void setFileList(List<TestCaseExecutionFile> fileList) {
+        this.fileList = fileList;
+    }
+
+    public void addFileList(TestCaseExecutionFile file) {
+        if (file != null) {
+            this.fileList.add(file);
+        }
+    }
+
+    public void addFileList(List<TestCaseExecutionFile> fileList) {
+        if (fileList != null) {
+            for (TestCaseExecutionFile testCaseExecutionFile : fileList) {
+                this.fileList.add(testCaseExecutionFile);
+            }
+        }
+    }
 
     public String getDatabase() {
         return database;
@@ -84,12 +132,60 @@ public class TestCaseExecutionData {
         this.value2Init = value2Init;
     }
 
-    public int getLength() {
+    public String getLengthInit() {
+        return lengthInit;
+    }
+
+    public void setLengthInit(String lengthInit) {
+        this.lengthInit = lengthInit;
+    }
+
+    public String getLength() {
         return length;
     }
 
-    public void setLength(int length) {
+    public void setLength(String length) {
         this.length = length;
+    }
+
+    public String getSystem() {
+        return system;
+    }
+
+    public void setSystem(String system) {
+        this.system = system;
+    }
+
+    public String getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(String environment) {
+        this.environment = environment;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public String getDataLib() {
+        return dataLib;
+    }
+
+    public void setDataLib(String dataLib) {
+        this.dataLib = dataLib;
+    }
+
+    public String getJsonResult() {
+        return jsonResult;
+    }
+
+    public void setJsonResult(String jsonResult) {
+        this.jsonResult = jsonResult;
     }
 
     public int getRowLimit() {
@@ -107,6 +203,7 @@ public class TestCaseExecutionData {
     public void setNature(String nature) {
         this.nature = nature;
     }
+
     public int getRetryNb() {
         return retryNb;
     }
@@ -292,6 +389,70 @@ public class TestCaseExecutionData {
     @Override
     public String toString() {
         return "TestCaseExecutionData{" + "id=" + id + ", property=" + property + ", value=" + value + ", type=" + type + ", value1=" + value1 + ", value2=" + value2 + ", RC=" + RC + ", rMessage=" + rMessage + ", start=" + start + ", end=" + end + ", startLong=" + startLong + ", endLong=" + endLong + ", propertyResultMessage=" + propertyResultMessage.toString() + ", executionResultMessage=" + executionResultMessage + ", stopExecution=" + stopExecution + '}';
+    }
+
+    /**
+     * Convert the current TestCaseExecutionData into JSON format Note that if
+     * withChilds and withParents are both set to true, only the child will be
+     * included to avoid loop.
+     *
+     * @param withChilds boolean that define if childs should be included
+     * @param withParents boolean that define if parents should be included
+     * @return TestCaseExecutionData in JSONObject format
+     */
+    public JSONObject toJson(boolean withChilds, boolean withParents) {
+        JSONObject result = new JSONObject();
+        // Check if both parameter are not set to true
+        if (withChilds == true && withParents == true) {
+            withParents = false;
+        }
+        try {
+            result.put("type", "testCaseExecutionData");
+            result.put("id", this.getId());
+            result.put("property", this.getProperty());
+            result.put("index", this.getIndex());
+            result.put("database", this.getDatabase());
+            result.put("value", this.getValue());
+            result.put("type", this.getType());
+            result.put("value1Init", this.getValue1Init());
+            result.put("value2Init", this.getValue2Init());
+            result.put("value1", this.getValue1());
+            result.put("value2", this.getValue2());
+            result.put("length", this.getLength());
+            result.put("rowLimit", this.getRowLimit());
+            result.put("nature", this.getNature());
+            result.put("retryNb", this.getRetryNb());
+            result.put("retryPeriod", this.getRetryPeriod());
+            result.put("start", this.getStart());
+            result.put("end", this.getEnd());
+            result.put("startLong", this.getStartLong());
+            result.put("endLong", this.getEndLong());
+            result.put("RC", this.getRC());
+            result.put("rMessage", this.getrMessage());
+            result.put("description", this.getDescription());
+
+            if (withChilds) {
+                JSONArray array = new JSONArray();
+                if (this.getFileList() != null) {
+                    for (Object dataFileList : this.getFileList()) {
+                        array.put(((TestCaseExecutionFile) dataFileList).toJson());
+                    }
+                }
+                result.put("fileList", array);
+            }
+
+            if (withParents && this.gettCExecution() != null) {
+                result.put("testCaseExecution", this.gettCExecution().toJson(false));
+            }
+
+        } catch (JSONException ex) {
+            LOG.error(this.getId() + " - " + this.getProperty() + " - " + this.getIndex());
+            LOG.error(ex);
+        } catch (Exception ex) {
+            LOG.error(this.getId() + " - " + this.getProperty() + " - " + this.getIndex());
+            LOG.error(ex);
+        }
+        return result;
     }
 
 }

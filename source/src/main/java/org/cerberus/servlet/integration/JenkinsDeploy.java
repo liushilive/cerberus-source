@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,14 +21,15 @@ package org.cerberus.servlet.integration;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.cerberus.crud.service.ILogEventService;
 
 import org.cerberus.crud.service.IParameterService;
 import org.cerberus.crud.service.impl.ParameterService;
@@ -46,10 +47,10 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "JenkinsDeploy", urlPatterns = {"/JenkinsDeploy"})
 public class JenkinsDeploy extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(JenkinsDeploy.class);
     /**
-     * Processes requests for both HTTP
-     * <code>GET</code> and
-     * <code>POST</code> methods.
+     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
+     * methods.
      *
      * @param request servlet request
      * @param response servlet response
@@ -62,8 +63,7 @@ public class JenkinsDeploy extends HttpServlet {
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**
-     * Handles the HTTP
-     * <code>GET</code> method.
+     * Handles the HTTP <code>GET</code> method.
      *
      * @param request servlet request
      * @param response servlet response
@@ -81,14 +81,13 @@ public class JenkinsDeploy extends HttpServlet {
             ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
             IParameterService parameterService = appContext.getBean(ParameterService.class);
 
-            String user = parameterService.findParameterByKey("jenkins_admin_user","").getValue();
-            String pass = parameterService.findParameterByKey("jenkins_admin_password","").getValue();
-
+            String user = parameterService.findParameterByKey("cerberus_jenkinsadmin_user", "").getValue();
+            String pass = parameterService.findParameterByKey("cerberus_jenkinsadmin_password", "").getValue();
 
             HTTPSession session = new HTTPSession();
             session.startSession(user, pass);
 
-            String url = parameterService.findParameterByKey("jenkins_deploy_url","").getValue();
+            String url = parameterService.findParameterByKey("cerberus_jenkinsdeploy_url", "").getValue();
             String final_url;
             final_url = url.replace("%APPLI%", request.getParameter("application"));
             final_url = final_url.replace("%JENKINSBUILDID%", request.getParameter("jenkinsbuildid"));
@@ -103,19 +102,22 @@ public class JenkinsDeploy extends HttpServlet {
             if ((responseCode != 200) && (responseCode != 201)) {
                 out.print("ERROR Contacting Jenkins HTTP Response " + responseCode);
             } else {
+                /**
+                 * Jenkins was called successfuly. Adding Log entry.
+                 */
+                ILogEventService logEventService = appContext.getBean(ILogEventService.class);
+                logEventService.createForPrivateCalls("/JenkinsDeploy", "DEPLOY", "JenkinsDeploy Triggered : ['" + final_url + "']", request);
                 out.print("Sent request : " + url);
             }
 
         } catch (Exception ex) {
-            Logger.getLogger(JenkinsDeploy.class.getName()).log(Level.SEVERE,
-                    Infos.getInstance().getProjectNameAndVersion() + " - Exception catched.", ex);
+            LOG.warn(Infos.getInstance().getProjectNameAndVersion() + " - Exception catched.", ex);
         }
 
     }
 
     /**
-     * Handles the HTTP
-     * <code>POST</code> method.
+     * Handles the HTTP <code>POST</code> method.
      *
      * @param request servlet request
      * @param response servlet response

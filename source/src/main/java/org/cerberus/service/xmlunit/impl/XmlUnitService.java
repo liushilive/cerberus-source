@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,21 +19,15 @@
  */
 package org.cerberus.service.xmlunit.impl;
 
-import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.service.xmlunit.IXmlUnitService;
 import org.cerberus.service.xmlunit.AInputTranslator;
 import org.cerberus.service.xmlunit.Differences;
@@ -42,6 +36,7 @@ import org.cerberus.service.xmlunit.InputTranslator;
 import org.cerberus.service.xmlunit.InputTranslatorException;
 import org.cerberus.service.xmlunit.InputTranslatorManager;
 import org.cerberus.service.xmlunit.InputTranslatorUtil;
+import org.cerberus.util.StringUtil;
 import org.cerberus.util.XmlUtil;
 import org.cerberus.util.XmlUtilException;
 import org.custommonkey.xmlunit.DetailedDiff;
@@ -62,7 +57,7 @@ public class XmlUnitService implements IXmlUnitService {
     /**
      * The associated {@link Logger} to this class
      */
-    private static final Logger LOG = Logger.getLogger(XmlUnitService.class);
+    private static final Logger LOG = LogManager.getLogger(XmlUnitService.class);
 
     /**
      * Difference value for null XPath
@@ -178,15 +173,15 @@ public class XmlUnitService implements IXmlUnitService {
     }
 
     @Override
-    public String getFromXml(String lastSOAPResponse, String url, String xpath) {
+    public String getFromXml(final String xmlToParse, final String xpath) {
         if (xpath == null) {
             LOG.warn("Null argument");
             return DEFAULT_GET_FROM_XML_VALUE;
         }
 
         try {
-            Document document = url == null ? XmlUtil.fromString(lastSOAPResponse) : XmlUtil.fromURL(new URL(url));
-            String result = XmlUtil.evaluateString(document, xpath);
+            final Document document = StringUtil.isURL(xmlToParse) ? XmlUtil.fromURL(new URL(xmlToParse)) : XmlUtil.fromString(xmlToParse);
+            final String result = XmlUtil.evaluateString(document, xpath);
             // Not that in case of multiple values then send the first one
             return result != null && result.length() > 0 ? result : DEFAULT_GET_FROM_XML_VALUE;
         } catch (XmlUtilException e) {
@@ -282,6 +277,7 @@ public class XmlUnitService implements IXmlUnitService {
 
         try {
             NodeList candidates = XmlUtil.evaluate(lastSOAPResponse, xpath);
+            LOG.debug(candidates.toString());
             for (Document candidate : XmlUtil.fromNodeList(candidates)) {
                 if (Differences.fromString(getDifferencesFromXml(XmlUtil.toString(candidate), expectedElement)).isEmpty()) {
                     return true;
@@ -303,8 +299,8 @@ public class XmlUnitService implements IXmlUnitService {
             document = XmlUtil.fromString(lastSOAPResponse);
             return document;
         } catch (XmlUtilException ex) {
-            java.util.logging.Logger.getLogger(XmlUnitService.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
         return document;
     }
-    }
+}

@@ -12,3 +12,7 @@
 /.settings
 *.iml
 /.idea/
+*.mwb.beforefix
+*.DS_Store
+
+source/\.idea/

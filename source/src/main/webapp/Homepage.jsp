@@ -1,21 +1,23 @@
 <%--
-  ~ Cerberus Copyright (C) 2013 vertigo17
-  ~ DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-  ~
-  ~ This file is part of Cerberus.
-  ~
-  ~ Cerberus is free software: you can redistribute it and/or modify
-  ~ it under the terms of the GNU General Public License as published by
-  ~ the Free Software Foundation, either version 3 of the License, or
-  ~ (at your option) any later version.
-  ~
-  ~ Cerberus is distributed in the hope that it will be useful,
-  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
-  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-  ~ GNU General Public License for more details.
-  ~
-  ~ You should have received a copy of the GNU General Public License
-  ~ along with Cerberus. If not, see <http://www.gnu.org/licenses/>.
+
+    Cerberus Copyright (C) 2013 - 2017 cerberustesting
+    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+
+    This file is part of Cerberus.
+
+    Cerberus is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Cerberus is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
+
 --%>
 <%@page import="java.util.Date"%>
 <%@page import="org.springframework.web.context.support.WebApplicationContextUtils"%>
@@ -32,14 +34,14 @@
     <head>
         <meta content="text/html; charset=UTF-8" http-equiv="content-type">
         <title>Cerberus Homepage</title>
-        <%@ include file="include/dependenciesInclusions.html" %>
+        <%@ include file="include/global/dependenciesInclusions.html" %>
         <link rel="stylesheet" href="css/pages/Homepage.css" type="text/css"/>
         <link rel="stylesheet" href="css/pages/ReportingExecutionByTag.css" type="text/css"/>
         <script type="text/javascript" src="js/pages/Homepage.js"></script>
     </head>
     <body>
-        <%@ include file="include/header.html"%>
-        <%@ include file="include/homepage/tagSettingsModal.html" %>
+        <%@ include file="include/global/header.html"%>
+        <%@ include file="include/pages/homepage/tagSettingsModal.html" %>
         <%
             ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
 
@@ -61,9 +63,9 @@
 
         </style>
         <div class="container-fluid center" id="page-layout">
-            <%@ include file="include/messagesArea.html"%>
+            <%@ include file="include/global/messagesArea.html"%>
             <h1 class="page-title-line" id="title">Welcome to Cerberus Application</h1>
-            
+
             <div id="homeTableDiv" class="panel panel-default">
                 <div class="panel-heading card" data-toggle="collapse" data-target="#applicationPanel">
                     <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
@@ -92,31 +94,46 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6" id="ReportByStatusPanel">
-                    <div class="panel panel-default">
-                        <div class="panel-heading card" data-toggle="collapse" data-target="#EnvStatus">
-                            <span class="fa fa-pie-chart fa-fw"></span>
-                            <label id="reportStatus">Environment Status</label>
-                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
-                        </div>
-                        <div class="panel-body collapse in" id="EnvStatus">
-                            <div class="row">
-                                <div class="col-xs-12" id="EnvByBuildRevisionTable">
-                                    <table class="table dataTable table-bordered table-hover nomarginbottom" id="envTable">
-                                        <thead>
-                                            <tr>
-                                                <th class="text-center" id="buildHeader" name="buildHeader">Build</th>
-                                                <th class="text-center" id="revisionHeader" name="revisionHeader">Revision</th>
-                                                <th class="text-center" id="devHeader" name="devHeader">DEV</th>
-                                                <th class="text-center" id="qaHeader" name="qaHeader">QA</th>
-                                                <th class="text-center" id="uatHeader" name="uatHeader">UAT</th>
-                                                <th class="text-center" id="prodHeader" name="prodHeader">PROD</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="envTableBody">
-                                        </tbody>
-                                    </table>
+                <div class="col-lg-6">
+                    <div id="ReportByStatusPanel">
+                        <div class="panel panel-default">
+                            <div class="panel-heading card" data-toggle="collapse" data-target="#EnvStatus">
+                                <span class="fa fa-pie-chart fa-fw"></span>
+                                <label id="reportStatus">Environment Status</label>
+                                <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
+                            </div>
+                            <div class="panel-body collapse in" id="EnvStatus">
+                                <div class="row">
+                                    <div class="col-xs-12" id="EnvByBuildRevisionTable">
+                                        <table class="table dataTable table-bordered table-hover nomarginbottom" id="envTable">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-center" id="buildHeader" name="buildHeader">Build</th>
+                                                    <th class="text-center" id="revisionHeader" name="revisionHeader">Revision</th>
+                                                    <th class="text-center" id="devHeader" name="devHeader">DEV</th>
+                                                    <th class="text-center" id="qaHeader" name="qaHeader">QA</th>
+                                                    <th class="text-center" id="uatHeader" name="uatHeader">UAT</th>
+                                                    <th class="text-center" id="prodHeader" name="prodHeader">PROD</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="envTableBody">
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="ChangelogPanel">
+                        <div class="panel panel-default">
+                            <div class="panel-heading card" data-toggle="collapse" data-target="#Changelog33">
+                                <span class="fa fa-pie-chart fa-fw"></span>
+                                <label id="changelogLabel">Changelog</label>
+                                <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
+                            </div>
+                            <div class="panel-body collapse in" id="Changelog33">
+                                <iframe id="documentationFrame" style="width:100%" frameborder="0" scrolling="yes"/>
+                                </iframe>
                             </div>
                         </div>
                     </div>

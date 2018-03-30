@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2016  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,8 +22,8 @@ package org.cerberus.crud.service.impl;
 import java.util.Arrays;
 import java.util.List;
 import org.cerberus.crud.dao.IRobotCapabilityDAO;
-import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.RobotCapability;
+import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.util.answer.AnswerList;
 import org.junit.BeforeClass;

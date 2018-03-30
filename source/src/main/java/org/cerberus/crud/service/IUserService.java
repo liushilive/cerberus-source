@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -75,6 +75,13 @@ public interface IUserService {
      * @return
      */
     AnswerItem<User> updateUserPassword(User user, String currentPassword, String newPassword, String confirmPassword, String resetPasswordToken);
+
+    /**
+     * @param user
+     * @param newPassword
+     * @return
+     */
+    AnswerItem<User> updateUserPasswordAdmin(User user, String newPassword);
 
     /**
      * @param user

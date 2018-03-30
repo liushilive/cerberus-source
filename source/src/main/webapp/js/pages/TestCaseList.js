@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,12 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 /* global modalFormCleaner */
 
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -33,99 +37,56 @@ function initPage() {
     displayGlobalLabel(doc);
     displayPageLabel(doc);
     displayFooter(doc);
-    displayInvariantList("group", "GROUP", false);
-    displayInvariantList("status", "TCSTATUS", false);
-    displayInvariantList("priority", "PRIORITY", false);
-    $('[name="origin"]').append('<option value="All">All</option>');
-    displayInvariantList("origin", "ORIGIN", true);
-    displayInvariantList("active", "TCACTIVE", false);
-    displayInvariantList("activeQA", "TCACTIVE", false);
-    displayInvariantList("activeUAT", "TCACTIVE", false);
-    displayInvariantList("activeProd", "TCACTIVE", false);
-    appendProjectList();
 
-//    var selectTest = GetURLParameter('test');
-//    loadTestFilters(selectTest);
+    var table = loadTable();
 
-    tinymce.init({
-        selector: "textarea"
-    });
+    // MASS ACTION
+    $("#massActionTestCaseButtonAddLabel").click(massActionModalSaveHandler_addLabel);
+    $("#massActionTestCaseButtonRemoveLabel").click(massActionModalSaveHandler_removeLabel);
+    $("#massActionTestCaseButtonUpdate").click(massActionModalSaveHandler_update);
 
-    loadTable();
-
-    // handle the click for specific action buttons
-    $("#addEntryButton").click(addEntryModalSaveHandler);
-    $("#duplicateEntryButton").click(duplicateEntryModalSaveHandler);
-    //PREPARE MASS ACTION
-    //$("#massActionBrpButton").click(massActionModalSaveHandler);
-
-    $('#editEntryModal').on('hidden.bs.modal', {extra: "#editEntryModal"}, modalFormCleaner);
-    $('#addEntryModal').on('hidden.bs.modal', {extra: "#addEntryModal"}, modalFormCleaner);
-    $('#duplicateEntryModal').on('hidden.bs.modal', {extra: "#duplicateEntryModal"}, modalFormCleaner);
-    $('#manageLabelModal').on('hidden.bs.modal', {extra: "#manageLabelModal"}, modalFormCleaner);
-    //PREPARE MASS ACTION
-    //$('#massActionBrpModal').on('hidden.bs.modal', massActionModalCloseHandler);
+    // MASS ACTION
+    $('#massActionTestCaseModal').on('hidden.bs.modal', massActionModalCloseHandler);
     $('[data-toggle="tooltip"]').tooltip();
+
+    initModalTestCase();
+    $('#editTestCaseModal').data("initLabel", true);
+    initMassActionModal();
 
 }
 
+function initMassActionModal() {
+    $("#massActionTestCaseModal #massStatus").prop("disabled", true);
+    $("#statusCheckbox").prop("checked", false);
+    $("#statusCheckbox").change(function () {
+        if ($(this).prop("checked")) {
+            $("#massActionTestCaseModal #massStatus").prop("disabled", false);
+        } else {
+            $("#massActionTestCaseModal #massStatus").prop("disabled", true);
+        }
+    });
+    $("#massActionTestCaseModal #massFunction").prop("disabled", true);
+    $("#functionCheckbox").prop("checked", false);
+    $("#functionCheckbox").change(function () {
+        if ($(this).prop("checked")) {
+            $("#massActionTestCaseModal #massFunction").prop("disabled", false);
+        } else {
+            $("#massActionTestCaseModal #massFunction").prop("disabled", true);
+        }
+    });
+    $("#massActionTestCaseModal #massApplication").prop("disabled", true);
+    $("#applicationCheckbox").prop("checked", false);
+    $("#applicationCheckbox").change(function () {
+        if ($(this).prop("checked")) {
+            $("#massActionTestCaseModal #massApplication").prop("disabled", false);
+        } else {
+            $("#massActionTestCaseModal #massApplication").prop("disabled", true);
+        }
+    });
+}
+
 function displayPageLabel(doc) {
-    $("[name='testField']").html(doc.getDocOnline("test", "Test"));
-    $("[name='testCaseField']").html(doc.getDocOnline("testcase", "TestCase"));
-    $("[name='lastModifierField']").html(doc.getDocOnline("testcase", "LastModifier"));
-    $("[name='originField']").html(doc.getDocOnline("testcase", "Origine"));
-    $("[name='refOriginField']").html(doc.getDocOnline("testcase", "RefOrigine"));
-    $("[name='projectField']").html(doc.getDocOnline("project", "idproject"));
-    $("[name='ticketField']").html(doc.getDocOnline("testcase", "ticket"));
-    $("[name='functionField']").html(doc.getDocOnline("testcase", "Function"));
-    $("[name='applicationField']").html(doc.getDocOnline("application", "Application"));
-    $("[name='statusField']").html(doc.getDocOnline("testcase", "Status"));
-    $("[name='bugIdField']").html(doc.getDocOnline("testcase", "BugID"));
-    $("[name='actQAField']").html(doc.getDocOnline("testcase", "activeQA"));
-    $("[name='actUATField']").html(doc.getDocOnline("testcase", "activeUAT"));
-    $("[name='actUATField']").html(doc.getDocOnline("testcase", "activeUAT"));
-    $("[name='actProdField']").html(doc.getDocOnline("testcase", "activePROD"));
-    $("[name='shortDescField']").html(doc.getDocOnline("testcase", "Description"));
-    $("[name='behaviorOrValueExpectedField']").html(doc.getDocOnline("testcase", "BehaviorOrValueExpected"));
-    $("[name='shortDescField']").html(doc.getDocOnline("testcase", "Description"));
-    $("[name='howToField']").html(doc.getDocOnline("testcase", "HowTo"));
-    $("[name='descriptionField']").html(doc.getDocOnline("test", "Description"));
-    $("[name='creatorField']").html(doc.getDocOnline("testcase", "Creator"));
-    $("[name='implementerField']").html(doc.getDocOnline("testcase", "Implementer"));
-    $("[name='groupField']").html(doc.getDocOnline("invariant", "GROUP"));
-    $("[name='priorityField']").html(doc.getDocOnline("invariant", "PRIORITY"));
-    $("[name='countryList']").html(doc.getDocOnline("testcase", "countryList"));
-    $("[name='bugIdField']").html(doc.getDocOnline("testcase", "BugID"));
-    $("[name='tcDateCreaField']").html(doc.getDocOnline("testcase", "TCDateCrea"));
-    $("[name='activeField']").html(doc.getDocOnline("testcase", "TcActive"));
-    $("[name='fromSprintField']").html(doc.getDocOnline("testcase", "FromBuild"));
-    $("[name='fromRevField']").html(doc.getDocOnline("testcase", "FromRev"));
-    $("[name='toSprintField']").html(doc.getDocOnline("testcase", "ToBuild"));
-    $("[name='toRevField']").html(doc.getDocOnline("testcase", "ToRev"));
-    $("[name='targetSprintField']").html(doc.getDocOnline("testcase", "TargetBuild"));
-    $("[name='targetRevField']").html(doc.getDocOnline("testcase", "TargetRev"));
-    $("[name='commentField']").html(doc.getDocOnline("testcase", "Comment"));
-    $("#filters").html(doc.getDocOnline("page_testcaselist", "filters"));
     $("#testCaseListLabel").html(doc.getDocOnline("page_testcaselist", "testcaselist"));
-    $("[name='btnLoad']").html(doc.getDocLabel("page_global", "buttonLoad"));
-    $("[name='testField']").html(doc.getDocLabel("test", "Test"));
-    $("[name='editEntryField']").html(doc.getDocLabel("page_testcaselist", "btn_edit"));
-    $("[name='addEntryField']").html(doc.getDocLabel("page_testcaselist", "btn_create"));
-    $("[name='linkField']").html(doc.getDocLabel("page_testcaselist", "link"));
-    //PREPARE MASS ACTION
-    //$("[name='massActionBrpField']").html(doc.getDocOnline("page_testcaselist", "massAction"));
-
-    $("[name='testInfoField']").html(doc.getDocLabel("page_testcaselist", "testInfo"));
-    $("[name='testCaseInfoField']").html(doc.getDocLabel("page_testcaselist", "testCaseInfo"));
-    $("[name='testCaseParameterField']").html(doc.getDocLabel("page_testcaselist", "testCaseParameter"));
-    $("[name='activationCriteriaField']").html(doc.getDocLabel("page_testcaselist", "activationCriteria"));
-    // Tracability
-    $("[name='lbl_datecreated']").html(doc.getDocOnline("transversal", "DateCreated"));
-    $("[name='lbl_usrcreated']").html(doc.getDocOnline("transversal", "UsrCreated"));
-    $("[name='lbl_datemodif']").html(doc.getDocOnline("transversal", "DateModif"));
-    $("[name='lbl_usrmodif']").html(doc.getDocOnline("transversal", "UsrModif"));
-
-
 }
 
 function loadTable(selectTest, sortColumn) {
@@ -141,11 +102,11 @@ function loadTable(selectTest, sortColumn) {
     var jqxhr = $.getJSON("FindInvariantByID", "idName=COUNTRY");
 
     $.when(jqxhr).then(function (data) {
-           sortColumn = 2;
+        sortColumn = 2;
 
         var config = new TableConfigurationsServerSide("testCaseTable", contentUrl, "contentTable", aoColumnsFunc(data, "testCaseTable"), [2, 'asc']);
 
-        var table = createDataTableWithPermissions(config, renderOptionsForTestCaseList, "#testCaseList");
+        var table = createDataTableWithPermissions(config, renderOptionsForTestCaseList, "#testCaseList", undefined, true);
 
         var app = GetURLParameter('application');
         if (app !== "" && app !== null) {
@@ -156,8 +117,11 @@ function loadTable(selectTest, sortColumn) {
         if (test !== "" && test !== null) {
             filterOnColumn("testCaseTable", "test", test);
         }
-        //PREPARE MASS ACTION
-        //$("#selectAll").click(selectAll);
+
+        // Mass action 
+        $("#selectAll").click(selectAll);
+
+        return table;
 
     });
 }
@@ -168,18 +132,25 @@ function renderOptionsForTestCaseList(data) {
     if (data["hasPermissionsCreate"]) {
         if ($("#createTestCaseButton").length === 0) {
             var contentToAdd = "<div class='marginBottom10'>";
-            contentToAdd += "<button id='createTestCaseButton' type='button' class='btn btn-default'>\n\
-           <span class='glyphicon glyphicon-plus-sign'></span> " + doc.getDocLabel("page_testcaselist", "btn_create") + "</button></div>";
-//PREPARE MASS ACTION
-//var contentToAddAfter = "<button id='createBrpMassButton' type='button' class='pull-right btn btn-default'><span class='glyphicon glyphicon-th-list'></span> " + doc.getDocLabel("page_global", "button_massAction") + "</button>";
+            contentToAdd += "<button id='createTestCaseButton' type='button' class='btn btn-default'><span class='glyphicon glyphicon-plus-sign'></span> " + doc.getDocLabel("page_testcaselist", "btn_create") + "</button>";
+            contentToAdd += "<button id='createBrpMassButton' type='button' class='btn btn-default'><span class='glyphicon glyphicon-th-list'></span> " + doc.getDocLabel("page_global", "button_massAction") + "</button>";
+            contentToAdd += "</div>";
 
             $("#testCaseTable_wrapper #testCaseTable_length").before(contentToAdd);
-            //PREPARE MASS ACTION
-            //$("#showHideColumnsButton").parent().after(contentToAddAfter);
 
-            $('#testCaseList #createTestCaseButton').click(data, addTestCaseClick);
-            //PREPARE MASS ACTION
-            //$('#testCaseList #createBrpMassButton').click(massActionClick);
+            $('#testCaseList #createTestCaseButton').click(data, function () {
+                // Getting the Test from the 1st row of the testcase table.
+                if ($("#testCaseTable td.sorting_1")[0] !== undefined) {
+                    var firstRowTest = $("#testCaseTable td.sorting_1")[0].textContent; 
+//                    addTestCaseClick(firstRowTest);
+                    openModalTestCase(firstRowTest, undefined, "ADD");
+                } else {
+                	var testQueryString = GetURLParameter("test",undefined);
+//                    addTestCaseClick();
+                    openModalTestCase(testQueryString, undefined, "ADD");
+                }
+            });
+            $('#testCaseList #createBrpMassButton').click(massActionClick);
         }
     }
 }
@@ -199,7 +170,7 @@ function deleteEntryClick(test, testCase) {
     var doc = new Doc();
     var messageComplete = doc.getDocLabel("page_testcase", "message_delete");
     messageComplete = messageComplete.replace("%ENTRY%", test + " / " + testCase);
-    showModalConfirmation(deleteEntryHandlerClick, "Delete", messageComplete, test, testCase, "", "");
+    showModalConfirmation(deleteEntryHandlerClick, undefined, "Delete", messageComplete, test, testCase, "", "");
 }
 
 /*
@@ -209,7 +180,7 @@ function deleteEntryClick(test, testCase) {
 function deleteEntryHandlerClick() {
     var test = $('#confirmationModal').find('#hiddenField1').prop("value");
     var testCase = $('#confirmationModal').find('#hiddenField2').prop("value");
-    var jqxhr = $.post("DeleteTestCase2", {test: test, testCase: testCase}, "json");
+    var jqxhr = $.post("DeleteTestCase", {test: test, testCase: testCase}, "json");
     $.when(jqxhr).then(function (data) {
         var messageType = getAlertType(data.messageType);
         if (messageType === "success") {
@@ -224,68 +195,144 @@ function deleteEntryHandlerClick() {
 
         }
         //show message in the main page
-        showMessageMainPage(messageType, data.message);
+        showMessageMainPage(messageType, data.message, false);
         //close confirmation window
         $('#confirmationModal').modal('hide');
     }).fail(handleErrorAjaxAfterTimeout);
 }
 
-/** IMPLEMENT MASS ACTION ON TESTCASELIST PAGE
- 
- function selectAll() {
- if ($(this).prop("checked"))
- $("[data-line='select']").prop("checked", true);
- else
- $("[data-line='select']").removeProp("checked");
- }
- 
- function massActionModalSaveHandler() {
- clearResponseMessage($('#massActionBrpModal'));
- 
- var formNewValues = $('#massActionBrpModal #massActionBrpModalForm');
- var formList = $('#massActionForm');
- var paramSerialized = formNewValues.serialize() + "&" + formList.serialize().replace(/=on/g, '').replace(/id-/g, 'id=');
- 
- showLoaderInModal('#massActionBrpModal');
- 
- var jqxhr = $.post("UpdateBuildRevisionParameters", paramSerialized, "json");
- $.when(jqxhr).then(function (data) {
- // unblock when remote call returns 
- hideLoaderInModal('#massActionBrpModal');
- if ((getAlertType(data.messageType) === "success") || (getAlertType(data.messageType) === "warning")) {
- var oTable = $("#buildrevisionparametersTable").dataTable();
- oTable.fnDraw(true);
- $('#massActionBrpModal').modal('hide');
- showMessage(data);
- } else {
- showMessage(data, $('#massActionBrpModal'));
- }
- }).fail(handleErrorAjaxAfterTimeout);
- }
- 
- function massActionModalCloseHandler() {
- // reset form values
- $('#massActionBrpModal #massActionBrpModalForm')[0].reset();
- // remove all errors on the form fields
- $(this).find('div.has-error').removeClass("has-error");
- // clear the response messages of the modal
- clearResponseMessage($('#massActionBrpModal'));
- }
- 
- function massActionClick() {
- var doc = new Doc();
- console.debug("Mass Action");
- clearResponseMessageMainPage();
- // When creating a new item, Define here the default value.
- var formList = $('#massActionForm');
- if (formList.serialize().indexOf("id-") === -1) {
- var localMessage = new Message("danger", doc.getDocLabel("page_buildcontent", "message_massActionError1"));
- showMessage(localMessage, null);
- } else {
- $('#massActionBrpModal').modal('show');
- }
- }
- */
+function selectAll() {
+    if ($(this).prop("checked"))
+        $("[data-line='select']").prop("checked", true);
+    else
+        $("[data-line='select']").prop("checked", false);
+}
+
+function massActionModalSaveHandler_addLabel() {
+    clearResponseMessage($('#massActionTestCaseModal'));
+
+    var formNewValues = $('#massActionTestCaseModal #massActionTestCaseModalFormAddLabel');
+    var formList = $('#massActionForm');
+    var paramSerialized = formNewValues.serialize() + "&" + formList.serialize().replace(/=on/g, '').replace(/test-/g, 'test=').replace(/testcase-/g, '&testcase=');
+
+    showLoaderInModal('#massActionTestCaseModal');
+
+    var jqxhr = $.post("CreateTestCaseLabel", paramSerialized, "json");
+    $.when(jqxhr).then(function (data) {
+        // unblock when remote call returns 
+        hideLoaderInModal('#massActionTestCaseModal');
+        if ((getAlertType(data.messageType) === "success") || (getAlertType(data.messageType) === "warning")) {
+            $('#testCaseTable').DataTable().draw();
+            $("#selectAll").prop("checked", false);
+            $('#massActionTestCaseModal').modal('hide');
+            showMessage(data);
+        } else {
+            showMessage(data, $('#massActionTestCaseModal'));
+        }
+    }).fail(handleErrorAjaxAfterTimeout);
+}
+
+function massActionModalSaveHandler_removeLabel() {
+    clearResponseMessage($('#massActionTestCaseModal'));
+
+    var formNewValues = $('#massActionTestCaseModal #massActionTestCaseModalFormAddLabel');
+    var formList = $('#massActionForm');
+    var paramSerialized = formNewValues.serialize() + "&" + formList.serialize().replace(/=on/g, '').replace(/test-/g, 'test=').replace(/testcase-/g, '&testcase=');
+
+    showLoaderInModal('#massActionTestCaseModal');
+
+    var jqxhr = $.post("DeleteTestCaseLabel", paramSerialized, "json");
+    $.when(jqxhr).then(function (data) {
+        // unblock when remote call returns 
+        hideLoaderInModal('#massActionTestCaseModal');
+        if ((getAlertType(data.messageType) === "success") || (getAlertType(data.messageType) === "warning")) {
+            $('#testCaseTable').DataTable().draw();
+            $("#selectAll").prop("checked", false);
+            $('#massActionTestCaseModal').modal('hide');
+            showMessage(data);
+        } else {
+            showMessage(data, $('#massActionTestCaseModal'));
+        }
+    }).fail(handleErrorAjaxAfterTimeout);
+}
+
+function massActionModalSaveHandler_update() {
+    clearResponseMessage($('#massActionTestCaseModal'));
+
+    var formNewValues = $('#massActionTestCaseModal #massActionTestCaseModalFormUpdate');
+    var formList = $('#massActionForm');
+    var paramSerialized = formNewValues.serialize() + "&" + formList.serialize().replace(/=on/g, '').replace(/test-/g, 'test=').replace(/testcase-/g, '&testcase=');
+
+    showLoaderInModal('#massActionTestCaseModal');
+
+    var jqxhr = $.post("UpdateTestCaseMass", paramSerialized, "json");
+    $.when(jqxhr).then(function (data) {
+        // unblock when remote call returns 
+        hideLoaderInModal('#massActionTestCaseModal');
+        if ((getAlertType(data.messageType) === "success") || (getAlertType(data.messageType) === "warning")) {
+            $('#testCaseTable').DataTable().draw();
+            $("#selectAll").prop("checked", false);
+            $('#massActionTestCaseModal').modal('hide');
+            showMessage(data);
+        } else {
+            showMessage(data, $('#massActionTestCaseModal'));
+        }
+    }).fail(handleErrorAjaxAfterTimeout);
+}
+
+function massActionModalCloseHandler() {
+    // reset form values
+    $('#massActionTestCaseModal #massActionTestCaseModalForm')[0].reset();
+    // remove all errors on the form fields
+    $(this).find('div.has-error').removeClass("has-error");
+    // clear the response messages of the modal
+    clearResponseMessage($('#massActionTestCaseModal'));
+}
+
+function massActionClick() {
+    var doc = new Doc();
+    clearResponseMessageMainPage();
+
+    // When creating a new item, Define here the default value.
+    var formList = $('#massActionForm');
+    if (formList.serialize().indexOf("test-") === -1) {
+        var localMessage = new Message("danger", doc.getDocLabel("page_global", "message_massActionError"));
+        showMessage(localMessage, null);
+    } else {
+        // Title of the label list.
+        $("[name='labelMassField']").html("Labels from system : " + getUser().defaultSystem);
+
+        // Labels
+        loadLabel(undefined, getUser().defaultSystem, "#selectLabelAdd", "4");
+
+        // Load Status.
+        $("[name='massStatus']").empty();
+        displayInvariantList("massStatus", "TCSTATUS", false);
+
+        // Load Function.
+        var availableFunctions = getInvariantArray("FUNCTION", false);
+        $('#massActionTestCaseModal').find("#massFunction").autocomplete({
+            source: availableFunctions
+        });
+
+        // Load Applications.
+        $("[name='massApplication']").empty();
+        var jqxhr = $.getJSON("ReadApplication");
+        $.when(jqxhr).then(function (data) {
+            var applicationList = $("[name='massApplication']");
+
+            for (var index = 0; index < data.contentTable.length; index++) {
+                if (data.contentTable[index].system === getUser().defaultSystem) {
+                    applicationList.prepend($('<option></option>').addClass('bold-option').text(data.contentTable[index].application).val(data.contentTable[index].application));
+                } else {
+                    applicationList.append($('<option></option>').text(data.contentTable[index].application).val(data.contentTable[index].application));
+                }
+            }
+        });
+
+        $('#massActionTestCaseModal').modal('show');
+    }
+}
 
 function loadTestFilters(selectTest) {
     var jqxhr = $.get("ReadTest", "system=" + getUser().defaultSystem);
@@ -311,7 +358,7 @@ function loadTestFilters(selectTest) {
 
                 var selectTestNew = $("#selectTest option:selected").attr("value");
                 if (selectTestNew !== selectTest) { // If the url test value does not exist in the combobox --> we display a warning message.
-                    showMessageMainPage("warning", "The test \"" + selectTest + "\" contains no testcase on application that belong to " + getUser().defaultSystem + " system.");
+                    showMessageMainPage("warning", "The test \"" + selectTest + "\" contains no testcase on application that belong to " + getUser().defaultSystem + " system.", false);
                     option = $('<option></option>').attr("value", selectTest).text(selectTest);
                     $('#selectTest').append(option);
 //                    $('#selectTest').val(selectTest);
@@ -319,7 +366,7 @@ function loadTestFilters(selectTest) {
                 }
             }
         } else {
-            showMessageMainPage(messageType, data.message);
+            showMessageMainPage(messageType, data.message, false);
         }
     }).fail(handleErrorAjaxAfterTimeout);
 }
@@ -336,9 +383,9 @@ function setActive(checkbox) {
     }
 
     $.ajax({
-        url: "UpdateTestCase2",
+        url: "UpdateTestCase",
         method: "POST",
-        data: {test: test, testCase: testCase, active: active},
+        data: {test: test, testCase: testCase, originalTest: test, originalTestCase: testCase, active: active},
         dataType: "json",
         success: function (data) {
             if (active === "Y") {
@@ -349,7 +396,7 @@ function setActive(checkbox) {
             clearResponseMessageMainPage();
             var messageType = getAlertType(data.messageType);
             //show message in the main page
-            showMessageMainPage(messageType, data.message);
+            showMessageMainPage(messageType, data.message, false);
         },
         error: showUnexpectedError
     });
@@ -371,7 +418,7 @@ function setCountry(checkbox) {
                 clearResponseMessageMainPage();
                 var messageType = getAlertType(data.messageType);
                 //show message in the main page
-                showMessageMainPage(messageType, data.message);
+                showMessageMainPage(messageType, data.message, false);
             },
             error: showUnexpectedError
         });
@@ -386,7 +433,7 @@ function setCountry(checkbox) {
                 clearResponseMessageMainPage();
                 var messageType = getAlertType(data.messageType);
                 //show message in the main page
-                showMessageMainPage(messageType, data.message);
+                showMessageMainPage(messageType, data.message, false);
             },
             error: showUnexpectedError
         });
@@ -405,80 +452,73 @@ function aoColumnsFunc(countries, tableId) {
 
     var countryLen = countries.length;
     var aoColumns = [
-//PREPARE MASS ACTION
-//        {"data": null,
-//            "title": '<input id="selectAll" title="' + doc.getDocLabel("page_global", "tooltip_massAction") + '" type="checkbox"></input>',
-//            "bSortable": false,
-//            "sWidth": "30px",
-//            "bSearchable": false,
-//            "mRender": function (data, type, obj) {
-//                console.log(obj);
-//                var hasPermissions = $("#" + tableId).attr("hasPermissions");
-//
-//                var selectBrp = '<input id="selectLine" \n\
-//                                class="selectBrp margin-right5" \n\
-//                                name="id-' + obj["test"] + obj["testCase"] + '" data-line="select" data-id="' + obj["test"] + obj["testCase"] + '" title="' + doc.getDocLabel("page_global", "tooltip_massActionLine") + '" type="checkbox">\n\
-//                                </input>';
-//                if (hasPermissions === "true") { //only draws the options if the user has the correct privileges
-//                    return '<div class="center btn-group width50">' + selectBrp + '</div>';
-//                }
-//                return '<div class="center btn-group width50"></div>';
-//
-//            }
-//        },
+        {"data": null,
+            "title": '<input id="selectAll" title="' + doc.getDocLabel("page_global", "tooltip_massAction") + '" type="checkbox"></input>',
+            "bSortable": false,
+            "sWidth": "30px",
+            "bSearchable": false,
+            "mRender": function (data, type, obj) {
+                var selectBrp = '<input id="selectLine" \n\
+                                class="selectBrp margin-right5" \n\
+                                name="test-' + obj["test"] + 'testcase-' + obj["testCase"] + '" data-line="select" data-id="' + obj["test"] + obj["testCase"] + '" title="' + doc.getDocLabel("page_global", "tooltip_massActionLine") + '" type="checkbox">\n\
+                                </input>';
+                if (data.hasPermissionsUpdate) { //only draws the options if the user has the correct privileges
+                    return '<div class="center btn-group width50">' + selectBrp + '</div>';
+                }
+                return '<div class="center btn-group width50"></div>';
+
+            }
+        },
         {
             "data": null,
             "bSortable": false,
             "bSearchable": false,
             "title": doc.getDocOnline("page_global", "columnAction"),
             "sDefaultContent": "",
-            "sWidth": "190px",
+            "sWidth": "160px",
             "mRender": function (data, type, obj) {
                 var buttons = "";
 
-                var testCaseLink = '<button id="testCaseLink" class="btn btn-primary btn-inverse btn-xs margin-right5"\n\
-                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_testcaselist", "btn_editScript") + '" onclick="window.open(\'./TestCase.jsp?Test=' + encodeURIComponent(obj["test"]) + '&TestCase=' + encodeURIComponent(obj["testCase"]) + '&Load=Load\', \'_blank\')">\n\
-                                    <span class="glyphicon glyphicon-new-window"></span>\n\
-                                    </button>';
-                var editEntry = '<button id="editEntry" onclick="editTestCaseClick(\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testCase"]) + '\');"\n\
+                var editEntry = '<button id="editEntry" onclick="openModalTestCase(\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testCase"]) + '\',\'EDIT\');"\n\
                                 class="editEntry btn btn-default btn-xs margin-right5" \n\
                                 name="editEntry" data-toggle="tooltip"  title="' + doc.getDocLabel("page_testcaselist", "btn_edit") + '" type="button">\n\
                                 <span class="glyphicon glyphicon-pencil"></span></button>';
-                var viewEntry = '<button id="editEntry" onclick="editTestCaseClick(\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testCase"]) + '\');"\n\
+                var viewEntry = '<button id="editEntry" onclick="openModalTestCase(\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testCase"]) + '\',\'EDIT\');"\n\
                                 class="editEntry btn btn-default btn-xs margin-right5" \n\
                                 name="editEntry" data-toggle="tooltip"  title="' + doc.getDocLabel("page_testcaselist", "btn_view") + '" type="button">\n\
                                 <span class="glyphicon glyphicon-eye-open"></span></button>';
                 var deleteEntry = '<button id="deleteEntry" onclick="deleteEntryClick(\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testCase"]) + '\');"\n\
-                                        class="deleteEntry btn btn-default btn-xs margin-right5" \n\
+                                        class="deleteEntry btn btn-default btn-xs margin-right25" \n\
                                         name="deleteEntry" data-toggle="tooltip"  title="' + doc.getDocLabel("page_testcaselist", "btn_delete") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-trash"></span></button>';
-                var duplicateEntry = '<button id="duplicateEntry" onclick="duplicateTestCaseClick(\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testCase"]) + '\');"\n\
+                var duplicateEntry = '<button id="duplicateEntry" onclick="openModalTestCase(\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testCase"]) + '\',\'DUPLICATE\');"\n\
                                         class="duplicateEntry btn btn-default btn-xs margin-right5" \n\
                                         name="duplicateEntry" data-toggle="tooltip"  title="' + doc.getDocLabel("page_testcaselist", "btn_duplicate") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-duplicate"></span></button>';
-                var testCaseBetaLink = '<button id="testCaseBetaLink" class="btn btn-warning btn-xs margin-right5"\n\
-                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_testcaselist", "btn_editScript") + ' (beta page)" onclick="window.open(\'./TestCaseScript.jsp?test=' + encodeURIComponent(obj["test"]) + '&testcase=' + encodeURIComponent(obj["testCase"]) + '\', \'_blank\')">\n\
+                var editScript = '<a id="testCaseLink" class="btn btn-primary btn-xs marginRight5"\n\
+                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_testcaselist", "btn_editScript") + '" href="./TestCaseScript.jsp?test=' + encodeURIComponent(obj["test"]) + '&testcase=' + encodeURIComponent(obj["testCase"]) + '">\n\
                                     <span class="glyphicon glyphicon-new-window"></span>\n\
-                                    </button>';
-                var runTest = '<button id="runTest" class="btn btn-default btn-xs margin-right5"\n\
-                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_testcaselist", "btn_runTest") + '" onclick=window.location="./RunTests1.jsp?test=' + encodeURIComponent(obj["test"]) + "&testcase=" + encodeURIComponent(obj["testCase"]) + '">\n\
+                                    </a>';
+                var runTest = '<a id="runTest" class="btn btn-primary btn-xs marginRight5 marginLeft20"\n\
+                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_testcaselist", "btn_runTest") + '" href="./RunTests.jsp?test=' + encodeURIComponent(obj["test"]) + '&testcase=' + encodeURIComponent(obj["testCase"]) + '">\n\
                                     <span class="glyphicon glyphicon-play"></span>\n\
-                                    </button>';
+                                    </a>';
 
                 if (data.hasPermissionsUpdate) {
                     buttons += editEntry;
+                    buttons += editScript;
                     buttons += duplicateEntry;
                 } else {
                     buttons += viewEntry;
+                    buttons += editScript;
+                    if (data.hasPermissionsCreate) {
+                        buttons += duplicateEntry;
+                    }
                 }
                 if (data.hasPermissionsDelete) {
                     buttons += deleteEntry;
                 }
                 buttons += runTest;
-                buttons += testCaseLink;
-                buttons += testCaseBetaLink;
-
-
 
                 return '<div class="center btn-group width250">' + buttons + '</div>';
             }
@@ -493,8 +533,17 @@ function aoColumnsFunc(countries, tableId) {
         {
             "data": "testCase",
             "sName": "tec.testCase",
+            "like": true,
             "title": doc.getDocOnline("testcase", "TestCase"),
-            "sWidth": "70px",
+            "sWidth": "82px",
+            "sDefaultContent": ""
+        },
+        {
+            "data": "description",
+            "sName": "tec.description",
+            "like": true,
+            "title": doc.getDocOnline("testcase", "Description"),
+            "sWidth": "300px",
             "sDefaultContent": ""
         },
         {
@@ -506,10 +555,17 @@ function aoColumnsFunc(countries, tableId) {
             "render": function (data, type, full, meta) {
                 var labelValue = '';
                 $.each(data, function (i, e) {
-                    labelValue += '<div style="float:left"><span class="label label-primary" onclick="filterOnLabel(this)" style="cursor:pointer;background-color:' + e.color + '">' + e.name + '</span></div> ';
+                    labelValue += '<div style="float:left"><span class="label label-primary" onclick="filterOnLabel(this)" style="cursor:pointer;background-color:' + e.color + '" data-toggle="tooltip" title="' + e.description + '">' + e.name + '</span></div> ';
                 });
                 return labelValue;
             }
+        },
+        {
+            "data": "status",
+            "sName": "tec.status",
+            "title": doc.getDocOnline("testcase", "Status"),
+            "sWidth": "100px",
+            "sDefaultContent": ""
         },
         {
             "data": "application",
@@ -519,23 +575,9 @@ function aoColumnsFunc(countries, tableId) {
             "sDefaultContent": ""
         },
         {
-            "data": "project",
-            "sName": "tec.project",
-            "title": doc.getDocOnline("project", "idproject"),
-            "sWidth": "100px",
-            "sDefaultContent": ""
-        },
-        {
-            "data": "usrCreated",
-            "sName": "tec.usrCreated",
-            "title": doc.getDocOnline("testcase", "Creator"),
-            "sWidth": "100px",
-            "sDefaultContent": ""
-        },
-        {
-            "data": "usrModif",
-            "sName": "tec.usrModif",
-            "title": doc.getDocOnline("testcase", "LastModifier"),
+            "data": "system",
+            "sName": "app.system",
+            "title": doc.getDocOnline("invariant", "SYSTEM"),
             "sWidth": "100px",
             "sDefaultContent": ""
         },
@@ -565,17 +607,25 @@ function aoColumnsFunc(countries, tableId) {
             }
         },
         {
-            "data": "status",
-            "sName": "tec.status",
-            "title": doc.getDocOnline("testcase", "Status"),
-            "sWidth": "100px",
-            "sDefaultContent": ""
-        },
-        {
             "data": "priority",
             "sName": "tec.priority",
             "title": doc.getDocOnline("invariant", "PRIORITY"),
             "sWidth": "70px",
+            "sDefaultContent": ""
+        },
+        {
+            "data": "function",
+            "like": true,
+            "sName": "tec.function",
+            "title": doc.getDocOnline("testcase", "Function"),
+            "sWidth": "100px",
+            "sDefaultContent": ""
+        },
+        {
+            "data": "project",
+            "sName": "tec.project",
+            "title": doc.getDocOnline("project", "idproject"),
+            "sWidth": "100px",
             "sDefaultContent": ""
         },
         {
@@ -588,6 +638,7 @@ function aoColumnsFunc(countries, tableId) {
         {
             "data": "refOrigine",
             "sName": "tec.refOrigine",
+            "like": true,
             "title": doc.getDocOnline("testcase", "RefOrigine"),
             "sWidth": "80px",
             "sDefaultContent": ""
@@ -600,17 +651,44 @@ function aoColumnsFunc(countries, tableId) {
             "sDefaultContent": ""
         },
         {
-            "data": "description",
-            "sName": "tec.description",
-            "title": doc.getDocOnline("testcase", "Description"),
-            "sWidth": "300px",
+            "data": "dateCreated",
+            "sName": "tec.dateCreated",
+            "like": true,
+            "title": doc.getDocOnline("transversal", "DateCreated"),
+            "sWidth": "150px",
             "sDefaultContent": ""
         },
         {
-            "data": "dateCreated",
-            "sName": "tec.dateCreated",
-            "title": doc.getDocOnline("testcase", "TCDateCrea"),
+            "data": "usrCreated",
+            "sName": "tec.usrCreated",
+            "title": doc.getDocOnline("transversal", "UsrCreated"),
+            "sWidth": "100px",
+            "sDefaultContent": ""
+        },
+        {
+            "data": "testCaseVersion",
+            "sName": "tec.testCaseVersion",
+            "title": doc.getDocOnline("testcase", "TestCaseVersion"),
+            "sWidth": "50px",
+            "sDefaultContent": ""
+        },
+        {
+            "data": "dateModif",
+            "like": true,
+            "sName": "tec.dateModif",
+            "title": doc.getDocOnline("transversal", "DateModif"),
             "sWidth": "150px",
+            "sDefaultContent": "",
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["dateModif"]);
+            }
+
+        },
+        {
+            "data": "usrModif",
+            "sName": "tec.usrModif",
+            "title": doc.getDocOnline("transversal", "UsrModif"),
+            "sWidth": "100px",
             "sDefaultContent": ""
         }
     ];

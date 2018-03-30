@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,24 +27,24 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.cerberus.engine.entity.MessageEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Robot;
-import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.exception.CerberusException;
 import org.cerberus.crud.service.IRobotService;
 import org.cerberus.crud.service.impl.RobotService;
+import org.cerberus.engine.entity.MessageEvent;
+import org.cerberus.enums.MessageEventEnum;
+import org.cerberus.exception.CerberusException;
 import org.cerberus.util.ParameterParserUtil;
 import org.cerberus.util.answer.AnswerItem;
 import org.cerberus.util.answer.AnswerList;
 import org.cerberus.util.answer.AnswerUtil;
+import org.cerberus.util.servlet.ServletUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -61,6 +61,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 public class ReadRobot extends HttpServlet {
 
     private IRobotService robotService;
+    private static final Logger LOG = LogManager.getLogger(ReadRobot.class);
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -81,6 +82,9 @@ public class ReadRobot extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("utf8");
 
+        // Calling Servlet Transversal Util.
+        ServletUtil.servletStart(request);
+
         // Default message to unexpected error.
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
@@ -88,7 +92,7 @@ public class ReadRobot extends HttpServlet {
         /**
          * Parsing and securing all required parameters.
          */
-        String robot = ParameterParserUtil.parseStringParam(request.getParameter("robot"), "");
+        String robot = ParameterParserUtil.parseStringParamAndSanitize(request.getParameter("robot"), "");
         Integer robotid = 0;
         boolean robotid_error = false;
         if (request.getParameter("robotid") != null) {
@@ -120,13 +124,13 @@ public class ReadRobot extends HttpServlet {
                     answer = findRobotByKeyTech(robotid, appContext, userHasPermissions);
                     jsonResponse = (JSONObject) answer.getItem();
                 } else if (!(request.getParameter("robot") == null)) {
-                    answer = findRobotByKey(robot, appContext, userHasPermissions);
+                    answer = findRobotByKey(robot, appContext, request);
                     jsonResponse = (JSONObject) answer.getItem();
                 } else if (!Strings.isNullOrEmpty(columnName)) {
-                //If columnName is present, then return the distinct value of this column.
-                answer = findDistinctValuesOfColumn(appContext, request, columnName);
-                jsonResponse = (JSONObject) answer.getItem();
-            } else {
+                    //If columnName is present, then return the distinct value of this column.
+                    answer = findDistinctValuesOfColumn(appContext, request, columnName);
+                    jsonResponse = (JSONObject) answer.getItem();
+                } else {
                     answer = findRobotList(appContext, userHasPermissions, request);
                     jsonResponse = (JSONObject) answer.getItem();
                 }
@@ -139,7 +143,7 @@ public class ReadRobot extends HttpServlet {
             response.getWriter().print(jsonResponse.toString());
 
         } catch (JSONException e) {
-            org.apache.log4j.Logger.getLogger(ReadRobot.class.getName()).log(org.apache.log4j.Level.ERROR, null, e);
+            LOG.warn(e);
             //returns a default error message with the json format that is able to be parsed by the client-side
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
         }
@@ -160,7 +164,7 @@ public class ReadRobot extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadRobot.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -178,7 +182,7 @@ public class ReadRobot extends HttpServlet {
         try {
             processRequest(request, response);
         } catch (CerberusException ex) {
-            Logger.getLogger(ReadRobot.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
     }
 
@@ -208,20 +212,29 @@ public class ReadRobot extends HttpServlet {
         String columnToSort[] = sColumns.split(",");
         String columnName = columnToSort[columnToSortParameter];
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
-        
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
+
         Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
-            if (null!=request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
+            if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
                 List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+                if (individualLike.contains(columnToSort[a])) {
+                    individualSearch.put(columnToSort[a] + ":like", search);
+                } else {
+                    individualSearch.put(columnToSort[a], search);
+                }
             }
         }
-        
+
         AnswerList resp = robotService.readByCriteria(startPosition, length, columnName, sort, searchParameter, individualSearch);
 
         JSONArray jsonArray = new JSONArray();
         if (resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
             for (Robot robot : (List<Robot>) resp.getDataList()) {
+                if (robot != null) {
+                    robot.setHostPassword(null); // hide the password to the view
+                }
+
                 jsonArray.put(convertRobotToJSONObject(robot));
             }
         }
@@ -248,6 +261,9 @@ public class ReadRobot extends HttpServlet {
         if (answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
             //if the service returns an OK message then we can get the item and convert it to JSONformat
             Robot lib = (Robot) answer.getItem();
+            if (lib != null) {
+                lib.setHostPassword(null); // hide the password to the view
+            }
             JSONObject response = convertRobotToJSONObject(lib);
             object.put("contentTable", response);
         }
@@ -259,25 +275,40 @@ public class ReadRobot extends HttpServlet {
         return item;
     }
 
-    private AnswerItem findRobotByKey(String robot, ApplicationContext appContext, boolean userHasPermissions) throws JSONException, CerberusException {
+    private AnswerItem findRobotByKey(String robot, ApplicationContext appContext, HttpServletRequest request) throws JSONException, CerberusException {
         AnswerItem item = new AnswerItem();
         JSONObject object = new JSONObject();
 
         IRobotService libService = appContext.getBean(IRobotService.class);
 
-        //finds the project     
-        AnswerItem answer = libService.readByKey(robot);
+        //finds the project
+        try {
+            Robot robotObj = libService.readByKey(robot);
 
-        if (answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
-            //if the service returns an OK message then we can get the item and convert it to JSONformat
-            Robot lib = (Robot) answer.getItem();
-            JSONObject response = convertRobotToJSONObject(lib);
-            object.put("contentTable", response);
+            if (robotObj != null) {
+                robotObj.setHostPassword(null); // hide the password to the view
+            }
+
+            if (robot == null) {
+                item.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND));
+            } else {
+                //if the service returns an OK message then we can get the item and convert it to JSONformat
+                JSONObject response = convertRobotToJSONObject(robotObj);
+                response.put("hasPermissionsUpdate", libService.hasPermissionsUpdate(robotObj, request));
+                response.put("hasPermissionsDelete", libService.hasPermissionsDelete(robotObj, request));
+
+                object.put("contentTable", response);
+
+                item.setResultMessage(new MessageEvent(MessageEventEnum.DATA_OPERATION_OK));
+            }
+        } catch (CerberusException e) {
+            item.setItem(robot);
+            item.setResultMessage(new MessageEvent(e.getMessageError().getCodeString(), e.getMessageError().getDescription()));
         }
 
-        object.put("hasPermissions", userHasPermissions);
+        object.put("hasPermissionsCreate", libService.hasPermissionsCreate(null, request));
+
         item.setItem(object);
-        item.setResultMessage(answer.getResultMessage());
 
         return item;
     }
@@ -294,16 +325,22 @@ public class ReadRobot extends HttpServlet {
         JSONObject object = new JSONObject();
 
         robotService = appContext.getBean(RobotService.class);
-        
+
         String searchParameter = ParameterParserUtil.parseStringParam(request.getParameter("sSearch"), "");
         String sColumns = ParameterParserUtil.parseStringParam(request.getParameter("sColumns"), "test,testcase,application,project,ticket,description,behaviororvalueexpected,readonly,bugtrackernewurl,deploytype,mavengroupid");
         String columnToSort[] = sColumns.split(",");
 
+        List<String> individualLike = new ArrayList(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
+
         Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
-            if (null!=request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
+            if (null != request.getParameter("sSearch_" + a) && !request.getParameter("sSearch_" + a).isEmpty()) {
                 List<String> search = new ArrayList(Arrays.asList(request.getParameter("sSearch_" + a).split(",")));
-                individualSearch.put(columnToSort[a], search);
+                if (individualLike.contains(columnToSort[a])) {
+                    individualSearch.put(columnToSort[a] + ":like", search);
+                } else {
+                    individualSearch.put(columnToSort[a], search);
+                }
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,21 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
-function initPage(){
+function initPage() {
     var doc = new Doc();
 
     displayHeaderLabel(doc);
-    
+
     var lang = $("#MyLang").val();
-    $("#documentationFrame").attr("src", "./documentation/documentation_"+lang+".html");
+    var windowsHeight = $(window).height() + 'px';
+    
+    var hash = window.location.hash.substr(1);
+    $("#documentationFrame").attr("src", "./documentation/documentation_" + lang + ".html#" + hash);
+    $('#documentationFrame').css('height', windowsHeight);
+
+    $('#documentationFrame').load(function () {
+        $('#documentationFrame').contents().find('#content').css('height', windowsHeight).css('overflow', 'auto');
+    });
+
 }
 
 function resizeIframe(obj) {
     obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
-  }
+}

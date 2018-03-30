@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -44,11 +46,14 @@ public class MessageGeneral {
     private final int code;
     private final String codeString;
     private String description;
+    
+    private MessageGeneralEnum source;
 
     public MessageGeneral(MessageGeneralEnum messageGeneralEnum) {
         this.code = messageGeneralEnum.getCode();
         this.codeString = messageGeneralEnum.getCodeString();
         this.description = messageGeneralEnum.getDescription();
+        this.source = messageGeneralEnum;
     }
 
     public int getCode() {
@@ -65,6 +70,10 @@ public class MessageGeneral {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public MessageGeneralEnum getSource() {
+        return source;
     }
 
     /**

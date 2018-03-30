@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -52,7 +54,20 @@ public interface ITestCaseStepExecutionDAO {
      */
     List<TestCaseStepExecution> findTestCaseStepExecutionById(long id);
 
+    /**
+     *
+     * @param executionId
+     * @param test
+     * @param testcase
+     * @return
+     */
     public AnswerList readByVarious1(long executionId, String test, String testcase);
     
+    /**
+     *
+     * @param resultSet
+     * @return
+     * @throws SQLException
+     */
     public TestCaseStepExecution loadFromResultSet(ResultSet resultSet) throws SQLException;
 }

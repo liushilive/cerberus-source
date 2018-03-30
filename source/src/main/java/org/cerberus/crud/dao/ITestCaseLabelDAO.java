@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -41,7 +43,16 @@ public interface ITestCaseLabelDAO {
      * @param id
      * @return
      */
-    AnswerItem<TestCaseLabel> readByKey(Integer id);
+    AnswerItem<TestCaseLabel> readByKeyTech(Integer id);
+    
+    /**
+     *
+     * @param test
+     * @param testCase
+     * @param id
+     * @return
+     */
+    AnswerItem<TestCaseLabel> readByKey(String test, String testCase, Integer id);
 
     /**
      *

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -36,6 +36,16 @@ import java.io.Serializable;
  */
 public class CampaignParameter implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    public static final String BROWSER_PARAMETER = "BROWSER";
+    public static final String ROBOT_PARAMETER = "ROBOT";
+    public static final String COUNTRY_PARAMETER = "COUNTRY";
+    public static final String ENVIRONMENT_PARAMETER = "ENVIRONMENT";
+    public static final String STATUS_PARAMETER = "STATUS";
+    public static final String APPLICATION_PARAMETER = "APPLICATION";
+    public static final String SYSTEM_PARAMETER = "SYSTEM";
+    public static final String PRIORITY_PARAMETER = "PRIORITY";
+    public static final String GROUP_PARAMETER = "GROUP";
 
     private Integer campaignparameterID;
     private String parameter;
@@ -121,6 +131,9 @@ public class CampaignParameter implements Serializable {
             return false;
         }
         final CampaignParameter other = (CampaignParameter) obj;
+        if ((this.campaignparameterID == null) ? (other.campaignparameterID != null) : !this.campaignparameterID.equals(other.campaignparameterID)) {
+            return false;
+        }
         if ((this.parameter == null) ? (other.parameter != null) : !this.parameter.equals(other.parameter)) {
             return false;
         }

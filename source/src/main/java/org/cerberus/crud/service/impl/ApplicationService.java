@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,7 +21,8 @@ package org.cerberus.crud.service.impl;
 
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import org.cerberus.crud.dao.IApplicationDAO;
 import org.cerberus.crud.entity.Application;
@@ -46,7 +47,7 @@ public class ApplicationService implements IApplicationService {
     @Autowired
     private IApplicationDAO ApplicationDAO;
 
-    private static final Logger LOG = Logger.getLogger("ApplicationService");
+    private static final Logger LOG = LogManager.getLogger("ApplicationService");
 
     private final String OBJECT_NAME = "Application";
 
@@ -97,8 +98,8 @@ public class ApplicationService implements IApplicationService {
     }
 
     @Override
-    public Answer update(Application object) {
-        return ApplicationDAO.update(object);
+    public Answer update(String application, Application object) {
+        return ApplicationDAO.update(application, object);
     }
 
     @Override

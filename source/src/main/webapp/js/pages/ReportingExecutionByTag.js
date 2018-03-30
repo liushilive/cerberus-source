@@ -1,5 +1,5 @@
 /*
- * Cerberus  Copyright (C) 2013  vertigo17
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,26 +19,47 @@
  */
 /* global handleErrorAjaxAfterTimeout */
 
-$.when($.getScript("js/pages/global/global.js")).then(function () {
+$.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
 
         bindToggleCollapse();
+
+        var urlTag = GetURLParameter('Tag');
 
         $("#splitFilter input").click(function () {
             //save the filter preferences in the session storage
             var serial = $("#splitFilter input").serialize();
             var obj = convertSerialToJSONObject(serial);
             sessionStorage.setItem("splitFilter", JSON.stringify(obj));
+            //split when check or uncheck filter
+            if (urlTag !== null && urlTag !== "" && urlTag !== undefined) {
+                filterCountryBrowserReport(urlTag);
+            }
         });
 
+        $(document).on("mouseover", "td.center", function (e) {
+            var id = $(e.currentTarget).attr("aria-describedby")
+            $("#" + id).css("display", "none")
+        })
+
         splitFilterPreferences();
+
+        $("#splitLabelFilter input").click(function () {
+            //save the filter preferences in the session storage
+            var serial = $("#splitLabelFilter input").serialize();
+            var obj = convertSerialToJSONObject(serial);
+            sessionStorage.setItem("splitLabelFilter", JSON.stringify(obj));
+            //split when check or uncheck filter
+            if (urlTag !== null && urlTag !== "" && urlTag !== undefined) {
+                filterLabelReport(urlTag);
+            }
+        });
 
         $("#reportByEnvCountryBrowser .nav li").on("click", function (event) {
             stopPropagation(event);
             $(this).parent().find(".active").removeClass("active");
             $(this).addClass("active");
-
             if ($(this).prop("id") === "tab") {
                 $("#progressEnvCountryBrowser").hide();
                 $("#summaryTableDiv").show();
@@ -48,11 +69,21 @@ $.when($.getScript("js/pages/global/global.js")).then(function () {
             }
         });
 
-        var urlTag = GetURLParameter('Tag');
         loadTagFilters(urlTag);
+        if (urlTag !== null) {
+            loadAllReports(urlTag);
+        }
         $('body').tooltip({
             selector: '[data-toggle="tooltip"]'
         });
+
+        //open Run navbar Menu
+        openNavbarMenu("navMenuExecutionReporting");
+
+        $('[data-toggle="popover"]').popover({
+            'placement': 'auto',
+            'container': 'body'}
+        );
     });
 });
 
@@ -148,7 +179,6 @@ function displaySummaryTableLabel(doc) {
     $("#summaryTableHeaderEnvironment").html(doc.getDocOnline("invariant", "ENVIRONMENT"));
 
     $("#selectTableButtonText").html(doc.getDocOnline("page_reportbytag", "btn_select_table"));
-
 }
 
 function displayExportDataLabel(doc) {
@@ -170,55 +200,126 @@ function displayPageLabel(doc) {
     $("#statusLabel").html(doc.getDocLabel("testcase", "Status") + " :");
 }
 
+
 function loadTagFilters(urlTag) {
-    var jqxhr = $.get("ReadTag", "", "json");
-    $.when(jqxhr).then(function (data) {
-        var messageType = getAlertType(data.messageType);
-        if (messageType === "success") {
-            var index;
-            var len = data.contentTable.length;
 
-            $('#selectTag').append($('<option></option>').attr("value", "")).attr("placeholder", "Select a Tag");
-            for (index = 0; index < len; index++) {
-                //the character " needs a special encoding in order to avoid breaking the string that creates the html element   
-                var encodedString = data.contentTable[index].replace(/\"/g, "%22");
-                var option = $('<option></option>').attr("value", encodedString).text(data.contentTable[index]);
-                $('#selectTag').append(option);
-            }
+    $("#selectTag").select2(getComboConfigTag());
 
-            $('#selectTag').select2();
-
-            //if the tag is passed as a url parameter, then it loads the report from this tag
-            if (urlTag !== null) {
-                $('#selectTag').val(urlTag).trigger("change");
-                loadReport();
-            }
-        } else {
-            showMessageMainPage(messageType, data.message);
-        }
-    }).fail(handleErrorAjaxAfterTimeout);
+    if (urlTag !== null) {
+        var $option = $('<option></option>').text(urlTag).val(urlTag);
+        $("#selectTag").append($option).trigger('change'); // append the option and update Select2
+    }
 }
 
-function loadReport() {
-    var selectTag = $("#selectTag option:selected").text();
 
-    InsertURLInHistory('ReportingExecutionByTag.jsp?Tag=' + encodeURIComponent(selectTag));
+function loadAllReports(urlTag) {
 
-    if (selectTag !== "") {
-        //handle the test case execution list display
-        loadEnvCountryBrowserReport();
-        loadReportList();
-        //Retrieve data for charts and draw them
-        var jqxhr = $.get("GetReportData", {CampaignName: "null", Tag: selectTag}, "json");
-        $.when(jqxhr).then(function (data) {
-            //clear the old report content before redrawing it
-            $("#ReportByStatusTable").empty();
-            $("#statusChart").empty();
-            $("#functionChart").empty();
-            loadReportByStatusTable(data);
-            loadReportByFunctionChart(data);
-        });
+    if (urlTag === undefined) {
+        urlTag = $('#selectTag').val();
+        InsertURLInHistory('ReportingExecutionByTag.jsp?Tag=' + encodeURIComponent(urlTag) + '');
     }
+
+    if (urlTag !== "") {
+        loadReportingData(urlTag);
+    }
+}
+
+function loadReportingData(selectTag) {
+    //var selectTag = $("#selectTag option:selected").text();
+    showLoader($("#TagDetail"));
+    showLoader($("#ReportByStatus"));
+    showLoader($("#functionChart"));
+    showLoader($("#BugReportByStatus"));
+    showLoader($("#reportEnvCountryBrowser"));
+    showLoader($("#reportLabel"));
+    showLoader($("#listReport"));
+    var statusFilter = $("#statusFilter input");
+    var countryFilter = $("#countryFilter input");
+    var params = $("#splitFilter input");
+    var paramsLabel = $("#splitLabelFilter input");
+    $("#startExe").val("");
+    $("#endExe").val("");
+    $("#endLastExe").val("");
+    $("#durExe").val("");
+    $("#TagUsrCreated").val("");
+    $("#Tagcampaign").val("");
+    //Retrieve data for charts and draw them
+    var jqxhr = $.get("ReadTestCaseExecutionByTag?Tag=" + selectTag + "&" + statusFilter.serialize() + "&" + countryFilter.serialize() + "&" + params.serialize() + "&" + paramsLabel.serialize(), null, "json");
+    $.when(jqxhr).then(function (data) {
+
+        // Tag Detail feed.
+        $("#startExe").val(data.tagObject.DateCreated);
+        $("#endExe").val(data.tagObject.DateEndQueue);
+        $("#endLastExe").val(data.functionChart.globalEnd);
+        $("#TagUsrCreated").val(data.tagObject.UsrCreated);
+        $("#Tagcampaign").val(data.tagObject.campaign);
+        $("#durExe").val(data.tagDuration);
+        if (data.tagDuration >= 0) {
+            $("#panelDuration").removeClass("hidden");
+            $("#durExe").removeClass("hidden");
+        } else {
+            $("#panelDuration").addClass("hidden");
+            $("#durExe").addClass("hidden");
+        }
+        hideLoader($("#TagDetail"));
+
+        // Report By Status
+        $("#ReportByStatusTable").empty();
+        $("#statusChart").empty();
+        loadReportByStatusTable(data.functionChart, selectTag);
+
+        // Report By Function
+        $("#ReportByfunctionChart").empty();
+        loadReportByFunctionChart(data.functionChart, selectTag);
+
+        // Bug Report
+        $("#BugReportTable").empty();
+        loadBugReportByStatusTable(data.bugTrackerStat, selectTag);
+
+        // Report By Application Environment Country Browser
+        loadEnvCountryBrowserReport(data.statsChart);
+
+        // Report By Label
+        $("#progressLabel").empty();
+        if (!$.isEmptyObject(data.labelStat)) {
+            loadLabelReport(data.labelStat);
+        }
+
+        // Detailed Test Case List Report
+        loadReportList(data.table, selectTag);
+    });
+
+}
+
+function  filterCountryBrowserReport(selectTag, splitFilterSettings) {
+    //var selectTag = $("#selectTag option:selected").text();
+    var statusFilter = $("#statusFilter input");
+    var countryFilter = $("#countryFilter input");
+    var params = $("#splitFilter input");
+    var requestToServlet = "ReadTestCaseExecutionByTag?Tag=" + selectTag + "&" + statusFilter.serialize() + "&" + countryFilter.serialize() + "&" + params.serialize() + "&" + "outputReport=statsChart";
+    var jqxhr = $.get(requestToServlet, null, "json");
+
+    $.when(jqxhr).then(function (data) {
+        loadEnvCountryBrowserReport(data.statsChart);
+    });
+
+}
+
+function  filterLabelReport(selectTag) {
+    //var selectTag = $("#selectTag option:selected").text();
+    var statusFilter = $("#statusFilter input");
+    var countryFilter = $("#countryFilter input");
+    var params = $("#splitLabelFilter input");
+    var requestToServlet = "ReadTestCaseExecutionByTag?Tag=" + selectTag + "&" + statusFilter.serialize() + "&" + countryFilter.serialize() + "&" + params.serialize() + "&" + "outputReport=labelStat";
+    var jqxhr = $.get(requestToServlet, null, "json");
+
+    $.when(jqxhr).then(function (data) {
+        $("#progressLabel").empty();
+        if (!$.isEmptyObject(data.labelStat)) {
+            loadLabelReport(data.labelStat);
+        }
+    });
+
 }
 
 function generateBarTooltip(data, statusOrder) {
@@ -240,13 +341,25 @@ function generateBarTooltip(data, statusOrder) {
 
 function buildBar(obj) {
     var buildBar;
-    var statusOrder = ["OK", "KO", "FA", "NA", "NE", "PE", "CA"];
+    var statusOrder = ["OK", "KO", "FA", "NA", "NE", "PE", "QU", "CA"];
     var len = statusOrder.length;
-    var key = obj.environment + " " + obj.country + " " + obj.browser + " " + obj.application;
-    var tooltip = generateBarTooltip(obj, statusOrder);
+    //Build the title to show at the top of the bar by checking the value of the checkbox
+    var params = $("#splitFilter input");
+    var key = "";
+    if (params[0].checked)
+        key += obj.environment + " ";
+    if (params[1].checked)
+        key += obj.country + " ";
+    if (params[2].checked)
+        key += obj.robotDecli + " ";
+    if (params[3].checked)
+        key += obj.application;
+    if (key === "")//if no spliter if selected
+        key = "Total";
 
-    buildBar = '<div>' + key + '<div class="pull-right" style="display: inline;">Total executions : ' + obj.total + '</div>\n\
-                                                        </div><div class="progress" data-toggle="tooltip" data-html="true" title="' + tooltip + '">';
+    var tooltip = generateBarTooltip(obj, statusOrder);
+    buildBar = '<div class="row"><div class="col-sm-6">' + key + '</div><div class="col-sm-6 pull-right" style="display: inline;">Total executions : ' + obj.total + '</div>';
+    buildBar += '</div><div class="progress" data-toggle="tooltip" data-html="true" title="' + tooltip + '">';
 
     for (var i = 0; i < len; i++) {
         var status = statusOrder[i];
@@ -264,92 +377,226 @@ function buildBar(obj) {
     $("#progressEnvCountryBrowser").append(buildBar);
 }
 
-function loadEnvCountryBrowserReport() {
+function buildLabelBar(obj) {
+    var buildBar;
+    var statusOrder = ["OK", "KO", "FA", "NA", "NE", "PE", "QU", "CA"];
+    var len = statusOrder.length;
+    //Build the title to show at the top of the bar by checking the value of the checkbox
+    var params = $("#splitLabelFilter input");
+    var key = '<div class="pull-left"><span class="label label-primary" style="background-color:' + obj.label.map.color + '" data-toggle="tooltip" title="' + obj.label.map.description + '">' + obj.label.map.name + '</span></div>';
+
+    var tooltip = generateBarTooltip(obj, statusOrder);
+    buildBar = '<div>' + key + '<div class="pull-right" style="display: inline;margin-bottom:5px">Total executions : ' + obj.total + '</div>\n\
+                                                        </div><div class="progress" style="width:100%;" data-toggle="tooltip" data-html="true" title="' + tooltip + '">';
+
+    buildBar += '<div>'
+    for (var i = 0; i < len; i++) {
+        var status = statusOrder[i];
+
+        if (obj[status] !== 0) {
+            var percent = (obj[status] / obj.total) * 100;
+            var roundPercent = Math.round(percent * 10) / 10;
+
+            buildBar += '<div class="progress-bar status' + status + '" \n\
+                                    role="progressbar" \n\
+                                    style="width:' + percent + '%;">' + roundPercent + '%</div>';
+        }
+    }
+    buildBar += '</div>';
+    $("#progressLabel").append(buildBar);
+}
+
+function loadEnvCountryBrowserReport(data) {
     //adds a loader to a table 
     showLoader($("#reportEnvCountryBrowser"));
-    var tag = GetURLParameter('Tag');
     $("#progressEnvCountryBrowser").empty();
-    var params = convertSerialToJSONObject($("#splitFilter input").serialize());
 
-    //turns checkbox status too boolean
-    if (params.env === "on") {
-        params.env = true;
-    }
-    if (params.country === "on") {
-        params.country = true;
-    }
-    if (params.browser === "on") {
-        params.browser = true;
-    }
-    if (params.app === "on") {
-        params.app = true;
-    }
+    var len = data.contentTable.split.length;
+    if (len > 0) {
 
-    $.ajax({
-        type: "GET",
-        url: "GetReportData",
-        data: {split: true, Tag: tag, env: params.env, country: params.country, browser: params.browser, app: params.app},
-        async: true,
-        dataType: 'json',
-        success: function (json) {
-            var len = json.contentTable.split.length;
-            createSummaryTable(json.contentTable);
-            for (var index = 0; index < len; index++) {
-                //draw a progress bar for each combo retrieved
-                buildBar(json.contentTable.split[index]);
-                hideLoader($("#reportEnvCountryBrowser"));
-            }
-        },
-        error: showUnexpectedError
-    });
+        $("#reportByEnvCountryBrowser").show();
+        createSummaryTable(data.contentTable);
+        for (var index = 0; index < len; index++) {
+            //draw a progress bar for each combo retrieved
+            buildBar(data.contentTable.split[index]);
+        }
+    } else {
+        $("#reportByEnvCountryBrowser").hide();
+    }
+    hideLoader($("#reportEnvCountryBrowser"));
+
 }
 
-function loadReportList() {
-    var selectTag = $("#selectTag option:selected").text();
-    var statusFilter = $("#statusFilter input");
-    var countryFilter = $("#countryFilter input");
+function loadLabelReport(data) {
+    //adds a loader to a table 
+    showLoader($("#reportLabel"));
+    $("#progressLabel").empty();
 
-    if (selectTag !== "") {
-        //configure and create the dataTable
-        var jqxhr = $.getJSON("ReadTestCaseExecution", "byColumns=Y&" + "Tag=" + encodeURIComponent(selectTag) + "&" + statusFilter.serialize() + "&" + countryFilter.serialize());
-        $.when(jqxhr).then(function (data) {
+    var len = data.labelStats.split.length;
+    if (len > 0) {
+        $("#reportByLabel").show();
+        //createSummaryTable(data.contentTable);
+        for (var index = 0; index < len; index++) {
+            //draw a progress bar for each combo retrieved
+            buildLabelBar(data.labelStats.split[index]);
+        }
+    } else {
+        $("#reportByLabel").hide();
+    }
+    hideLoader($("#reportLabel"));
+
+}
+
+function loadReportList(data2, selectTag) {
+    if (data2.tableColumns) {
+        showLoader($("#listReport"));
+
+        $("#ListPanel").show();
+
+        if (selectTag !== "") {
             if ($("#listTable_wrapper").hasClass("initialized")) {
                 $("#tableArea").empty();
-                $("#tableArea").html('<table id="listTable" class="table display" name="listTable">\n\
-                                            </table><div class="marginBottom20"></div>');
+                $("#tableArea").html('<form id="massActionForm" name="massActionForm"  title="" role="form"><table id="listTable" class="table display" name="listTable">\n\
+                                            </table></form><div class="marginBottom20"></div>');
             }
 
-            var request = "ReadTestCaseExecution?Tag=" + encodeURIComponent(selectTag) + "&" + statusFilter.serialize() + "&" + countryFilter.serialize();
-
-            var config = new TableConfigurationsServerSide("listTable", request, "testList", aoColumnsFunc(data.Columns), [0, 'asc']);
+            var config = new TableConfigurationsClientSide("listTable", data2.tableContent, aoColumnsFunc(data2.tableColumns), [2, 'asc']);
             customConfig(config);
 
-            createDataTable(config, createShortDescRow, undefined, undefined);
+            var table = createDataTableWithPermissions(config, undefined, "#tableArea", undefined, undefined, undefined, createShortDescRow);
             $('#listTable_wrapper').not('.initialized').addClass('initialized');
+            hideLoader($("#listReport"));
+            renderOptionsForExeList(selectTag);
+        }
 
-        });
+    } else {
+        $("#ListPanel").hide();
     }
 }
+
+
+/*
+ * Bugs panels
+ */
+
+function loadBugReportByStatusTable(data, selectTag) {
+    var len = data.BugTrackerStat.length;
+    var doc = new Doc();
+
+    $("#bugTableBody tr").remove();
+
+    if (len > 0) {
+        $("#BugReportByStatusPanel").show();
+        //calculate totaltest nb
+        for (var index = 0; index < len; index++) {
+            // increase the total execution
+            var bugLink = '<a target="_blank" href="' + data.BugTrackerStat[index].bugIdURL + '">' + data.BugTrackerStat[index].bugId + "</a>";
+            var editEntry = '<button id="editEntry" onclick="openModalTestCase_FromRepTag(this,\'' + escapeHtml(data.BugTrackerStat[index].testFirst) + '\',\'' + escapeHtml(data.BugTrackerStat[index].testCaseFirst) + '\',\'EDIT\');"\n\
+                                class="editEntry btn btn-default btn-xs margin-right5" \n\
+                                name="editEntry" data-toggle="tooltip"  title="' + doc.getDocLabel("page_testcaselist", "btn_edit") + '" type="button">\n\
+                                <span class="glyphicon glyphicon-pencil"></span></button>' + data.BugTrackerStat[index].testCaseFirst;
+            var exeLink = '<a target="_blank" href="TestCaseExecution.jsp?executionId=' + data.BugTrackerStat[index].exeIdLast + '">' + data.BugTrackerStat[index].exeIdLast + "</a> (" + data.BugTrackerStat[index].exeIdLastStatus + ")";
+
+            var $tr = $('<tr>');
+            $tr.append($('<td>').html(bugLink).css("text-align", "center"));
+            if (data.BugTrackerStat[index].exeIdLast !== 0) {
+//            $tr.append($('<td>').text(data.BugTrackerStat[index].exeIdLast).css("text-align", "center"));
+                $tr.append($('<td>').html(exeLink).css("text-align", "center"));
+            } else {
+                $tr.append($('<td>'));
+            }
+            $tr.append($('<td>').html(editEntry).css("text-align", "center"));
+            $tr.append($('<td>').text(data.BugTrackerStat[index].nbExe).css("text-align", "center"));
+            $("#bugTableBody").append($tr);
+
+        }
+
+// add a panel for the total
+
+        if (data.totalBugToReport > 0) {
+            if (data.totalBugToReportReported !== data.totalBugToReport) {
+                $("#BugReportTable").append(
+                        $("<div class='panel panel-primary'></div>").append(
+                        $('<div class="panel-heading"></div>').append(
+                        $('<div class="row"></div>').append(
+                        $('<div class="col-xs-8 status"></div>').text("Bugs to Report").prepend(
+                        $('<span class="" style="margin-right: 5px;"></span>'))).append(
+                        $('<div class="col-xs-4 text-right"></div>').append(
+                        $('<div class="total"></div>').text(data.totalBugToReport))
+                        ))));
+            }
+            if (data.totalBugToReportReported !== 0) {
+                $("#BugReportTable").append(
+                        $("<div class='panel panel-primary'></div>").append(
+                        $('<div class="panel-heading"></div>').append(
+                        $('<div class="row"></div>').append(
+                        $('<div class="col-xs-8 status"></div>').text("Bugs Reported").prepend(
+                        $('<span class="" style="margin-right: 5px;"></span>'))).append(
+                        $('<div class="col-xs-4 text-right"></div>').append(
+                        $('<div class="total"></div>').text(data.totalBugToReportReported)).append(
+                        $('<div class="row"></div>').append(
+                        $('<div class="percentage pull-right"></div>').text(Math.round(((data.totalBugToReportReported / data.totalBugToReport) * 100) * 100) / 100 + '%'))
+                        )
+                        ))));
+            }
+        }
+
+        if (data.totalBugToClean !== 0) {
+            $("#BugReportTable").append(
+                    $("<div class='panel panelTOCLEAN'></div>").append(
+                    $('<div class="panel-heading"></div>').append(
+                    $('<div class="row"></div>').append(
+                    $('<div class="col-xs-8 status"></div>').text("Bugs to Clean").prepend(
+                    $('<span class="" style="margin-right: 5px;"></span>'))).append(
+                    $('<div class="col-xs-4 text-right"></div>').append(
+                    $('<div class="total"></div>').text(data.totalBugToClean))
+                    ))));
+        }
+    } else {
+        $("#BugReportByStatusPanel").hide();
+    }
+
+    hideLoader($("#BugReportByStatus"));
+
+}
+
 
 /*
  * Status panels
  */
 
-function appendPanelStatus(status, total) {
+function appendPanelStatus(status, total, selectTag) {
     var rowClass = getRowClass(status);
-    $("#ReportByStatusTable").append(
-            $("<div class='panel " + rowClass.panel + "'></div>").append(
-            $('<div class="panel-heading"></div>').append(
-            $('<div class="row"></div>').append(
-            $('<div class="col-xs-6 status"></div>').text(status).prepend(
-            $('<span class="' + rowClass.glyph + '" style="margin-right: 5px;"></span>'))).append(
-            $('<div class="col-xs-6 text-right"></div>').append(
-            $('<div class="total"></div>').text(total[status].value)))).append(
-            $('<div class="row"></div>').append(
-            $('<div class="percentage pull-right"></div>').text('Percentage : ' + Math.round(((total[status].value / total.test) * 100) * 100) / 100 + '%')))));
+    if (rowClass.panel === "panelQU") {
+        // When we display the QU status, we add a link to all executions in the queue on the queue page.
+        $("#ReportByStatusTable").append(
+                $("<a href='./TestCaseExecutionQueueList.jsp?tag=" + selectTag + "'></a>").append(
+                $("<div class='panel " + rowClass.panel + "'></div>").append(
+                $('<div class="panel-heading"></div>').append(
+                $('<div class="row"></div>').append(
+                $('<div class="col-xs-6 status"></div>').text(status).prepend(
+                $('<span class="' + rowClass.glyph + '" style="margin-right: 5px;"></span>'))).append(
+                $('<div class="col-xs-6 text-right"></div>').append(
+                $('<div class="total"></div>').text(total[status].value)))).append(
+                $('<div class="row"></div>').append(
+                $('<div class="percentage pull-right"></div>').text('Percentage : ' + Math.round(((total[status].value / total.test) * 100) * 100) / 100 + '%'))
+                ))));
+    } else {
+        $("#ReportByStatusTable").append(
+                $("<div class='panel " + rowClass.panel + "'></div>").append(
+                $('<div class="panel-heading"></div>').append(
+                $('<div class="row"></div>').append(
+                $('<div class="col-xs-6 status"></div>').text(status).prepend(
+                $('<span class="' + rowClass.glyph + '" style="margin-right: 5px;"></span>'))).append(
+                $('<div class="col-xs-6 text-right"></div>').append(
+                $('<div class="total"></div>').text(total[status].value)))).append(
+                $('<div class="row"></div>').append(
+                $('<div class="percentage pull-right"></div>').text('Percentage : ' + Math.round(((total[status].value / total.test) * 100) * 100) / 100 + '%'))
+                )));
+    }
 }
 
-function loadReportByStatusTable(data) {
+function loadReportByStatusTable(data, selectTag) {
     var total = {};
     var len = data.axis.length;
 
@@ -373,7 +620,7 @@ function loadReportByStatusTable(data) {
     // create a panel for each control status
     for (var label in total) {
         if (label !== "test") {
-            appendPanelStatus(label, total);
+            appendPanelStatus(label, total, selectTag);
         }
     }
 // add a panel for the total
@@ -442,6 +689,7 @@ function loadReportByStatusChart(data) {
             .attr('fill', function (d, i) {
                 return d.data.color;
             });
+    hideLoader($("#ReportByStatus"));
 }
 
 function convertData(dataset) {
@@ -455,113 +703,120 @@ function convertData(dataset) {
 function loadReportByFunctionChart(dataset) {
     var data = convertData(dataset.axis);
 
-    var margin = {top: 20, right: 20, bottom: 200, left: 150},
-    width = 1200 - margin.left - margin.right,
-            height = 600 - margin.top - margin.bottom;
+    if (dataset.axis.length > 0) {
+        $("#ReportByFunctionPanel").show();
 
-    var x = d3.scale.ordinal()
-            .rangeRoundBands([0, width], .1);
+        var margin = {top: 20, right: 20, bottom: 200, left: 150},
+                width = 1200 - margin.left - margin.right,
+                height = 600 - margin.top - margin.bottom;
 
-    var y = d3.scale.linear()
-            .rangeRound([height, 0]);
+        var x = d3.scale.ordinal()
+                .rangeRoundBands([0, width], .1);
 
-    var xAxis = d3.svg.axis()
-            .scale(x)
-            .orient("bottom");
+        var y = d3.scale.linear()
+                .rangeRound([height, 0]);
 
-    var yAxis = d3.svg.axis()
-            .scale(y)
-            .orient("left");
+        var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom");
 
-    var tip = d3.tip()
-            .attr('class', 'd3-tip')
-            .offset([-10, 0])
-            .html(function (d) {
-                var res = "<strong>Function :</strong> <span style='color:red'>" + d.name + "</span>";
-                var len = d.chartData.length;
+        var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left");
 
-                for (var index = 0; index < len; index++) {
-                    res = res + "<div><div class='color-box' style='background-color:" + d.chartData[index].color + " ;'>\n\
+        var tip = d3.tip()
+                .attr('class', 'd3-tip')
+                .offset([-10, 0])
+                .html(function (d) {
+                    var res = "<strong>Function :</strong> <span style='color:red'>" + d.name + "</span>";
+                    var len = d.chartData.length;
+
+                    for (var index = 0; index < len; index++) {
+                        res = res + "<div><div class='color-box' style='background-color:" + d.chartData[index].color + " ;'>\n\
                     </div>" + d.chartData[index].name + " : " + d[d.chartData[index].name].value + "</div>";
+                    }
+                    return res;
+                });
+
+        var svg = d3.select("#ReportByfunctionChart").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.call(tip);
+
+
+        data.forEach(function (d) {
+            var y0 = 0;
+            d.chartData = [];
+            for (var status in d) {
+                if (status !== "name" && status !== "chartData") {
+                    d.chartData.push({name: status, y0: y0, y1: y0 += +d[status].value, color: d[status].color});
                 }
-                return res;
-            });
-
-    var svg = d3.select("#functionChart").append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    svg.call(tip);
-
-
-    data.forEach(function (d) {
-        var y0 = 0;
-        d.chartData = [];
-        for (var status in d) {
-            if (status !== "name" && status !== "chartData") {
-                d.chartData.push({name: status, y0: y0, y1: y0 += +d[status].value, color: d[status].color});
             }
-        }
-        d.totalTests = d.chartData[d.chartData.length - 1].y1;
-    });
+            d.totalTests = d.chartData[d.chartData.length - 1].y1;
+        });
 
-    x.domain(data.map(function (d) {
-        return d.name;
-    }));
-    y.domain([0, d3.max(data, function (d) {
-            return d.totalTests;
-        })]);
+        x.domain(data.map(function (d) {
+            return d.name;
+        }));
+        y.domain([0, d3.max(data, function (d) {
+                return d.totalTests;
+            })]);
 
-    svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis)
-            .selectAll("text")
-            .call(wrap, 200)
-            .style({"text-anchor": "end"})
-            .attr("dx", "-.8em")
-            .attr("dy", "-.55em")
-            .attr("transform", "rotate(-75)");
+        svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .selectAll("text")
+                .call(wrap, 200)
+                .style({"text-anchor": "end"})
+                .attr("dx", "-.8em")
+                .attr("dy", "-.55em")
+                .attr("transform", "rotate(-75)");
 
-    svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-            .append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", ".71em")
-            .style("text-anchor", "end")
-            .text("TestCase Number");
+        svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("TestCase Number");
 
-    var name = svg.selectAll(".name")
-            .data(data)
-            .enter().append("g")
-            .attr("class", "g")
-            .attr("transform", function (d) {
-                return "translate(" + x(d.name) + ",0)";
-            });
+        var name = svg.selectAll(".name")
+                .data(data)
+                .enter().append("g")
+                .attr("class", "g")
+                .attr("transform", function (d) {
+                    return "translate(" + x(d.name) + ",0)";
+                });
 
-    svg.selectAll(".g")
-            .on('mouseover', tip.show)
-            .on('mouseout', tip.hide);
+        svg.selectAll(".g")
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide);
 
-    name.selectAll("rect")
-            .data(function (d) {
-                return d.chartData;
-            })
-            .enter().append("rect")
-            .attr("width", x.rangeBand())
-            .attr("y", function (d) {
-                return y(d.y1);
-            })
-            .attr("height", function (d) {
-                return y(d.y0) - y(d.y1);
-            })
-            .style("fill", function (d) {
-                return d.color;
-            });
+        name.selectAll("rect")
+                .data(function (d) {
+                    return d.chartData;
+                })
+                .enter().append("rect")
+                .attr("width", x.rangeBand())
+                .attr("y", function (d) {
+                    return y(d.y1);
+                })
+                .attr("height", function (d) {
+                    return y(d.y0) - y(d.y1);
+                })
+                .style("fill", function (d) {
+                    return d.color;
+                });
+    } else {
+        $("#ReportByFunctionPanel").hide();
+    }
+    hideLoader($("#functionChart"));
 }
 
 /*** EXPORT OPTIONS***/
@@ -582,7 +837,6 @@ function exportReport() {
 
 function controlExportRadioButtons() {
     //control radiobuttons
-    console.log("mudou ");
     var isChecked = $(this).prop("checked");
     if (isChecked) {
         $("input[name='exportOption']").prop("disabled", false);
@@ -596,20 +850,48 @@ function controlExportRadioButtons() {
 /**
  * Create a row for the summaryTable
  * @param {JSONObject} row containing the data of the row
+ * @param {boolean} isTotalRow true is the row to display is total line.
  * @returns {jQuery} the jquery object row
  */
-function createRow(row) {
-    var $tr = $('<tr>').append(
-            $('<td>').text(row.environment),
-            $('<td>').text(row.country),
-            $('<td>').text(row.browser),
-            $('<td>').text(row.application),
+function createRow(row, isTotalRow) {
+
+    var $tr = $('<tr>');
+    var params = $("#splitFilter input");
+
+    if (!isTotalRow) {
+        if (params[0].checked) {
+            if (row.environment === "Total")//TODO: make this change in the back-end
+                row.environment = "";//The part where Total is written is handle in a more generic way
+            $tr.append($('<td>').text(row.environment).css("text-align", "center"));
+        }
+        if (params[1].checked)
+            $tr.append($('<td>').text(row.country).css("text-align", "center"));
+        if (params[2].checked)
+            $tr.append($('<td>').text(row.robotDecli).css("text-align", "center"));
+        if (params[3].checked)
+            $tr.append($('<td>').text(row.application).css("text-align", "center"));
+    } else {
+        var blankSpaceToAdd = 0;
+        for (var i in params) {
+            if (params[i].checked)
+                blankSpaceToAdd++;
+        }
+        if (blankSpaceToAdd !== 0) {
+            $tr.append($('<td>').text("Total").css("text-align", "center"));
+            blankSpaceToAdd--;//remove a blank space for the total
+            for (var i = 0; i < blankSpaceToAdd; i++) {
+                $tr.append($('<td>').text("").css("text-align", "center"));
+            }
+        }
+    }
+    $tr.append(
             $('<td>').text(row.OK).css("text-align", "right"),
             $('<td>').text(row.KO).css("text-align", "right"),
             $('<td>').text(row.FA).css("text-align", "right"),
             $('<td>').text(row.NA).css("text-align", "right"),
             $('<td>').text(row.NE).css("text-align", "right"),
             $('<td>').text(row.PE).css("text-align", "right"),
+            $('<td>').text(row.QU).css("text-align", "right"),
             $('<td>').text(row.CA).css("text-align", "right"),
             $('<td>').text(row.notOKTotal).css("text-align", "right"),
             $('<td>').text(row.total).css("text-align", "right"),
@@ -619,11 +901,53 @@ function createRow(row) {
             $('<td>').text(row.percNA + "%").css("text-align", "right"),
             $('<td>').text(row.percNE + "%").css("text-align", "right"),
             $('<td>').text(row.percPE + "%").css("text-align", "right"),
+            $('<td>').text(row.percQU + "%").css("text-align", "right"),
             $('<td>').text(row.percCA + "%").css("text-align", "right"),
-            $('<td>').text(row.percNotOKTotal + "%").css("text-align", "right"));
+            $('<td>').text(row.percNotOKTotal + "%").css("text-align", "right")
+            );
     return $tr;
 }
 
+/**
+ * Create a row for the summaryTableHeader
+ * @returns {jQuery} the jquery object row
+ */
+function createHeaderRow() {
+    var $tr = $('<tr>');
+
+    var params = $("#splitFilter input");
+    if (params[0].checked)
+        $tr.append($('<td>').text("Environment").css("text-align", "center"));
+    if (params[1].checked)
+        $tr.append($('<td>').text("Country").css("text-align", "center"));
+    if (params[2].checked)
+        $tr.append($('<td>').text("Browser").css("text-align", "center"));
+    if (params[3].checked)
+        $tr.append($('<td>').text("Application").css("text-align", "center"));
+
+    $tr.append(
+            $('<td>').text("OK").css("text-align", "center"),
+            $('<td>').text("KO").css("text-align", "center"),
+            $('<td>').text("FA").css("text-align", "center"),
+            $('<td>').text("NA").css("text-align", "center"),
+            $('<td>').text("NE").css("text-align", "center"),
+            $('<td>').text("PE").css("text-align", "center"),
+            $('<td>').text("QU").css("text-align", "center"),
+            $('<td>').text("CA").css("text-align", "center"),
+            $('<td>').text("NOT OK").css("text-align", "center"),
+            $('<td>').text("TOTAL").css("text-align", "center"),
+            $('<td>').text("% OK").css("text-align", "center"),
+            $('<td>').text("% KO").css("text-align", "center"),
+            $('<td>').text("% FA").css("text-align", "center"),
+            $('<td>').text("% NA").css("text-align", "center"),
+            $('<td>').text("% NE").css("text-align", "center"),
+            $('<td>').text("% PE").css("text-align", "center"),
+            $('<td>').text("% QU").css("text-align", "center"),
+            $('<td>').text("% CA").css("text-align", "center"), /*.class("width80")*/
+            $('<td>').text("% NOT OK").css("text-align", "center")
+            );
+    return $tr;
+}
 /**
  * Creates a summary table from data retrieved from server.
  * @param {type} data
@@ -631,22 +955,21 @@ function createRow(row) {
  */
 function createSummaryTable(data) {
     //cleans the data that was already added
+    $("#summaryTableHeader tr").remove();
     $("#summaryTableBody tr").remove();
+    $("#summaryTableHeader").append(createHeaderRow(data.total));
     //TODO:FN verifies if table is empty?
     $.when($.each(data.split, function (idx, obj) {
-        //creates a new row
+        //creates a new row 
         //numbers are aligned to right
-        var $tr = createRow(obj);
+        var $tr = createRow(obj, false);
         if (obj.percOK === 100) {
             $($tr).addClass("summary100");
         }
         $("#summaryTableBody").append($tr);
-
-
     })).then(function () {
-        var $total = createRow(data.total);
+        var $total = createRow(data.total, true);
         $total.addClass("summaryTotal");
-
         $("#summaryTableBody").append($total);
         //alternate colors
         $("#summaryTableBody tr:odd").css("background-color", "rgba(225,231,243,0.2)");
@@ -681,83 +1004,199 @@ function selectTableToCopy() {
     }
 }
 
-/*
- * Helper functions
- */
-
 function createShortDescRow(row, data, index) {
     var tableAPI = $("#listTable").DataTable();
-    
+
     var createdRow = tableAPI.row(row);
-    
-    createdRow.child([data.shortDesc,"labels"]);
+
+    createdRow.child([data.shortDesc, "labels"]);
     $(row).children('.center').attr('rowspan', '3');
     $(row).children('.priority').attr('rowspan', '3');
     $(row).children('.bugid').attr('rowspan', '3');
-    $(createdRow.child()).children('td').attr('colspan', '3').attr('class', 'shortDesc');
+    $(createdRow.child()).children('td').attr('colspan', '3').attr('class', 'shortDesc').attr('data-toggle', 'tooltip').attr('data-original-title', data.shortDesc);
     var labelValue = '';
-                $.each(data.labels, function (i, e) {
-                    labelValue += '<div style="float:left"><span class="label label-primary" style="background-color:' + e.color + '">' + e.name + '</span></div> ';
-                });
+    $.each(data.labels, function (i, e) {
+        labelValue += '<div style="float:left"><span class="label label-primary" style="background-color:' + e.color + '">' + e.name + '</span></div> ';
+    });
     $($(createdRow.child())[1]).children('td').html(labelValue);
     createdRow.child.show();
 }
 
 function generateTooltip(data) {
     var htmlRes;
-
-    htmlRes = '<div><span class=\'bold\'>Execution ID :</span> ' + data.ID + '</div>' +
-            '<div><span class=\'bold\'>Country : </span>' + data.Country + '</div>' +
+    if (!isEmpty(data.NbExecutions) && (data.NbExecutions >= 2)) {
+        htmlRes = '<div><span class=\'bold\'>Execution ID :</span> ' + data.ID + ' - (' + data.NbExecutions + ' Exe(s))</div>';
+    } else {
+        htmlRes = '<div><span class=\'bold\'>Execution ID :</span> ' + data.ID + '</div>';
+    }
+    htmlRes += '<div><span class=\'bold\'>Country : </span>' + data.Country + '</div>' +
             '<div><span class=\'bold\'>Environment : </span>' + data.Environment + '</div>' +
-            '<div><span class=\'bold\'>Browser : </span>' + data.Browser + '</div>' +
-            '<div><span class=\'bold\'>Start : </span>' + data.Start + '</div>' +
-            '<div><span class=\'bold\'>End : </span>' + data.End + '</div>' +
+            '<div><span class=\'bold\'>Browser : </span>' + data.RobotDecli + '</div>' +
+            '<div><span class=\'bold\'>Start : </span>' + new Date(data.Start) + '</div>' +
+            '<div><span class=\'bold\'>End : </span>' + new Date(data.End) + '</div>' +
             '<div>' + data.ControlMessage + '</div>';
 
     return htmlRes;
 }
 
+function openModalTestCase_FromRepTag(element, test, testcase, mode) {
+    openModalTestCase(test, testcase, mode);
+    $('#editTestCaseModal').on("hidden.bs.modal", function (e) {
+        $('#editTestCaseModal').unbind("hidden.bs.modal");
+        console.info("DONE - " + element);
+        var testcaseobj = $('#editTestCaseModal').data("testcase");
+        if ((!(testcaseobj === undefined)) && ($('#editTestCaseModal').data("Saved"))) {
+            // when modal is closed, we check that testcase object exist and has been saved in order to update the comment and bugid on reportbytag screen.
+            var newComment = $('#editTestCaseModal').data("testcase").comment;
+            var newBugId = $('#editTestCaseModal').data("testcase").bugId;
+            $(element).parent().parent().find('td.comment').text(newComment);
+            $(element).parent().parent().find('td.bugid').text(newBugId);
+        }
+    });
+}
+
+function selectAllQueue(status) {
+    if ($('#selectAllQueue' + status).prop("checked")) {
+        $("[data-line='select" + status + "']").prop("checked", true);
+    } else {
+        $("[data-line='select" + status + "']").prop("checked", false);
+    }
+    refreshNbChecked();
+}
+
+function refreshNbChecked() {
+    // Count total nb of result in order to display it and activate or not the button.
+    var nbchecked = $("[data-select='id']:checked").size();
+    if (nbchecked > 0) {
+        $('#submitExe').prop("disabled", false);
+        $('#submitExe').html("<span class='glyphicon glyphicon-play'></span> Submit Again (" + nbchecked + ")");
+    } else {
+        $('#submitExe').prop("disabled", true);
+        $('#submitExe').html("<span class='glyphicon glyphicon-play'></span> Submit Again");
+    }
+}
+
+function renderOptionsForExeList(selectTag) {
+    if ($("#blankSpace").length === 0) {
+        var doc = new Doc();
+        var contentToAdd = "<div class='marginBottom10'>";
+        contentToAdd += "<label>Select all/none :</label>";
+        contentToAdd += "<label class='checkbox-inline'><input id='selectAllQueueQUERROR' type='checkbox'></input>QU (ERROR)</label>";
+        contentToAdd += "<label class='checkbox-inline'><input id='selectAllQueueFA' type='checkbox'></input>FA</label>";
+        contentToAdd += "<label class='checkbox-inline'><input id='selectAllQueueKO' type='checkbox'></input>KO</label>";
+        contentToAdd += "<label class='checkbox-inline'><input id='selectAllQueueNA' type='checkbox'></input>NA</label>";
+        contentToAdd += "<button id='submitExe' type='button' disabled='disabled' title='Submit again the selected executions.' class='btn btn-default'><span class='glyphicon glyphicon-play'></span> Submit Again</button>";
+        contentToAdd += "<a href='TestCaseExecutionQueueList.jsp?tag=" + selectTag + "'><button id='openqueue' type='button' class='btn btn-default'><span class='glyphicon glyphicon-list'></span> Open Queue</button></a>";
+        contentToAdd += "<button id='refresh' type='button' title='Refresh.' class='btn btn-default' onclick='loadAllReports()'><span class='glyphicon glyphicon-refresh'></span> Refresh</button>";
+        contentToAdd += "</div>";
+
+        $("#listTable_length").before(contentToAdd);
+
+        $('#selectAllQueueQUERROR').click(function () {
+            selectAllQueue("QUERROR");
+        });
+        $('#selectAllQueueFA').click(function () {
+            selectAllQueue("FA");
+        });
+        $('#selectAllQueueKO').click(function () {
+            selectAllQueue("KO");
+        });
+        $('#selectAllQueueNA').click(function () {
+            selectAllQueue("NA");
+        });
+        $('#submitExe').click(massAction_copyQueue);
+    }
+}
+
+function massAction_copyQueue() {
+
+    clearResponseMessageMainPage();
+
+    var doc = new Doc();
+    var formList = $('#massActionForm');
+    var paramSerialized = formList.serialize();
+
+    if (paramSerialized.indexOf("id") === -1) {
+        var localMessage = new Message("danger", doc.getDocLabel("page_global", "message_massActionError"));
+        showMessage(localMessage, null);
+    } else {
+
+        var jqxhr = $.post("CreateTestCaseExecutionQueue", paramSerialized + "&actionState=toQUEUED&actionSave=save", "json");
+        $.when(jqxhr).then(function (data) {
+            // unblock when remote call returns 
+            if ((getAlertType(data.messageType) === "success") || (getAlertType(data.messageType) === "warning")) {
+                if (data.addedEntries === 1) {
+                    data.message = data.message + "<a href='TestCaseExecution.jsp?executionQueueId=" + data.testCaseExecutionQueueList[0].id + "'><button class='btn btn-primary' id='goToExecution'>Get to Execution</button></a>";
+                }
+                showMessageMainPage(getAlertType(data.messageType), data.message, false, 60000);
+            } else {
+                showMessage(data);
+            }
+        }).fail(handleErrorAjaxAfterTimeout);
+    }
+
+}
+
+
 function aoColumnsFunc(Columns) {
     var doc = new Doc();
-    var colLen = Columns.length;
-    var nbColumn = colLen + 5;
-    var testCaseInfoWidth = (1 / 5) * 30;
+    var colNb = Columns.length;
+    var nbColumn = colNb + 5;
+    var testCaseInfoWidth = (1 / 6) * 30;
     var testExecWidth = (1 / nbColumn) * 70;
-
+    var tag = $('#selectTag').val();
 
     var aoColumns = [
         {
             "data": "test",
             "sName": "tec.test",
-            "sWidth": testCaseInfoWidth + "%",
+//            "sWidth": testCaseInfoWidth + "%",
+            "sWidth": "80px",
             "title": doc.getDocOnline("test", "Test"),
-            "sClass": "bold"
+            "sClass": "bold",
+            "fnCreatedCell": function (row, data, dataIndex) {
+                // Set the data-status attribute, and add a class
+                $(row).attr('data-original-title', data)
+                $(row).attr('data-toggle', "tooltip")
+            }
         },
         {
             "data": "testCase",
             "sName": "tec.testCase",
-            "sWidth": testCaseInfoWidth + "%",
+            "sWidth": "60px",
+//            "sWidth": testCaseInfoWidth + "%",
             "title": doc.getDocOnline("testcase", "TestCase"),
             "mRender": function (data, type, obj, meta) {
-                var result = "<a href='./TestCase.jsp?Test=" + encodeURIComponent(obj.test) + "&TestCase=" + encodeURIComponent(obj.testCase) + "&Load=Load'>" + obj.testCase + "</a>";
-                return result;
+                var result = "<a href='./TestCaseScript.jsp?test=" + encodeURIComponent(obj.test) + "&testcase=" + encodeURIComponent(obj.testCase) + "'>" + obj.testCase + "</a>";
+                var editEntry = '<button id="editEntry" onclick="openModalTestCase_FromRepTag(this,\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testCase"]) + '\',\'EDIT\');"\n\
+                                class="editEntry btn btn-default btn-xs margin-right5" \n\
+                                name="editEntry" data-toggle="tooltip"  title="' + doc.getDocLabel("page_testcaselist", "btn_edit") + '" type="button">\n\
+                                <span class="glyphicon glyphicon-pencil"></span></button>';
+                if (obj.testExist) {
+                    return editEntry + result;
+//                    return result;
+                } else {
+                    return obj.testCase;
+                }
             }
         },
         {
             "data": "application",
             "sName": "app.application",
-            "sWidth": testCaseInfoWidth + "%",
+            "sWidth": "60px",
+//            "sWidth": testCaseInfoWidth + "%",
             "title": doc.getDocOnline("application", "Application")
         }
     ];
-    for (var i = 0; i < colLen; i++) {
-        var title = Columns[i].environment + " " + Columns[i].country + " " + Columns[i].browser;
+    for (var i = 0; i < colNb; i++) {
+        var title = Columns[i].environment + " " + Columns[i].country + " " + Columns[i].robotDecli;
 
         var col = {
             "title": title,
-            "bSortable": false,
-            "bSearchable": false,
-            "sWidth": testExecWidth + "%",
+            "bSortable": true,
+            "bSearchable": true,
+//            "sWidth": testExecWidth + "%",
+            "sWidth": "40px",
             "data": function (row, type, val, meta) {
                 var dataTitle = meta.settings.aoColumns[meta.col].sTitle;
                 if (row.hasOwnProperty("execTab") && row["execTab"].hasOwnProperty(dataTitle)) {
@@ -769,15 +1208,42 @@ function aoColumnsFunc(Columns) {
             "sClass": "center",
             "mRender": function (data) {
                 if (data !== "") {
-                    var executionLink = generateExecutionLink(data.ControlStatus, data.ID);
+                    // Getting selected Tag;
+                    var executionLink = generateExecutionLink(data.ControlStatus, data.ID, tag);
                     var glyphClass = getRowClass(data.ControlStatus);
                     var tooltip = generateTooltip(data);
-                    var cell = '<div class="progress-bar status' + data.ControlStatus + '" \n\
-                                role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;cursor: pointer; height: 40px;" \n\
-                                data-toggle="tooltip" data-html="true" title="' + tooltip + '"\n\
-                                onclick="window.open(\'' + executionLink + '\')">\n\
-                                <span class="' + glyphClass.glyph + ' marginRight5"></span>\n\
-                                 <span>' + data.ControlStatus + '<span></div>';
+                    var cell = "";
+                    //cell += '<table class="table"><tr>';
+                    cell += '<div class="input-group"><span style="border:0px;border-radius:0px;box-shadow: inset 0 -1px 0 rgba(0,0,0,.15);" class="input-group-addon status' + data.ControlStatus + '">';
+                    var state = data.ControlStatus;
+                    if (!isEmpty(data.QueueState)) {
+                        state += data.QueueState;
+                    }
+                    if ((data.QueueID !== undefined) && (data.QueueID !== "0")) {
+                        //cell += '<td><input id="selectLine" name="id" value=' + data.QueueID + ' onclick="refreshNbChecked()" data-select="id" data-line="select' + state + '" data-id="' + data.QueueID + '" title="Select for Action" type="checkbox"></input></td>';
+                        cell += '<input id="selectLine" name="id" value=' + data.QueueID + ' onclick="refreshNbChecked()" data-select="id" data-line="select' + state + '" data-id="' + data.QueueID + '" title="Select for Action" type="checkbox"></input>';
+                    }
+                    cell += '</span>';
+                    if (data.ControlStatus === "QU") {
+                        cell += '<div class="progress-bar progress-bar-queue status' + data.ControlStatus + '" ';
+                    } else {
+                        cell += '<div class="progress-bar status' + data.ControlStatus + '" ';
+                    }
+                    cell += 'role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;cursor: pointer; height: 40px;"';
+                    cell += 'data-toggle="tooltip" data-html="true" title="' + tooltip + '"';
+                    if (data.ControlStatus === "QU") {
+                        cell += ' onclick="openModalTestCaseExecutionQueue(' + data.QueueID + ', \'EDIT\');">\n\' ';
+                    } else {
+                        cell += ' onclick="window.open(\'' + executionLink + '\')">';
+                    }
+                    cell += '<span class="' + glyphClass.glyph + ' marginRight5"></span>';
+                    cell += '<span>' + data.ControlStatus + '<span>';
+                    if (data.QueueState !== undefined) {
+                        cell += '<br><span style="font-size: xx-small">' + data.QueueState + '<span>';
+                    }
+                    cell += '</div>';
+                    cell += '</div>';
+                    //cell += "</td></tr></table>";
                     return cell;
                 } else {
                     return data;
@@ -791,21 +1257,47 @@ function aoColumnsFunc(Columns) {
                 "data": "priority",
                 "sName": "tec.priority",
                 "sClass": "priority",
-                "sWidth": testCaseInfoWidth + "%",
+                "sWidth": "20px",
+//                "sWidth": testCaseInfoWidth + "%",
                 "title": doc.getDocOnline("invariant", "PRIORITY")
             };
     aoColumns.push(col);
     var col =
             {
-                "data": "bugId", 
-                        "mRender": function (data) {
-                            var link = '<a href="'+data.bugTrackerUrl+'">'+data.bugId+"</a>";
-                            return link;
-                        },
+                "data": "comment",
+                "sName": "tec.comment",
+                "sClass": "comment",
+                "sWidth": "60px",
+//                "sWidth": testCaseInfoWidth + "%",
+                "title": doc.getDocOnline("testcase", "Comment")
+            };
+    aoColumns.push(col);
+    var col =
+            {
+                "data": "bugId.bugId",
+                "mRender": function (data, type, obj) {
+                    if (obj.bugId.bugTrackerUrl !== "") {
+                        var link = '<a target="_blank" href="' + obj.bugId.bugTrackerUrl + '">' + obj.bugId.bugId + "</a>";
+                        return link;
+                    } else {
+                        return obj.bugId.bugId;
+                    }
+                },
                 "sName": "tec.bugId",
                 "sClass": "bugid",
-                "sWidth": testCaseInfoWidth + "%",
+                "sWidth": "40px",
+//                "sWidth": testCaseInfoWidth + "%",
                 "title": doc.getDocOnline("testcase", "BugID")
+            };
+    aoColumns.push(col);
+
+    var col =
+            {
+                "data": "NbExecutionsTotal",
+                "sName": "NbExecutionsTotal",
+                "sClass": "NbExecutionsTotal",
+                "sWidth": "40px",
+                "title": "Total nb of Retries"
             };
     aoColumns.push(col);
 
@@ -826,11 +1318,13 @@ function customConfig(config) {
         }
     };
 
-    config.bPaginate = false;
+    config.bPaginate = true;
+    config.lengthMenu = [10, 25, 50, 100, 500, 1000, 1500, 2000];
     config.lang.colVis = customColvisConfig;
     config.orderClasses = false;
     config.bDeferRender = true;
-    config.displayLength = 10000;
+    config.displayLength = 500;
+
 }
 
 function getRowClass(status) {
@@ -855,16 +1349,6 @@ function getRowClass(status) {
         rowClass["glyph"] = "";
     }
     return rowClass;
-}
-
-function generateExecutionLink(status, id) {
-    var result = "";
-    if (status === "NE") {
-        result = "./RunTests.jsp?queuedExecution=" + id;
-    } else {
-        result = "./ExecutionDetail.jsp?id_tc=" + id;
-    }
-    return result;
 }
 
 function wrap(text, width) {

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,8 +27,9 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.TestCaseCountryProperties;
-import org.cerberus.log.MyLogger;
 import org.cerberus.crud.service.ITestCaseCountryPropertiesService;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -43,6 +44,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(value = "/GetPropertiesForTestCase", name = "GetPropertiesForTestCase")
 public class GetPropertiesForTestCase extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(GetPropertiesForTestCase.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -81,6 +84,10 @@ public class GetPropertiesForTestCase extends HttpServlet {
                     propertyFound.put("length", prop.getLength());
                     propertyFound.put("rowLimit", prop.getRowLimit());
                     propertyFound.put("nature", prop.getNature());
+                    propertyFound.put("retryNb", prop.getRetryNb());
+                    propertyFound.put("retryPeriod", prop.getRetryPeriod());
+                    propertyFound.put("cacheExpire", prop.getCacheExpire());
+                    
                     List<String> countriesSelected = testCaseCountryPropertiesService.findCountryByProperty(prop);
                     JSONArray countries = new JSONArray();
                     for (String country : countriesSelected) {
@@ -95,7 +102,7 @@ public class GetPropertiesForTestCase extends HttpServlet {
             response.getWriter().print(propertyList.toString());
 
         } catch (JSONException ex) {
-            MyLogger.log(GetPropertiesForTestCase.class.getName(), org.apache.log4j.Level.WARN, ex.toString());
+            LOG.warn(ex.toString());
         } finally {
             out.close();
         }

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,8 +19,12 @@
  */
 package org.cerberus.crud.factory.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.cerberus.crud.entity.TestCaseExecutionFile;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.crud.entity.TestCaseStepAction;
+import org.cerberus.crud.entity.TestCaseStepActionControlExecution;
 import org.cerberus.crud.entity.TestCaseStepActionExecution;
 import org.cerberus.crud.entity.TestCaseStepExecution;
 import org.cerberus.crud.factory.IFactoryTestCaseStepActionExecution;
@@ -33,14 +37,20 @@ import org.springframework.stereotype.Service;
 public class FactoryTestCaseStepActionExecution implements IFactoryTestCaseStepActionExecution {
 
     @Override
-    public TestCaseStepActionExecution create(long id, String test, String testCase, int step, int sequence, int sort, String returnCode, String returnMessage, String conditionOper, String conditionVal1, String action, String value1Init, String value2Init, String value1, String value2, String forceExeStatus, long start, long end, long startLong, long endLong, MessageEvent resultMessage, String description, TestCaseStepAction testCaseStepAction, TestCaseStepExecution testCaseStepExecution) {
+    public TestCaseStepActionExecution create(long id, String test, String testCase, int step, int index, int sequence, int sort, String returnCode, String returnMessage, 
+            String conditionOper, String conditionVal1Init, String conditionVal2Init, String conditionVal1, String conditionVal2, String action, String value1Init, String value2Init, String value1, String value2, 
+            String forceExeStatus, long start, long end, long startLong, long endLong, MessageEvent resultMessage, String description, TestCaseStepAction testCaseStepAction, 
+            TestCaseStepExecution testCaseStepExecution) {
         TestCaseStepActionExecution testCaseStepActionExecution = new TestCaseStepActionExecution();
         testCaseStepActionExecution.setAction(action);
         testCaseStepActionExecution.setEnd(end);
         testCaseStepActionExecution.setEndLong(endLong);
         testCaseStepActionExecution.setId(id);
         testCaseStepActionExecution.setConditionOper(conditionOper);
+        testCaseStepActionExecution.setConditionVal1Init(conditionVal1Init);
+        testCaseStepActionExecution.setConditionVal2Init(conditionVal2Init);
         testCaseStepActionExecution.setConditionVal1(conditionVal1);
+        testCaseStepActionExecution.setConditionVal2(conditionVal2);
         testCaseStepActionExecution.setValue1(value1);
         testCaseStepActionExecution.setValue2(value2);
         testCaseStepActionExecution.setValue1Init(value1Init);
@@ -53,12 +63,18 @@ public class FactoryTestCaseStepActionExecution implements IFactoryTestCaseStepA
         testCaseStepActionExecution.setStart(start);
         testCaseStepActionExecution.setStartLong(startLong);
         testCaseStepActionExecution.setStep(step);
+        testCaseStepActionExecution.setIndex(index);
         testCaseStepActionExecution.setTest(test);
         testCaseStepActionExecution.setTestCase(testCase);
         testCaseStepActionExecution.setActionResultMessage(resultMessage);
         testCaseStepActionExecution.setTestCaseStepAction(testCaseStepAction);
         testCaseStepActionExecution.setTestCaseStepExecution(testCaseStepExecution);
         testCaseStepActionExecution.setDescription(description);
+        // List objects
+        List<TestCaseExecutionFile> objectFileList = new ArrayList<>();
+        testCaseStepActionExecution.setFileList(objectFileList);
+        List<TestCaseStepActionControlExecution> testCaseStepActionControlExecution = new ArrayList<>();
+        testCaseStepActionExecution.setTestCaseStepActionControlExecutionList(testCaseStepActionControlExecution);
         return testCaseStepActionExecution;
     }
 

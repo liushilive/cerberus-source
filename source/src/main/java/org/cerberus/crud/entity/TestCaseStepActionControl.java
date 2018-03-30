@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -17,6 +19,11 @@
  */
 package org.cerberus.crud.entity;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * @author bcivel
  */
@@ -28,6 +35,9 @@ public class TestCaseStepActionControl {
     private int sequence;
     private int controlSequence;
     private int sort;
+    private String conditionOper;
+    private String conditionVal1;
+    private String conditionVal2;
     private String control;
     private String value1;
     private String value2;
@@ -44,10 +54,12 @@ public class TestCaseStepActionControl {
     public static final String CONTROL_VERIFYSTRINGGREATER = "verifyStringGreater";
     public static final String CONTROL_VERIFYSTRINGMINOR = "verifyStringMinor";
     public static final String CONTROL_VERIFYSTRINGCONTAINS = "verifyStringContains";
-    public static final String CONTROL_VERIFYINTEGEREQUALS = "verifyIntegerEquals";
-    public static final String CONTROL_VERIFYINTEGERDIFFERENT = "verifyIntegerDifferent";
-    public static final String CONTROL_VERIFYINTEGERGREATER = "verifyIntegerGreater";
-    public static final String CONTROL_VERIFYINTEGERMINOR = "verifyIntegerMinor";
+    public static final String CONTROL_VERIFYNUMERICEQUALS = "verifyNumericEquals";
+    public static final String CONTROL_VERIFYNUMERICDIFFERENT = "verifyNumericDifferent";
+    public static final String CONTROL_VERIFYNUMERICGREATER = "verifyNumericGreater";
+    public static final String CONTROL_VERIFYNUMERICGREATEROREQUAL = "verifyNumericGreaterOrEqual";
+    public static final String CONTROL_VERIFYNUMERICMINOR = "verifyNumericMinor";
+    public static final String CONTROL_VERIFYNUMERICMINOROREQUAL = "verifyNumericMinorOrEqual";
     public static final String CONTROL_VERIFYELEMENTPRESENT = "verifyElementPresent";
     public static final String CONTROL_VERIFYELEMENTNOTPRESENT = "verifyElementNotPresent";
     public static final String CONTROL_VERIFYELEMENTVISIBLE = "verifyElementVisible";
@@ -68,7 +80,6 @@ public class TestCaseStepActionControl {
     public static final String CONTROL_VERIFYXMLTREESTRUCTURE = "verifyXmlTreeStructure";
     public static final String CONTROL_TAKESCREENSHOT = "takeScreenshot";
     public static final String CONTROL_GETPAGESOURCE = "getPageSource";
-    public static final String CONTROL_SKIPCONTROL = "skipControl";
     /**
      * Invariant CONTROL TYPE String.
      */
@@ -105,6 +116,30 @@ public class TestCaseStepActionControl {
 
     public void setSort(int sort) {
         this.sort = sort;
+    }
+
+    public String getConditionOper() {
+        return conditionOper;
+    }
+
+    public void setConditionOper(String conditionOper) {
+        this.conditionOper = conditionOper;
+    }
+
+    public String getConditionVal1() {
+        return conditionVal1;
+    }
+
+    public void setConditionVal1(String conditionVal1) {
+        this.conditionVal1 = conditionVal1;
+    }
+
+    public String getConditionVal2() {
+        return conditionVal2;
+    }
+
+    public void setConditionVal2(String conditionVal2) {
+        this.conditionVal2 = conditionVal2;
     }
 
     public String getValue2() {
@@ -206,6 +241,9 @@ public class TestCaseStepActionControl {
         hash = 67 * hash + this.sequence;
         hash = 67 * hash + this.controlSequence;
         hash = 67 * hash + this.sort;
+        hash = 67 * hash + (this.conditionOper != null ? this.conditionOper.hashCode() : 0);
+        hash = 67 * hash + (this.conditionVal1 != null ? this.conditionVal1.hashCode() : 0);
+        hash = 67 * hash + (this.conditionVal2 != null ? this.conditionVal2.hashCode() : 0);
         hash = 67 * hash + (this.control != null ? this.control.hashCode() : 0);
         hash = 67 * hash + (this.value1 != null ? this.value1.hashCode() : 0);
         hash = 67 * hash + (this.value2 != null ? this.value2.hashCode() : 0);
@@ -241,6 +279,15 @@ public class TestCaseStepActionControl {
         if (this.sort != other.sort) {
             return false;
         }
+        if ((this.conditionOper == null) ? (other.conditionOper != null) : !this.conditionOper.equals(other.conditionOper)) {
+            return false;
+        }
+        if ((this.conditionVal1 == null) ? (other.conditionVal1 != null) : !this.conditionVal1.equals(other.conditionVal1)) {
+            return false;
+        }
+        if ((this.conditionVal2 == null) ? (other.conditionVal2 != null) : !this.conditionVal2.equals(other.conditionVal2)) {
+            return false;
+        }
         if ((this.control == null) ? (other.control != null) : !this.control.equals(other.control)) {
             return false;
         }
@@ -267,4 +314,30 @@ public class TestCaseStepActionControl {
         return "TestCaseStepActionControl{" + "test=" + test + ", testCase=" + testCase + ", step=" + step + ", sequence=" + sequence + ", control=" + controlSequence + ", type=" + control + ", controlValue=" + value1 + ", controlProperty=" + value2 + ", fatal=" + fatal + ", description=" + description + '}';
     }
 
+    public JSONObject toJson() {
+        JSONObject result = new JSONObject();
+        try {
+            result.put("test", this.getTest());
+            result.put("testcase", this.getTestCase());
+            result.put("step", this.getStep());
+            result.put("sequence", this.getSequence());
+            result.put("control", this.getControlSequence());
+            result.put("sort", this.getSort());
+            result.put("conditionOper", this.getConditionOper());
+            result.put("conditionVal1", this.getConditionVal1());
+            result.put("conditionVal2", this.getConditionVal2());
+            result.put("conditionVal2AAAA", this.getConditionVal2());
+            result.put("control", this.getControl());
+            result.put("value1", this.getValue1());
+            result.put("value2", this.getValue2());
+            result.put("fatal", this.getFatal());
+            result.put("description", this.getDescription());
+            result.put("screenshotFilename", this.getScreenshotFilename());
+        } catch (JSONException ex) {
+            Logger LOG = LogManager.getLogger(TestCaseStepActionControl.class);
+            LOG.warn(ex);
+
+        }
+        return result;
+    }
 }

@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,12 +20,13 @@
 package org.cerberus.servlet.information;
 
 import java.io.IOException;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.service.IMyVersionService;
 import org.cerberus.database.IDatabaseVersioningService;
 import org.cerberus.version.Infos;
@@ -41,6 +42,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "ReadCerberusInformation", urlPatterns = {"/ReadCerberusInformation"})
 public class ReadCerberusInformation extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(ReadCerberusInformation.class);
+    
     private IDatabaseVersioningService databaseVersionService;
     private IMyVersionService myVersionService;
     
@@ -77,7 +80,7 @@ public class ReadCerberusInformation extends HttpServlet {
             }
 
         } catch (JSONException ex) {
-            Logger.getLogger(ReadCerberusInformation.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            LOG.warn(ex);
         }
         response.getWriter().print(data.toString());
     }

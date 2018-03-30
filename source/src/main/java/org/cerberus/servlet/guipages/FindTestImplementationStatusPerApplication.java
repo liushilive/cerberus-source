@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -32,12 +32,12 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.crud.entity.Invariant;
 import org.cerberus.crud.service.IInvariantService;
 import org.cerberus.crud.service.impl.InvariantService;
 import org.cerberus.database.DatabaseSpring;
-import org.cerberus.log.MyLogger;
 import org.cerberus.util.answer.AnswerList;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -53,6 +53,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "FindTestImplementationStatusPerApplication", urlPatterns = {"/FindTestImplementationStatusPerApplication"})
 public class FindTestImplementationStatusPerApplication extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(FindTestImplementationStatusPerApplication.class);
+    
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -100,7 +102,7 @@ public class FindTestImplementationStatusPerApplication extends HttpServlet {
             DatabaseSpring database = appContext.getBean(DatabaseSpring.class);
             connection = database.connect();
 
-            AnswerList answer = invariantService.findInvariantByIdGp1("TCSTATUS", "Y");
+            AnswerList answer = invariantService.readByIdnameGp1("TCSTATUS", "Y");
             List<Invariant> myInvariants = answer.getDataList();
             StringBuilder SQL = new StringBuilder();
             StringBuilder SQLa = new StringBuilder();
@@ -129,14 +131,11 @@ public class FindTestImplementationStatusPerApplication extends HttpServlet {
             SQLb.append(" group by t.test");
             SQL.append(SQLa);
             SQL.append(SQLb);
-            MyLogger.log(Homepage.class.getName(), Level.DEBUG, " SQL1 : " + SQL.toString());
+            LOG.debug(" SQL1 : " + SQL.toString());
 
             PreparedStatement stmt_teststatus = connection.prepareStatement(SQL.toString());
-            try {
-
-                ResultSet rs_teststatus = stmt_teststatus.executeQuery();
-
-//                Integer tot = 0;
+            try(ResultSet rs_teststatus = stmt_teststatus.executeQuery();) {
+                //Integer tot = 0;
                 List<Integer> totLine;
                 totLine = new ArrayList<Integer>();
                 for (Invariant i : myInvariants) {
@@ -171,24 +170,24 @@ public class FindTestImplementationStatusPerApplication extends HttpServlet {
                     response.setContentType("application/json");
                     response.getWriter().print(jsonResponse.toString());
                 } catch (JSONException ex) {
-                    MyLogger.log(Homepage.class.getName(), Level.FATAL, ex.toString());
+                    LOG.warn(ex.toString());
                 } finally {
                     out.close();
                 }
             } catch (SQLException ex) {
-                MyLogger.log(Homepage.class.getName(), Level.FATAL, " Exception trying to query '"+SQL.toString()+"' : " + ex);
+                LOG.warn(" Exception trying to query '"+SQL.toString()+"' : " + ex);
             } finally {
                 stmt_teststatus.close();
             }
         } catch (Exception ex) {
-            MyLogger.log(Homepage.class.getName(), Level.FATAL, " Exception catched : " + ex);
+            LOG.warn(" Exception catched : " + ex);
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(Homepage.class.getName(), org.apache.log4j.Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
     }

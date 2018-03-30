@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,13 +29,15 @@ import org.cerberus.crud.entity.TestCaseStepExecution;
  * @author bcivel
  */
 public interface IFactoryTestCaseStepExecution {
-    
-    TestCaseStepExecution create(long id, String test, String testCase, int step, int sort, String batNumExe,
-                                 long start, long end, long fullStart, long fullEnd, BigDecimal timeElapsed, String returnCode,
-                                 String returnMessage, String description);
-    
-    TestCaseStepExecution create(long id, String test, String testCase, int step, int sort, String batNumExe,
-                                 long start, long end, long fullStart, long fullEnd, BigDecimal timeElapsed, String returnCode,
-                                 MessageEvent stepResultMessage, TestCaseStep testCaseStep, TestCaseExecution tCExecution, String useStep, String useStepTest, 
-                                 String useStepTestCase, int useStepTestCaseStep, String description);
+
+    TestCaseStepExecution create(long id, String test, String testCase, int step, int index, int sort, String loop,
+            String conditionOper, String conditionVal1Init, String conditionVal2Init, String conditionVal1, String conditionVal2,
+            String batNumExe, long start, long end, long fullStart, long fullEnd, BigDecimal timeElapsed, String returnCode,
+            String returnMessage, String description);
+
+    TestCaseStepExecution create(long id, String test, String testCase, int step, int index, int sort, String loop, 
+            String conditionOper, String conditionVal1Init, String conditionVal2Init, String conditionVal1, String conditionVal2,
+            String batNumExe, long start, long end, long fullStart, long fullEnd, BigDecimal timeElapsed, String returnCode,
+            MessageEvent stepResultMessage, TestCaseStep testCaseStep, TestCaseExecution tCExecution, String useStep, String useStepTest,
+            String useStepTestCase, int useStepTestCaseStep, String description);
 }

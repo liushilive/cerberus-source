@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,24 +20,21 @@
 package org.cerberus.servlet.crud.testdata;
 
 import java.io.IOException;
-import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.engine.entity.MessageEvent;
-import org.cerberus.crud.entity.TestCaseCountryProperties;
 import org.cerberus.crud.entity.TestDataLib;
 import org.cerberus.crud.service.ILogEventService;
-import org.cerberus.crud.service.ITestCaseCountryPropertiesService;
 import org.cerberus.crud.service.ITestDataLibService;
 import org.cerberus.crud.service.impl.LogEventService;
-import org.cerberus.dto.TestListDTO;
 import org.cerberus.enums.MessageEventEnum;
 import org.cerberus.util.answer.Answer;
 import org.cerberus.util.answer.AnswerItem;
-import org.cerberus.util.answer.AnswerList;
 import org.cerberus.util.answer.AnswerUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -52,6 +49,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 @WebServlet(name = "DeleteTestDataLib", urlPatterns = {"/DeleteTestDataLib"})
 public class DeleteTestDataLib extends HttpServlet {
 
+    private static final Logger LOG = LogManager.getLogger(DeleteTestDataLib.class);
+    
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -84,7 +83,7 @@ public class DeleteTestDataLib extends HttpServlet {
             }
         } catch (NumberFormatException ex) {
             testdatalibid_error = true;
-            org.apache.log4j.Logger.getLogger(DeleteTestDataLib.class.getName()).log(org.apache.log4j.Level.ERROR, null, ex);
+            LOG.warn(ex);
         }
 
         /**
@@ -128,7 +127,7 @@ public class DeleteTestDataLib extends HttpServlet {
                  */
                 if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createPrivateCalls("/DeleteTestDataLib", "DELETE", "Delete TestDataLib : " + key, request);
+                    logEventService.createForPrivateCalls("/DeleteTestDataLib", "DELETE", "Delete TestDataLib : " + key, request);
                 }
 
             }
@@ -146,7 +145,7 @@ public class DeleteTestDataLib extends HttpServlet {
             response.getWriter().flush();
 
         } catch (JSONException ex) {
-            org.apache.log4j.Logger.getLogger(DeleteTestDataLib.class.getName()).log(org.apache.log4j.Level.ERROR, null, ex);
+            LOG.warn(ex);
             response.setContentType("application/json");
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
             response.getWriter().flush();

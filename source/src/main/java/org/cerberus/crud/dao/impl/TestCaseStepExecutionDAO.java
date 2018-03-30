@@ -1,4 +1,6 @@
-/* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
  *
@@ -28,17 +30,17 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.dao.ITestCaseStepExecutionDAO;
 import org.cerberus.engine.entity.MessageEvent;
 import org.cerberus.database.DatabaseSpring;
 import org.cerberus.crud.entity.TestCaseStepExecution;
 import org.cerberus.crud.factory.IFactoryTestCaseStepExecution;
 import org.cerberus.enums.MessageEventEnum;
-import org.cerberus.log.MyLogger;
 import org.cerberus.util.DateUtil;
 import org.cerberus.util.ParameterParserUtil;
+import org.cerberus.util.StringUtil;
 import org.cerberus.util.answer.AnswerList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -61,65 +63,84 @@ public class TestCaseStepExecutionDAO implements ITestCaseStepExecutionDAO {
     @Autowired
     private IFactoryTestCaseStepExecution factoryTestCaseStepExecution;
 
-    private static final Logger LOG = Logger.getLogger(TestCaseStepExecutionDAO.class);
+    private static final Logger LOG = LogManager.getLogger(TestCaseStepExecutionDAO.class);
 
-    /**
-     * Short one line description.
-     * <p/>
-     * Longer description. If there were any, it would be here.
-     * <p>
-     * And even more explanations to follow in consecutive paragraphs separated
-     * by HTML paragraph breaks.
-     *
-     * @param variable Description text text text.
-     */
     @Override
     public void insertTestCaseStepExecution(TestCaseStepExecution testCaseStepExecution) {
-        final String query = "INSERT INTO testcasestepexecution(id, test, testcase, step, sort, batnumexe, returncode, start, fullstart, returnMessage, description) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        final String query = "INSERT INTO testcasestepexecution(id, test, testcase, step, `index`, sort, `loop`, batnumexe, returncode, start, fullstart, "
+                + "returnMessage, description, conditionOper, conditionVal1Init, conditionVal2Init, conditionVal1, conditionVal2) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        // Debug message on SQL.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL : " + query);
+            LOG.debug("SQL.param.id : " + testCaseStepExecution.getId());
+            LOG.debug("SQL.param.test : " + testCaseStepExecution.getTest());
+            LOG.debug("SQL.param.testcase : " + testCaseStepExecution.getTestCase());
+            LOG.debug("SQL.param.step : " + testCaseStepExecution.getStep());
+            LOG.debug("SQL.param.index : " + testCaseStepExecution.getIndex());
+        }
 
         Connection connection = this.databaseSpring.connect();
         try {
             PreparedStatement preStat = connection.prepareStatement(query);
             try {
-                preStat.setLong(1, testCaseStepExecution.getId());
-                preStat.setString(2, testCaseStepExecution.getTest());
-                preStat.setString(3, testCaseStepExecution.getTestCase());
-                preStat.setInt(4, testCaseStepExecution.getStep());
-                preStat.setInt(5, testCaseStepExecution.getSort());
-                preStat.setString(6, testCaseStepExecution.getBatNumExe());
-                preStat.setString(7, testCaseStepExecution.getReturnCode());
-                preStat.setTimestamp(8, new Timestamp(testCaseStepExecution.getStart()));
+                int i = 1;
+                preStat.setLong(i++, testCaseStepExecution.getId());
+                preStat.setString(i++, testCaseStepExecution.getTest());
+                preStat.setString(i++, testCaseStepExecution.getTestCase());
+                preStat.setInt(i++, testCaseStepExecution.getStep());
+                preStat.setInt(i++, testCaseStepExecution.getIndex());
+                preStat.setInt(i++, testCaseStepExecution.getSort());
+                preStat.setString(i++, testCaseStepExecution.getLoop());
+                preStat.setString(i++, testCaseStepExecution.getBatNumExe());
+                preStat.setString(i++, testCaseStepExecution.getReturnCode());
+                preStat.setTimestamp(i++, new Timestamp(testCaseStepExecution.getStart()));
                 DateFormat df = new SimpleDateFormat(DateUtil.DATE_FORMAT_TIMESTAMP);
-                preStat.setString(9, df.format(testCaseStepExecution.getStart()));
-                preStat.setString(10, testCaseStepExecution.getReturnMessage());
-                preStat.setString(11, testCaseStepExecution.getDescription());
-                MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.DEBUG, "Insert testcasestepexecution " + testCaseStepExecution.getId() + "-"
-                        + testCaseStepExecution.getTest() + "-" + testCaseStepExecution.getTestCase() + "-" + testCaseStepExecution.getStep());
+                preStat.setString(i++, df.format(testCaseStepExecution.getStart()));
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getReturnMessage(), 65000));
+                preStat.setString(i++, testCaseStepExecution.getDescription());
+                preStat.setString(i++, testCaseStepExecution.getConditionOper());
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getConditionVal1Init(), 65000));
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getConditionVal2Init(), 65000));
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getConditionVal1(), 65000));
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getConditionVal2(), 65000));
 
                 preStat.executeUpdate();
 
             } catch (SQLException exception) {
-                MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.error("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.error("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
     }
 
     @Override
     public void updateTestCaseStepExecution(TestCaseStepExecution testCaseStepExecution) {
-        final String query = "UPDATE testcasestepexecution SET returncode = ?, start = ?, fullstart = ?, end = ?, fullend = ?, timeelapsed = ?, returnmessage = ?, description = ?, sort = ? WHERE id = ? AND step = ? AND test = ? AND testcase = ?";
+        final String query = "UPDATE testcasestepexecution SET returncode = ?, start = ?, fullstart = ?, end = ?, fullend = ?, timeelapsed = ?, "
+                + "returnmessage = ?, description = ?, sort = ?, `loop` = ?, conditionOper = ?, conditionVal1Init = ?, conditionVal2Init = ?, conditionVal1 = ?, conditionVal2 = ? "
+                + "WHERE id = ? AND step = ? AND `index` = ? AND test = ? AND testcase = ?";
+
+        // Debug message on SQL.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL : " + query);
+            LOG.debug("SQL.param.id : " + testCaseStepExecution.getId());
+            LOG.debug("SQL.param.test : " + testCaseStepExecution.getTest());
+            LOG.debug("SQL.param.testcase : " + testCaseStepExecution.getTestCase());
+            LOG.debug("SQL.param.step : " + testCaseStepExecution.getStep());
+            LOG.debug("SQL.param.index : " + testCaseStepExecution.getIndex());
+        }
 
         Connection connection = this.databaseSpring.connect();
         try {
@@ -128,39 +149,44 @@ public class TestCaseStepExecutionDAO implements ITestCaseStepExecutionDAO {
 
             PreparedStatement preStat = connection.prepareStatement(query);
             try {
+                int i = 1;
                 DateFormat df = new SimpleDateFormat(DateUtil.DATE_FORMAT_TIMESTAMP);
-                preStat.setString(1, ParameterParserUtil.parseStringParam(testCaseStepExecution.getReturnCode(), ""));
-                preStat.setTimestamp(2, timeStart);
-                preStat.setString(3, df.format(timeStart));
-                preStat.setTimestamp(4, timeEnd);
-                preStat.setString(5, df.format(timeEnd));
-                preStat.setFloat(6, (timeEnd.getTime() - timeStart.getTime()) / (float) 1000);
-                preStat.setString(7, testCaseStepExecution.getReturnMessage());
-                preStat.setString(8, testCaseStepExecution.getDescription());
-                preStat.setInt(9, testCaseStepExecution.getSort());
-                preStat.setLong(10, testCaseStepExecution.getId());
-                preStat.setInt(11, testCaseStepExecution.getStep());
-                preStat.setString(12, testCaseStepExecution.getTest());
-                preStat.setString(13, testCaseStepExecution.getTestCase());
-                MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.DEBUG, "Update testcasestepexecution " + testCaseStepExecution.getId() + "-"
-                        + testCaseStepExecution.getTest() + "-" + testCaseStepExecution.getTestCase() + "-" + testCaseStepExecution.getStep());
+                preStat.setString(i++, ParameterParserUtil.parseStringParam(testCaseStepExecution.getReturnCode(), ""));
+                preStat.setTimestamp(i++, timeStart);
+                preStat.setString(i++, df.format(timeStart));
+                preStat.setTimestamp(i++, timeEnd);
+                preStat.setString(i++, df.format(timeEnd));
+                preStat.setFloat(i++, (timeEnd.getTime() - timeStart.getTime()) / (float) 1000);
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getReturnMessage(), 65000));
+                preStat.setString(i++, testCaseStepExecution.getDescription());
+                preStat.setInt(i++, testCaseStepExecution.getSort());
+                preStat.setString(i++, testCaseStepExecution.getLoop());
+                preStat.setString(i++, testCaseStepExecution.getConditionOper());
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getConditionVal1Init(), 65000));
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getConditionVal2Init(), 65000));
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getConditionVal1(), 65000));
+                preStat.setString(i++, StringUtil.getLeftString(testCaseStepExecution.getConditionVal2(), 65000));
+                preStat.setLong(i++, testCaseStepExecution.getId());
+                preStat.setInt(i++, testCaseStepExecution.getStep());
+                preStat.setInt(i++, testCaseStepExecution.getIndex());
+                preStat.setString(i++, testCaseStepExecution.getTest());
+                preStat.setString(i++, testCaseStepExecution.getTestCase());
 
                 preStat.executeUpdate();
-
             } catch (SQLException exception) {
-                MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.error("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.error("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
     }
@@ -184,24 +210,24 @@ public class TestCaseStepExecutionDAO implements ITestCaseStepExecutionDAO {
                         result.add(this.loadFromResultSet(resultSet));
                     }
                 } catch (SQLException exception) {
-                    MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                    LOG.warn("Unable to execute query : " + exception.toString());
                 } finally {
                     resultSet.close();
                 }
             } catch (SQLException exception) {
-                MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+                LOG.warn("Unable to execute query : " + exception.toString());
             } finally {
                 preStat.close();
             }
         } catch (SQLException exception) {
-            MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.ERROR, "Unable to execute query : " + exception.toString());
+            LOG.warn("Unable to execute query : " + exception.toString());
         } finally {
             try {
                 if (connection != null) {
                     connection.close();
                 }
             } catch (SQLException e) {
-                MyLogger.log(TestCaseStepExecutionDAO.class.getName(), Level.WARN, e.toString());
+                LOG.warn(e.toString());
             }
         }
         return result;
@@ -214,18 +240,34 @@ public class TestCaseStepExecutionDAO implements ITestCaseStepExecutionDAO {
         List<TestCaseStepExecution> list = new ArrayList<TestCaseStepExecution>();
         StringBuilder query = new StringBuilder();
         query.append("SELECT * FROM testcasestepexecution a ");
-        query.append("where id = ? and test = ? and testcase = ?");
+        query.append("where 1=1 and id = ? ");
+        if (!(StringUtil.isNullOrEmpty(test))) {
+            query.append("and test = ? ");
+        }
+        if (!(StringUtil.isNullOrEmpty(testcase))) {
+            query.append("and testcase = ? ");
+        }
+        query.append(" order by start ");
+
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query.toString());
+            LOG.debug("SQL.param.id : " + executionId);
+            LOG.debug("SQL.param.test : " + test);
+            LOG.debug("SQL.param.testcase : " + testcase);
         }
         Connection connection = this.databaseSpring.connect();
         try {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
-                preStat.setLong(1, executionId);
-                preStat.setString(2, test);
-                preStat.setString(3, testcase);
+                int i = 1;
+                preStat.setLong(i++, executionId);
+                if (!(StringUtil.isNullOrEmpty(test))) {
+                    preStat.setString(i++, test);
+                }
+                if (!(StringUtil.isNullOrEmpty(testcase))) {
+                    preStat.setString(i++, testcase);
+                }
                 ResultSet resultSet = preStat.executeQuery();
                 try {
                     while (resultSet.next()) {
@@ -281,16 +323,23 @@ public class TestCaseStepExecutionDAO implements ITestCaseStepExecutionDAO {
         String test = resultSet.getString("test");
         String testcase = resultSet.getString("testcase");
         int step = resultSet.getInt("step");
+        int index = resultSet.getInt("index");
         int sort = resultSet.getInt("sort");
+        String loop = resultSet.getString("loop");
+        String conditionOper = resultSet.getString("conditionOper");
+        String conditionVal1 = resultSet.getString("conditionVal1");
+        String conditionVal2 = resultSet.getString("conditionVal2");
+        String conditionVal1Init = resultSet.getString("conditionVal1Init");
+        String conditionVal2Init = resultSet.getString("conditionVal2Init");
         String batNumExe = resultSet.getString("batnumexe");
-        long start = resultSet.getTimestamp("start")==null?0:resultSet.getTimestamp("start").getTime();
-        long end = resultSet.getTimestamp("end")==null?0:resultSet.getTimestamp("end").getTime();
+        long start = resultSet.getTimestamp("start") == null ? 0 : resultSet.getTimestamp("start").getTime();
+        long end = resultSet.getTimestamp("end") == null ? 0 : resultSet.getTimestamp("end").getTime();
         long fullstart = resultSet.getLong("fullstart");
         long fullend = resultSet.getLong("Fullend");
         BigDecimal timeelapsed = resultSet.getBigDecimal("timeelapsed");
         String returnCode = resultSet.getString("returncode");
         String returnMessage = resultSet.getString("returnMessage");
         String description = resultSet.getString("description");
-        return factoryTestCaseStepExecution.create(id, test, testcase, step, sort, batNumExe, start, end, fullstart, fullend, timeelapsed, returnCode, returnMessage, description);
+        return factoryTestCaseStepExecution.create(id, test, testcase, step, index, sort, loop, conditionOper, conditionVal1Init, conditionVal2Init, conditionVal1, conditionVal2, batNumExe, start, end, fullstart, fullend, timeelapsed, returnCode, returnMessage, description);
     }
 }

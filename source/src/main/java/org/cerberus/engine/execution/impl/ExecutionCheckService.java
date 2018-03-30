@@ -1,5 +1,5 @@
-/*
- * Cerberus  Copyright (C) 2013  vertigo17
+/**
+ * Cerberus Copyright (C) 2013 - 2017 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,9 +23,9 @@ import org.cerberus.enums.MessageGeneralEnum;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.logging.Level;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.cerberus.crud.entity.BuildRevisionInvariant;
 import org.cerberus.crud.entity.CountryEnvParam;
 import org.cerberus.engine.entity.MessageGeneral;
@@ -33,12 +33,10 @@ import org.cerberus.crud.entity.TestCase;
 import org.cerberus.crud.entity.Test;
 import org.cerberus.crud.entity.TestCaseExecution;
 import org.cerberus.exception.CerberusException;
-import org.cerberus.crud.service.IApplicationService;
 import org.cerberus.crud.service.IBuildRevisionInvariantService;
 import org.cerberus.crud.service.ITestCaseCountryService;
 import org.cerberus.engine.execution.IExecutionCheckService;
 import org.cerberus.util.ParameterParserUtil;
-import org.cerberus.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -53,12 +51,10 @@ import org.springframework.stereotype.Service;
 public class ExecutionCheckService implements IExecutionCheckService {
 
     /**
-     * The associated {@link org.apache.log4j.Logger} to this class
+     * The associated {@link org.apache.logging.log4j.Logger} to this class
      */
-    private static final Logger LOG = Logger.getLogger(ExecutionCheckService.class);
+    private static final Logger LOG = LogManager.getLogger(ExecutionCheckService.class);
 
-    @Autowired
-    private IApplicationService applicationService;
     @Autowired
     private ITestCaseCountryService testCaseCountryService;
     @Autowired
@@ -76,27 +72,23 @@ public class ExecutionCheckService implements IExecutionCheckService {
                     && this.checkTestActive(tCExecution.getTestObj())
                     && this.checkTestCaseNotManual(tCExecution)
                     && this.checkCountry(tCExecution)
-                    && this.checkMaintenanceTime(tCExecution)
-                    && this.checkUserAgentConsistent(tCExecution)) {
+                    && this.checkMaintenanceTime(tCExecution)) {
+                LOG.debug("Execution is checked and can proceed.");
                 return new MessageGeneral(MessageGeneralEnum.EXECUTION_PE_CHECKINGPARAMETERS);
             }
         } else /**
          * Automatic application connectivity parameter (from database)
          */
-        {
-            if (this.checkEnvironmentActive(tCExecution.getCountryEnvParam())
-                    && this.checkTestCaseNotManual(tCExecution)
-                    && this.checkRangeBuildRevision(tCExecution)
-                    && this.checkTargetBuildRevision(tCExecution)
-                    && this.checkActiveEnvironmentGroup(tCExecution)
-                    && this.checkTestCaseActive(tCExecution.getTestCaseObj())
-                    && this.checkTestActive(tCExecution.getTestObj())
-                    && this.checkCountry(tCExecution)
-                    && this.checkMaintenanceTime(tCExecution)
-                    && this.checkVerboseIsNotZeroForFirefoxOnly(tCExecution)
-                    && this.checkUserAgentConsistent(tCExecution)) {
-                return new MessageGeneral(MessageGeneralEnum.EXECUTION_PE_CHECKINGPARAMETERS);
-            }
+        if (this.checkEnvironmentActive(tCExecution.getCountryEnvParam())
+                && this.checkRangeBuildRevision(tCExecution)
+                && this.checkTargetBuildRevision(tCExecution)
+                && this.checkActiveEnvironmentGroup(tCExecution)
+                && this.checkTestCaseActive(tCExecution.getTestCaseObj())
+                && this.checkTestActive(tCExecution.getTestObj())
+                && this.checkCountry(tCExecution)
+                && this.checkMaintenanceTime(tCExecution)) {
+            LOG.debug("Execution is checked and can proceed.");
+            return new MessageGeneral(MessageGeneralEnum.EXECUTION_PE_CHECKINGPARAMETERS);
         }
         return message;
     }
@@ -140,7 +132,7 @@ public class ExecutionCheckService implements IExecutionCheckService {
             LOG.debug("Checking if testcase is not MANUAL");
         }
 
-        if ("N".equals(tCExecution.getManualExecution()) && tCExecution.getTestCaseObj().getGroup().equals("MANUAL")) {
+        if (!tCExecution.getManualExecution().equals("Y") && tCExecution.getTestCaseObj().getGroup().equals("MANUAL")) {
             message = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_TESTCASE_ISMANUAL);
             return false;
         }
@@ -331,10 +323,10 @@ public class ExecutionCheckService implements IExecutionCheckService {
         return true;
     }
 
-    private int compareBuild(String build1, String build2, String system) throws CerberusException{
+    private int compareBuild(String build1, String build2, String system) throws CerberusException {
         BuildRevisionInvariant b1;
         BuildRevisionInvariant b2;
-        
+
         try {
             b1 = buildRevisionInvariantService.convert(buildRevisionInvariantService.readByKey(system, 1, build1));
             b2 = buildRevisionInvariantService.convert(buildRevisionInvariantService.readByKey(system, 1, build2));
@@ -368,42 +360,41 @@ public class ExecutionCheckService implements IExecutionCheckService {
 
             try {
                 long now = sdf.parse(nowDate).getTime();
-                long startMaintenance = sdf.parse(tCExecution.getCountryEnvParam().getMaintenanceStr()).getTime();
-                long endMaintenance = sdf.parse(tCExecution.getCountryEnvParam().getMaintenanceStr()).getTime();
+                long startMaintenance = sdf.parse(nowDate).getTime();
+                long endMaintenance = sdf.parse(nowDate).getTime();
 
-                if (!(now > startMaintenance && now < endMaintenance)) {
+                if (tCExecution.getCountryEnvParam() != null) {
+                    if (tCExecution.getCountryEnvParam().getMaintenanceStr() != null) {
+                        startMaintenance = sdf.parse(tCExecution.getCountryEnvParam().getMaintenanceStr()).getTime();
+                    }
+                    if (tCExecution.getCountryEnvParam().getMaintenanceStr() != null) {
+                        endMaintenance = sdf.parse(tCExecution.getCountryEnvParam().getMaintenanceEnd()).getTime();
+                    }
+                }
+
+                if (!(now >= startMaintenance && now <= endMaintenance)) {
                     return true;
                 }
 
             } catch (ParseException exception) {
-                LOG.error(exception.toString());
+                LOG.error("Error when parsing maintenance start and/or end."
+                        + tCExecution.getCountryEnvParam().getSystem() + tCExecution.getCountryEnvParam().getCountry()
+                        + tCExecution.getCountryEnvParam().getEnvironment() + " " + tCExecution.getCountryEnvParam().getMaintenanceStr() + tCExecution.getCountryEnvParam().getMaintenanceEnd() + exception.toString());
+            } catch (Exception exception) {
+                LOG.error("Error when parsing maintenance start and/or end."
+                        + tCExecution.getCountryEnvParam().getSystem() + tCExecution.getCountryEnvParam().getCountry()
+                        + tCExecution.getCountryEnvParam().getEnvironment() + " " + tCExecution.getCountryEnvParam().getMaintenanceStr() + tCExecution.getCountryEnvParam().getMaintenanceEnd() + exception.toString());
             }
             message = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_ENVIRONMENT_UNDER_MAINTENANCE);
+            message.resolveDescription("START", tCExecution.getCountryEnvParam().getMaintenanceStr())
+                    .resolveDescription("END", tCExecution.getCountryEnvParam().getMaintenanceEnd())
+                    .resolveDescription("SYSTEM", tCExecution.getCountryEnvParam().getSystem())
+                    .resolveDescription("COUNTRY", tCExecution.getCountryEnvParam().getCountry())
+                    .resolveDescription("ENV", tCExecution.getCountryEnvParam().getEnvironment());
+
             return false;
         }
         return true;
     }
 
-    private boolean checkVerboseIsNotZeroForFirefoxOnly(TestCaseExecution tCExecution) {
-        if (!tCExecution.getBrowser().equalsIgnoreCase("firefox")) {
-            if (tCExecution.getVerbose() > 0) {
-                message = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_VERBOSE_USED_WITH_INCORRECT_BROWSER);
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean checkUserAgentConsistent(TestCaseExecution tCExecution) {
-        // We check here that User Agent has not been forced at TestCase Level and Robot Level on different value.
-        if (!(StringUtil.isNullOrEmpty(tCExecution.getTestCaseObj().getUserAgent())) && !(StringUtil.isNullOrEmpty(tCExecution.getUserAgent()))) {
-            if (!(tCExecution.getTestCaseObj().getUserAgent().equals(tCExecution.getUserAgent()))) {
-                message = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_USERAGENTDIFFERENT)
-                        .resolveDescription("UATESTCASE", tCExecution.getTestCaseObj().getUserAgent())
-                        .resolveDescription("UAROBOT", tCExecution.getUserAgent());
-                return false;
-            }
-        }
-        return true;
-    }
 }
